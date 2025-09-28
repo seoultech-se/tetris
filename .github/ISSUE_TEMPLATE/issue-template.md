@@ -1,6 +1,6 @@
 ---
 name: Issue template
-about: 새 이슈 생성 전용 템플릿
+about: 이슈 생성 전용 템플릿
 title: ''
 labels: ''
 assignees: ''
