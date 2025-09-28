@@ -4,11 +4,42 @@
 package tetris;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeAll;
 import static org.junit.jupiter.api.Assertions.*;
 
 class AppTest {
-    @Test void appHasAGreeting() {
+
+    @BeforeAll
+    static void setupHeadlessMode() {
+        // JavaFX를 헤드리스 모드로 설정
+        System.setProperty("testfx.robot", "glass");
+        System.setProperty("testfx.headless", "true");
+        System.setProperty("prism.order", "sw");
+        System.setProperty("prism.text", "t2k");
+        System.setProperty("java.awt.headless", "true");
+    }
+
+    @Test void appCanBeInstantiated() {
         App classUnderTest = new App();
-        assertNotNull(classUnderTest.getGreeting(), "app should have a greeting");
+        assertNotNull(classUnderTest, "app should be instantiated");
+    }
+
+    @Test void gameEngineCanBeCreated() {
+        tetris.game.GameEngine gameEngine = new tetris.game.GameEngine();
+        assertNotNull(gameEngine, "game engine should be created");
+        assertEquals(0, gameEngine.getScore(), "initial score should be 0");
+        assertEquals(1, gameEngine.getLevel(), "initial level should be 1");
+    }
+
+    @Test void gameBoardCanBeCreated() {
+        tetris.game.GameBoard gameBoard = new tetris.game.GameBoard();
+        assertNotNull(gameBoard, "game board should be created");
+        assertEquals(0, gameBoard.getCell(0, 0), "initial board should be empty");
+    }
+
+    @Test void pieceFactoryCanCreatePieces() {
+        tetris.game.Piece piece = tetris.game.PieceFactory.createRandomPiece();
+        assertNotNull(piece, "piece factory should create pieces");
+        assertTrue(piece.getType() >= 1 && piece.getType() <= 7, "piece type should be valid");
     }
 }
