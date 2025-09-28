@@ -5,7 +5,7 @@ package tetris;
 
 public class App {
     public String getGreeting() {
-        return "Hello World!";
+        return "Hello World! Test";
     }
 
     public static void main(String[] args) {
