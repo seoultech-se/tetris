@@ -29,7 +29,7 @@ public class Piece {
         y++;
     }
 
-    public void moveUp() {
+    public void moveUp() { 
         y--;
     }
 

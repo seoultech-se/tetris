@@ -35,9 +35,11 @@ public class GameScreenController implements Initializable {
     private SceneManager sceneManager;
     private GameEngine gameEngine;
     private AnimationTimer gameLoop;
+    private long lastUpdateTime = 0;
+    private long fallSpeed = 1_000_000_000; // 1 second in nanoseconds
 
     // 블록 크기와 색상 설정
-    private static final int BLOCK_SIZE = 30;
+    private static final int BLOCK_SIZE = 25;
     private static final Color[] PIECE_COLORS = {
         Color.BLACK,        // 0 - 빈 공간
         Color.CYAN,         // 1 - I 피스
@@ -56,6 +58,7 @@ public class GameScreenController implements Initializable {
         setupGameCanvas();
         setupNextPieceCanvas();
         startGameLoop();
+        gameEngine.startGame();
     }
 
     public void setSceneManager(SceneManager sceneManager) {
@@ -71,16 +74,44 @@ public class GameScreenController implements Initializable {
             // 키보드 이벤트 처리
             gameCanvas.setOnKeyPressed(event -> {
                 if (gameEngine != null) {
-                    gameEngine.handleKeyPress(event.getCode());
+                    GameEngine.KeyCode keyCode = mapKeyCode(event.getCode());
+                    if (keyCode != null) {
+                        gameEngine.handleKeyPress(keyCode);
+                    }
                 }
             });
         }
     }
 
+    private GameEngine.KeyCode mapKeyCode(javafx.scene.input.KeyCode fxKeyCode) {
+        switch (fxKeyCode) {
+            case LEFT:
+                return GameEngine.KeyCode.LEFT;
+            case RIGHT:
+                return GameEngine.KeyCode.RIGHT;
+            case DOWN:
+                return GameEngine.KeyCode.DOWN;
+            case UP:
+                return GameEngine.KeyCode.UP;
+            case SPACE:
+                return GameEngine.KeyCode.SPACE;
+            case A:
+                return GameEngine.KeyCode.A;
+            case D:
+                return GameEngine.KeyCode.D;
+            case S:
+                return GameEngine.KeyCode.S;
+            case W:
+                return GameEngine.KeyCode.W;
+            default:
+                return null;
+        }
+    }
+
     private void setupNextPieceCanvas() {
         if (nextPieceCanvas != null) {
-            nextPieceCanvas.setWidth(4 * BLOCK_SIZE);
-            nextPieceCanvas.setHeight(4 * BLOCK_SIZE);
+            nextPieceCanvas.setWidth(6 * BLOCK_SIZE);
+            nextPieceCanvas.setHeight(5 * BLOCK_SIZE);
         }
     }
 
@@ -88,12 +119,29 @@ public class GameScreenController implements Initializable {
         gameLoop = new AnimationTimer() {
             @Override
             public void handle(long now) {
+                if (lastUpdateTime == 0) {
+                    lastUpdateTime = now;
+                }
+
+                if (now - lastUpdateTime >= fallSpeed) {
+                    if (gameEngine.isGameRunning() && !gameEngine.isPaused()) {
+                        gameEngine.movePieceDown();
+                    }
+                    lastUpdateTime = now;
+                }
+
                 renderGame();
                 renderNextPiece();
                 updateUI();
+                updateFallSpeed();
             }
         };
         gameLoop.start();
+    }
+
+    // 블록 낙하 속도 조절
+    private void updateFallSpeed() {
+        fallSpeed = (long) (1_000_000_000 / (1 + 0.1 * gameEngine.getLevel()));
     }
 
     private void renderGame() {
@@ -143,7 +191,7 @@ public class GameScreenController implements Initializable {
             for (int row = 0; row < shape.length; row++) {
                 for (int col = 0; col < shape[row].length; col++) {
                     if (shape[row][col] != 0) {
-                        renderBlock(gc, col * BLOCK_SIZE, row * BLOCK_SIZE, color);
+                        renderBlock(gc, (col + 1)* BLOCK_SIZE, (row + 1) * BLOCK_SIZE, color);
                     }
                 }
             }
