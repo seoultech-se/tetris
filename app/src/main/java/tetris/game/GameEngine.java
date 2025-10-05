@@ -1,6 +1,6 @@
 package tetris.game;
 
-import tetris.game.GameBoard;
+// import tetris.game.GameBoard;
 
 public class GameEngine {
     private GameBoard gameBoard;
@@ -37,7 +37,6 @@ public class GameEngine {
         isPaused = false;
     }
 
-    public void handleKeyPress(KeyCode keyCode) {
     public enum KeyCode {
         LEFT, RIGHT, DOWN, UP, SPACE, A, D, S, W
     }
@@ -87,7 +86,7 @@ public class GameEngine {
         }
     }
 
-    private void movePieceDown() {
+    public void movePieceDown() {
         if (currentPiece != null) {
             currentPiece.moveDown();
             if (!gameBoard.isValidPosition(currentPiece)) {
