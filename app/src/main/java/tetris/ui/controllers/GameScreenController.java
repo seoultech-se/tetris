@@ -9,6 +9,7 @@ import javafx.scene.paint.Color;
 import javafx.animation.AnimationTimer;
 import tetris.ui.SceneManager;
 import tetris.game.GameEngine;
+import javafx.scene.input.KeyCode;
 import tetris.game.GameBoard;
 import tetris.game.Piece;
 
@@ -74,7 +75,7 @@ public class GameScreenController implements Initializable {
             // 키보드 이벤트 처리
             gameCanvas.setOnKeyPressed(event -> {
                 if (gameEngine != null) {
-                    GameEngine.KeyCode keyCode = mapKeyCode(event.getCode());
+                    KeyCode keyCode = event.getCode();
                     if (keyCode != null) {
                         gameEngine.handleKeyPress(keyCode);
                     }
@@ -83,30 +84,7 @@ public class GameScreenController implements Initializable {
         }
     }
 
-    private GameEngine.KeyCode mapKeyCode(javafx.scene.input.KeyCode fxKeyCode) {
-        switch (fxKeyCode) {
-            case LEFT:
-                return GameEngine.KeyCode.LEFT;
-            case RIGHT:
-                return GameEngine.KeyCode.RIGHT;
-            case DOWN:
-                return GameEngine.KeyCode.DOWN;
-            case UP:
-                return GameEngine.KeyCode.UP;
-            case SPACE:
-                return GameEngine.KeyCode.SPACE;
-            case A:
-                return GameEngine.KeyCode.A;
-            case D:
-                return GameEngine.KeyCode.D;
-            case S:
-                return GameEngine.KeyCode.S;
-            case W:
-                return GameEngine.KeyCode.W;
-            default:
-                return null;
-        }
-    }
+    // mapKeyCode 메서드 제거 (KeyCode 직접 사용)
 
     private void setupNextPieceCanvas() {
         if (nextPieceCanvas != null) {
