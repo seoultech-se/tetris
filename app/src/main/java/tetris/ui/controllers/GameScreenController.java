@@ -10,6 +10,7 @@ import javafx.animation.AnimationTimer;
 import tetris.ui.SceneManager;
 import tetris.ui.SettingsManager;
 import tetris.game.GameEngine;
+import javafx.scene.input.KeyCode;
 import tetris.game.GameBoard;
 import tetris.game.Piece;
 import tetris.game.ItemType;
