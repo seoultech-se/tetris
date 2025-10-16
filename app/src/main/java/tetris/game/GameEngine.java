@@ -1,6 +1,6 @@
 package tetris.game;
 
-import tetris.game.GameBoard;
+import javafx.scene.input.KeyCode;
 
 public class GameEngine {
     private GameBoard gameBoard;
@@ -38,37 +38,37 @@ public class GameEngine {
     }
 
     public void handleKeyPress(KeyCode keyCode) {
-    public enum KeyCode {
-        LEFT, RIGHT, DOWN, UP, SPACE, A, D, S, W
-    }
-    
-    public void handleKeyPress(KeyCode keyCode) {
-            if (!isGameRunning || isPaused || currentPiece == null) {
-                return;
-            }
-    
-            switch (keyCode) {
-                case LEFT:
-                case A:
-                    movePieceLeft();
-                    break;
-                case RIGHT:
-                case D:
-                    movePieceRight();
-                    break;
-                case DOWN:
-                case S:
-                    movePieceDown();
-                    break;
-                case UP:
-                case W:
-                    rotatePiece();
-                    break;
-                case SPACE:
-                    hardDrop();
-                    break;
-            }
+        if (!isGameRunning || isPaused || currentPiece == null) {
+            return;
         }
+
+        if (keyCode == null) return;
+
+        switch (keyCode) {
+            case LEFT:
+            case A:
+                movePieceLeft();
+                break;
+            case RIGHT:
+            case D:
+                movePieceRight();
+                break;
+            case DOWN:
+            case S:
+                movePieceDown();
+                break;
+            case UP:
+            case W:
+                rotatePiece();
+                break;
+            case SPACE:
+                hardDrop();
+                break;
+            default:
+                // ignore other keys
+                break;
+        }
+    }
     private void movePieceLeft() {
         if (currentPiece != null) {
             currentPiece.moveLeft();
