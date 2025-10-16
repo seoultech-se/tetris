@@ -40,6 +40,7 @@ public class GameEngine {
     public void handleKeyPress(KeyCode keyCode) {
         if (!isGameRunning || isPaused || currentPiece == null) {
             return;
+
         }
 
         if (keyCode == null) return;
@@ -87,7 +88,7 @@ public class GameEngine {
         }
     }
 
-    private void movePieceDown() {
+    public void movePieceDown() {
         if (currentPiece != null) {
             currentPiece.moveDown();
             if (!gameBoard.isValidPosition(currentPiece)) {
