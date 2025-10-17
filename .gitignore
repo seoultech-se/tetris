@@ -16,6 +16,7 @@ requirement/
 game_settings.properties
 scores.dat*
 
+app/bin/
 .metals
 
 # class
