@@ -46,6 +46,12 @@ public class SceneManager {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
             Scene scene = new Scene(loader.load(), WINDOW_WIDTH, WINDOW_HEIGHT);
 
+            // CSS 스타일 로드 (GameScreen의 경우)
+            if (fxmlPath.contains("GameScreen")) {
+                String cssPath = getClass().getResource("/css/GameScreen.css").toExternalForm();
+                scene.getStylesheets().add(cssPath);
+            }
+
             // 컨트롤러에 SceneManager 설정
             Object controller = loader.getController();
             if (controller instanceof tetris.ui.controllers.MainMenuController) {

@@ -1,0 +1,130 @@
+/* GameScreen 스타일 시트 */
+
+/* 메인 컨테이너 */
+.main-container {
+    -fx-background-color: #2c3e50;
+    -fx-padding: 15px;
+}
+
+/* 게임 보드 영역 */
+.game-board-container {
+    -fx-background-color: #34495e;
+    -fx-padding: 15px;
+    -fx-border-color: #ecf0f1;
+    -fx-border-width: 2px;
+    -fx-border-radius: 8px;
+}
+
+.game-canvas {
+    -fx-border-color: #ffffff;
+    -fx-border-width: 2px;
+    -fx-border-radius: 4px;
+}
+
+/* 사이드바 영역 */
+.sidebar {
+    -fx-background-color: #34495e;
+    -fx-padding: 15px;
+    -fx-spacing: 15px;
+    -fx-pref-width: 180px;
+}
+
+/* 다음 블록 미리보기 */
+.next-piece-container {
+    -fx-background-color: #2c3e50;
+    -fx-padding: 15px;
+    -fx-border-color: #ecf0f1;
+    -fx-border-width: 1px;
+    -fx-border-radius: 6px;
+}
+
+.next-piece-canvas {
+    -fx-border-color: #ffffff;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px;
+}
+
+/* 점수 영역 */
+.score-container {
+    -fx-background-color: #ecf0f1;
+    -fx-padding: 15px;
+    -fx-border-color: #bdc3c7;
+    -fx-border-width: 1px;
+    -fx-border-radius: 6px;
+}
+
+.score-title {
+    -fx-text-fill: #7f8c8d;
+    -fx-font-family: "System Bold";
+    -fx-font-size: 16px;
+}
+
+.score-value {
+    -fx-text-fill: #e74c3c;
+    -fx-font-family: "System Bold";
+    -fx-font-size: 20px;
+}
+
+/* 게임 정보 영역 */
+.game-info-container {
+    -fx-padding: 15px;
+    -fx-spacing: 8px;
+    -fx-alignment: center-left;
+}
+
+.game-info-label {
+    -fx-text-fill: #ecf0f1;
+    -fx-font-size: 14px;
+}
+
+/* 컨트롤 버튼 영역 */
+.control-buttons-container {
+    -fx-padding: 15px;
+    -fx-spacing: 12px;
+    -fx-alignment: center;
+}
+
+.control-button {
+    -fx-pref-width: 140px;
+    -fx-pref-height: 35px;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-background-color: #3498db;
+    -fx-text-fill: #ffffff;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+}
+
+.control-button:hover {
+    -fx-background-color: #2980b9;
+}
+
+.control-button:pressed {
+    -fx-background-color: #21618c;
+}
+
+/* 일시정지 버튼 특별 스타일 */
+.pause-button {
+    -fx-background-color: #f39c12;
+}
+
+.pause-button:hover {
+    -fx-background-color: #e67e22;
+}
+
+.pause-button:pressed {
+    -fx-background-color: #d35400;
+}
+
+/* 메뉴 버튼 특별 스타일 */
+.menu-button {
+    -fx-background-color: #95a5a6;
+}
+
+.menu-button:hover {
+    -fx-background-color: #7f8c8d;
+}
+
+.menu-button:pressed {
+    -fx-background-color: #6c7b7d;
+}

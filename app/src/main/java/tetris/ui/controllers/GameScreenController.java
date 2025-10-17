@@ -38,17 +38,17 @@ public class GameScreenController implements Initializable {
     private long lastUpdateTime = 0;
     private long fallSpeed = 1_000_000_000; // 1 second in nanoseconds
 
-    // 블록 크기와 색상 설정
+    // 블록 크기와 색상 설정 (ColorBlind Safe 팔레트)
     private static final int BLOCK_SIZE = 25;
     private static final Color[] PIECE_COLORS = {
-        Color.BLACK,        // 0 - 빈 공간
-        Color.CYAN,         // 1 - I 피스
-        Color.YELLOW,       // 2 - O 피스
-        Color.PURPLE,       // 3 - T 피스
-        Color.GREEN,        // 4 - S 피스
-        Color.RED,          // 5 - Z 피스
-        Color.BLUE,         // 6 - J 피스
-        Color.ORANGE        // 7 - L 피스
+        Color.BLACK,                    
+        Color.web("#56B4E9"),          // 1 - I 피스 (하늘색)
+        Color.web("#F0E442"),          // 2 - O 피스 (노랑)
+        Color.web("#CC79A7"),          // 3 - T 피스 (핑크/보라)
+        Color.web("#009E73"),          // 4 - S 피스 (초록)
+        Color.web("#D55E00"),          // 5 - Z 피스 (적갈색)
+        Color.web("#0072B2"),          // 6 - J 피스 (파랑)
+        Color.web("#E69F00")           // 7 - L 피스 (주황)
     };
 
     @Override
