@@ -6,6 +6,7 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Slider?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
@@ -39,6 +40,74 @@
                   <ComboBox fx:id="difficultyComboBox" prefWidth="200.0" />
                </children>
             </HBox>
+            <HBox alignment="CENTER_LEFT" spacing="20.0">
+               <children>
+                  <Label prefWidth="100.0" text="화면 크기:">
+                     <font>
+                        <Font size="16.0" />
+                     </font>
+                  </Label>
+                  <ComboBox fx:id="screenSizeComboBox" prefWidth="200.0" />
+               </children>
+            </HBox>
+            
+            <!-- 키 설정 섹션 -->
+            <Label text="키 설정" textFill="#2c3e50">
+               <font>
+                  <Font name="System Bold" size="18.0" />
+               </font>
+               <VBox.margin>
+                  <Insets top="10.0" />
+               </VBox.margin>
+            </Label>
+            
+            <HBox alignment="CENTER_LEFT" spacing="20.0">
+               <children>
+                  <Label prefWidth="100.0" text="왼쪽 이동:">
+                     <font>
+                        <Font size="14.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="keyLeftField" prefWidth="80.0" promptText="키 입력" />
+                  
+                  <Label prefWidth="100.0" text="오른쪽 이동:">
+                     <font>
+                        <Font size="14.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="keyRightField" prefWidth="80.0" promptText="키 입력" />
+               </children>
+            </HBox>
+            
+            <HBox alignment="CENTER_LEFT" spacing="20.0">
+               <children>
+                  <Label prefWidth="100.0" text="아래 이동:">
+                     <font>
+                        <Font size="14.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="keyDownField" prefWidth="80.0" promptText="키 입력" />
+                  
+                  <Label prefWidth="100.0" text="회전:">
+                     <font>
+                        <Font size="14.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="keyRotateField" prefWidth="80.0" promptText="키 입력" />
+               </children>
+            </HBox>
+            
+            <HBox alignment="CENTER_LEFT" spacing="20.0">
+               <children>
+                  <Label prefWidth="100.0" text="하드 드롭:">
+                     <font>
+                        <Font size="14.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="keyHardDropField" prefWidth="80.0" promptText="키 입력" />
+               </children>
+            </HBox>
+            
             <VBox spacing="10.0">
                <children>
                   <CheckBox fx:id="soundEffectsCheckBox" text="효과음 사용">
@@ -71,6 +140,11 @@
                </font>
             </Button>
             <Button mnemonicParsing="false" onAction="#onResetSettings" prefWidth="120.0" text="초기화">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Button>
+            <Button mnemonicParsing="false" onAction="#onClearScoreboard" prefWidth="150.0" text="스코어보드 초기화" textFill="#c0392b">
                <font>
                   <Font size="16.0" />
                </font>

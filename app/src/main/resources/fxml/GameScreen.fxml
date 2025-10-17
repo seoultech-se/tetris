@@ -51,8 +51,8 @@
             <!-- 컨트롤 버튼들 -->
             <HBox styleClass="control-buttons-container">
                <children>
-                  <Button mnemonicParsing="false" onAction="#onPause" text="PAUSE" styleClass="control-button pause-button" />
-                  <Button mnemonicParsing="false" onAction="#onBackToMenu" text="MENU" styleClass="control-button menu-button" />
+                  <Button mnemonicParsing="false" focusTraversable="false" onAction="#onPause" text="PAUSE" styleClass="control-button pause-button" />
+                  <Button mnemonicParsing="false" focusTraversable="false" onAction="#onBackToMenu" text="MENU" styleClass="control-button menu-button" />
                </children>
             </HBox>
          </children>

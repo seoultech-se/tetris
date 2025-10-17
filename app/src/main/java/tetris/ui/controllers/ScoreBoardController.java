@@ -2,10 +2,14 @@ package tetris.ui.controllers;
 
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ListView;
+import tetris.data.ScoreManager;
 import tetris.ui.SceneManager;
 
 import java.net.URL;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 public class ScoreBoardController implements Initializable {
@@ -26,21 +30,28 @@ public class ScoreBoardController implements Initializable {
 
     private void loadScores() {
         if (scoreListView != null) {
-            // 임시 스코어 데이터
-            scoreListView.getItems().addAll(
-                "1. Player1 - 15000",
-                "2. Player2 - 12000",
-                "3. Player3 - 10000",
-                "4. Player4 - 8000",
-                "5. Player5 - 6000"
-            );
+            scoreListView.getItems().clear();
+            scoreListView.getItems().addAll(ScoreManager.getInstance().getFormattedScores());
         }
     }
 
     @FXML
     private void onClearScores() {
-        if (scoreListView != null) {
-            scoreListView.getItems().clear();
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("스코어보드 초기화");
+        alert.setHeaderText("모든 점수 기록을 삭제하시겠습니까?");
+        alert.setContentText("이 작업은 되돌릴 수 없습니다.");
+        
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            ScoreManager.getInstance().clearScores();
+            loadScores();
+            
+            Alert infoAlert = new Alert(Alert.AlertType.INFORMATION);
+            infoAlert.setTitle("초기화 완료");
+            infoAlert.setHeaderText(null);
+            infoAlert.setContentText("스코어보드가 초기화되었습니다.");
+            infoAlert.showAndWait();
         }
     }
 
