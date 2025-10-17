@@ -6,6 +6,7 @@ import javafx.scene.control.Slider;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.CheckBox;
 import tetris.ui.SceneManager;
+import tetris.ui.SettingsManager;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -24,10 +25,15 @@ public class SettingsController implements Initializable {
     @FXML
     private CheckBox musicCheckBox;
 
+    @FXML
+    private CheckBox accessibilityModeCheckBox;
+
     private SceneManager sceneManager;
+    private SettingsManager settingsManager;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        settingsManager = SettingsManager.getInstance();
         setupDifficultyComboBox();
         loadSettings();
     }
@@ -44,15 +50,21 @@ public class SettingsController implements Initializable {
     }
 
     private void loadSettings() {
-        // 설정 로드 로직
+        // SettingsManager에서 설정 로드
         if (volumeSlider != null) {
-            volumeSlider.setValue(50);
+            volumeSlider.setValue(settingsManager.getVolume());
+        }
+        if (difficultyComboBox != null) {
+            difficultyComboBox.setValue(settingsManager.getDifficulty());
         }
         if (soundEffectsCheckBox != null) {
-            soundEffectsCheckBox.setSelected(true);
+            soundEffectsCheckBox.setSelected(settingsManager.isSoundEffectsEnabled());
         }
         if (musicCheckBox != null) {
-            musicCheckBox.setSelected(true);
+            musicCheckBox.setSelected(settingsManager.isMusicEnabled());
+        }
+        if (accessibilityModeCheckBox != null) {
+            accessibilityModeCheckBox.setSelected(settingsManager.isAccessibilityModeEnabled());
         }
     }
 
@@ -66,6 +78,7 @@ public class SettingsController implements Initializable {
     @FXML
     private void onResetSettings() {
         // 설정 초기화
+        settingsManager.resetToDefaults();
         loadSettings();
     }
 
@@ -77,7 +90,22 @@ public class SettingsController implements Initializable {
     }
 
     private void saveSettings() {
-        // 실제 설정 저장 구현
+        // UI에서 설정 값들을 SettingsManager에 저장
+        if (volumeSlider != null) {
+            settingsManager.setVolume(volumeSlider.getValue());
+        }
+        if (difficultyComboBox != null) {
+            settingsManager.setDifficulty(difficultyComboBox.getValue());
+        }
+        if (soundEffectsCheckBox != null) {
+            settingsManager.setSoundEffectsEnabled(soundEffectsCheckBox.isSelected());
+        }
+        if (musicCheckBox != null) {
+            settingsManager.setMusicEnabled(musicCheckBox.isSelected());
+        }
+        if (accessibilityModeCheckBox != null) {
+            settingsManager.setAccessibilityModeEnabled(accessibilityModeCheckBox.isSelected());
+        }
         System.out.println("Settings saved");
     }
 }
