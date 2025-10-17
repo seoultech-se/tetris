@@ -1,6 +1,6 @@
 package tetris.game;
 
-// import tetris.game.GameBoard;
+import tetris.ui.SettingsManager;
 
 public class GameEngine {
     private GameBoard gameBoard;
@@ -37,37 +37,26 @@ public class GameEngine {
         isPaused = false;
     }
 
-    public enum KeyCode {
-        LEFT, RIGHT, DOWN, UP, SPACE, A, D, S, W
-    }
-    
-    public void handleKeyPress(KeyCode keyCode) {
-            if (!isGameRunning || isPaused || currentPiece == null) {
-                return;
-            }
-    
-            switch (keyCode) {
-                case LEFT:
-                case A:
-                    movePieceLeft();
-                    break;
-                case RIGHT:
-                case D:
-                    movePieceRight();
-                    break;
-                case DOWN:
-                case S:
-                    movePieceDown();
-                    break;
-                case UP:
-                case W:
-                    rotatePiece();
-                    break;
-                case SPACE:
-                    hardDrop();
-                    break;
-            }
+    public void handleKeyPress(javafx.scene.input.KeyCode keyCode) {
+        if (!isGameRunning || isPaused || currentPiece == null) {
+            return;
         }
+
+        SettingsManager settings = SettingsManager.getInstance();
+        String keyName = keyCode.getName().toUpperCase();
+
+        if (keyName.equals(settings.getKeyLeft())) {
+            movePieceLeft();
+        } else if (keyName.equals(settings.getKeyRight())) {
+            movePieceRight();
+        } else if (keyName.equals(settings.getKeyDown())) {
+            movePieceDown();
+        } else if (keyName.equals(settings.getKeyRotate())) {
+            rotatePiece();
+        } else if (keyName.equals(settings.getKeyHardDrop()) || keyCode == javafx.scene.input.KeyCode.SPACE) {
+            hardDrop();
+        }
+    }
     private void movePieceLeft() {
         if (currentPiece != null) {
             currentPiece.moveLeft();
@@ -158,7 +147,23 @@ public class GameEngine {
                 break;
         }
 
-        level = (linesCleared / 10) + 1;
+        SettingsManager settings = SettingsManager.getInstance();
+        String difficulty = settings.getDifficulty();
+        int linesPerLevel;
+
+        switch (difficulty) {
+            case "Easy":
+                linesPerLevel = 12;
+                break;
+            case "Hard":
+                linesPerLevel = 8;
+                break;
+            default:    // Normal
+                linesPerLevel = 10;
+                break;
+        }
+
+        level = (linesCleared / linesPerLevel) + 1;
     }
 
     public GameBoard getGameBoard() {
