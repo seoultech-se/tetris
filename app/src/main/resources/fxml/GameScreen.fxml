@@ -8,79 +8,54 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<HBox spacing="10.0" style="-fx-background-color: #CCCCCC;" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="tetris.ui.controllers.GameScreenController">
+<HBox spacing="20.0" styleClass="main-container" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="tetris.ui.controllers.GameScreenController">
    <children>
       <!-- 메인 게임 보드 영역 -->
-      <VBox alignment="CENTER" style="-fx-background-color: #888888; -fx-padding: 10;">
+      <VBox alignment="CENTER" styleClass="game-board-container">
          <children>
-            <Canvas fx:id="gameCanvas" height="600.0" width="300.0" style="-fx-border-color: #FFFFFF; -fx-border-width: 2;" />
+            <Canvas fx:id="gameCanvas" height="600.0" width="300.0" styleClass="game-canvas" />
          </children>
       </VBox>
 
       <!-- 우측 사이드바 영역 -->
-      <VBox spacing="10.0" prefWidth="150.0" style="-fx-background-color: #CCCCCC;">
+      <VBox styleClass="sidebar">
          <children>
             <!-- 다음 블록 미리보기 -->
-            <VBox alignment="CENTER" style="-fx-background-color: #888888; -fx-padding: 10;">
+            <VBox alignment="CENTER" spacing="8.0" styleClass="next-piece-container">
                <children>
-                  <Canvas fx:id="nextPieceCanvas" height="120.0" width="120.0" style="-fx-border-color: #FFFFFF; -fx-border-width: 1;" />
+                  <Label text="NEXT" styleClass="score-title" />
+                  <Canvas fx:id="nextPieceCanvas" height="120.0" width="120.0" styleClass="next-piece-canvas">
+                     <VBox.margin>
+                        <Insets top="6.0" />
+                     </VBox.margin>
+                  </Canvas>
                </children>
             </VBox>
 
             <!-- 점수 영역 -->
-            <VBox alignment="CENTER" style="-fx-background-color: #EEEEEE; -fx-padding: 10; -fx-border-color: #AAAAAA; -fx-border-width: 1;">
+            <VBox alignment="CENTER" styleClass="score-container">
                <children>
-                  <Label text="Scores" textFill="#888888">
-                     <font>
-                        <Font name="System Bold" size="16.0" />
-                     </font>
-                  </Label>
-                  <Label fx:id="scoreLabel" text="238" textFill="#FF0000">
-                     <font>
-                        <Font name="System Bold" size="20.0" />
-                     </font>
-                  </Label>
+                  <Label text="SCORE" styleClass="score-title" />
+                  <Label fx:id="scoreLabel" text="0" styleClass="score-value" />
                </children>
             </VBox>
 
             <!-- 게임 정보 -->
-            <VBox spacing="5.0" alignment="CENTER_LEFT" style="-fx-padding: 10;">
+            <VBox styleClass="game-info-container">
                <children>
-                  <Label fx:id="levelLabel" text="Level: 1" textFill="#333333">
-                     <font>
-                        <Font size="12.0" />
-                     </font>
-                  </Label>
-                  <Label fx:id="linesLabel" text="Lines: 0" textFill="#333333">
-                     <font>
-                        <Font size="12.0" />
-                     </font>
-                  </Label>
+                  <Label fx:id="levelLabel" text="LEVEL: 1" styleClass="game-info-label" />
+                  <Label fx:id="linesLabel" text="LINES: 0" styleClass="game-info-label" />
                </children>
             </VBox>
 
             <!-- 컨트롤 버튼들 -->
-            <VBox spacing="10.0" alignment="CENTER" style="-fx-padding: 10;">
+            <HBox styleClass="control-buttons-container">
                <children>
-                  <Button mnemonicParsing="false" onAction="#onPause" prefWidth="120.0" text="일시정지">
-                     <font>
-                        <Font size="12.0" />
-                     </font>
-                  </Button>
-                  <Button mnemonicParsing="false" onAction="#onBackToMenu" prefWidth="120.0" text="메뉴로 돌아가기">
-                     <font>
-                        <Font size="12.0" />
-                     </font>
-                  </Button>
+                  <Button mnemonicParsing="false" onAction="#onPause" text="PAUSE" styleClass="control-button pause-button" />
+                  <Button mnemonicParsing="false" onAction="#onBackToMenu" text="MENU" styleClass="control-button menu-button" />
                </children>
-            </VBox>
+            </HBox>
          </children>
-         <HBox.margin>
-            <Insets left="10.0" />
-         </HBox.margin>
       </VBox>
    </children>
-   <padding>
-      <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
-   </padding>
 </HBox>
