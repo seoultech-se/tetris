@@ -76,6 +76,16 @@ public class GameScreenController implements Initializable {
         gameEngine = new GameEngine();
         setupGameCanvas();
         setupNextPieceCanvas();
+        
+        // Scene이 설정된 후 키 핸들러 등록
+        if (gameCanvas != null) {
+            gameCanvas.sceneProperty().addListener((obs, oldScene, newScene) -> {
+                if (newScene != null) {
+                    setupKeyHandler();
+                }
+            });
+        }
+        
         startGameLoop();
         gameEngine.startGame();
     }
@@ -88,42 +98,22 @@ public class GameScreenController implements Initializable {
         if (gameCanvas != null) {
             gameCanvas.setWidth(GameBoard.BOARD_WIDTH * BLOCK_SIZE);
             gameCanvas.setHeight(GameBoard.BOARD_HEIGHT * BLOCK_SIZE);
-            gameCanvas.setFocusTraversable(true);
-
-            // 키보드 이벤트 처리
-            gameCanvas.setOnKeyPressed(event -> {
-                if (gameEngine != null) {
-                    GameEngine.KeyCode keyCode = mapKeyCode(event.getCode());
-                    if (keyCode != null) {
-                        gameEngine.handleKeyPress(keyCode);
-                    }
-                }
-            });
+            // 포커스 비활성화 - Scene 레벨에서 키 입력 처리
+            gameCanvas.setFocusTraversable(false);
         }
     }
-
-    private GameEngine.KeyCode mapKeyCode(javafx.scene.input.KeyCode fxKeyCode) {
-        switch (fxKeyCode) {
-            case LEFT:
-                return GameEngine.KeyCode.LEFT;
-            case RIGHT:
-                return GameEngine.KeyCode.RIGHT;
-            case DOWN:
-                return GameEngine.KeyCode.DOWN;
-            case UP:
-                return GameEngine.KeyCode.UP;
-            case SPACE:
-                return GameEngine.KeyCode.SPACE;
-            case A:
-                return GameEngine.KeyCode.A;
-            case D:
-                return GameEngine.KeyCode.D;
-            case S:
-                return GameEngine.KeyCode.S;
-            case W:
-                return GameEngine.KeyCode.W;
-            default:
-                return null;
+    
+    public void setupKeyHandler() {
+        // Scene에 키 이벤트 핸들러 등록
+        if (gameCanvas != null && gameCanvas.getScene() != null) {
+            gameCanvas.getScene().setOnKeyPressed(event -> {
+                if (gameEngine != null && gameEngine.isGameRunning() && !gameEngine.isPaused()) {
+                    // 게임 진행 중에만 키 입력을 게임 엔진으로 전달
+                    gameEngine.handleKeyPress(event.getCode());
+                    // 이벤트를 consume하여 버튼으로 전파되지 않도록 차단
+                    event.consume();
+                }
+            });
         }
     }
 
@@ -151,6 +141,13 @@ public class GameScreenController implements Initializable {
             public void handle(long now) {
                 if (lastUpdateTime == 0) {
                     lastUpdateTime = now;
+                }
+
+                // 게임 오버 체크
+                if (!gameEngine.isGameRunning()) {
+                    gameLoop.stop();
+                    showGameOver();
+                    return;
                 }
 
                 if (now - lastUpdateTime >= fallSpeed) {
@@ -346,7 +343,8 @@ public class GameScreenController implements Initializable {
 
     public void showGameOver() {
         if (sceneManager != null) {
-            sceneManager.showGameOverScreen();
+            int finalScore = gameEngine.getScore();
+            sceneManager.showGameOverScreen(finalScore);
         }
     }
 }

@@ -38,10 +38,18 @@ public class SceneManager {
     }
 
     public void showGameOverScreen() {
-        loadScene("/fxml/GameOverScreen.fxml");
+        loadScene("/fxml/GameOverScreen.fxml", 0);
+    }
+
+    public void showGameOverScreen(int finalScore) {
+        loadScene("/fxml/GameOverScreen.fxml", finalScore);
     }
 
     private void loadScene(String fxmlPath) {
+        loadScene(fxmlPath, 0);
+    }
+
+    private void loadScene(String fxmlPath, int finalScore) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
             Scene scene;
@@ -69,7 +77,12 @@ public class SceneManager {
             } else if (controller instanceof tetris.ui.controllers.ScoreBoardController) {
                 ((tetris.ui.controllers.ScoreBoardController) controller).setSceneManager(this);
             } else if (controller instanceof tetris.ui.controllers.GameOverController) {
-                ((tetris.ui.controllers.GameOverController) controller).setSceneManager(this);
+                tetris.ui.controllers.GameOverController gameOverController = 
+                    (tetris.ui.controllers.GameOverController) controller;
+                gameOverController.setSceneManager(this);
+                if (finalScore > 0) {
+                    gameOverController.setFinalScore(finalScore);
+                }
             }
 
             primaryStage.setScene(scene);
@@ -82,5 +95,14 @@ public class SceneManager {
 
     public Stage getPrimaryStage() {
         return primaryStage;
+    }
+
+    public void setWindowSize(double width, double height) {
+        if (primaryStage != null) {
+            primaryStage.setWidth(width);
+            primaryStage.setHeight(height);
+            primaryStage.centerOnScreen();
+            System.out.println("창 크기 변경: " + width + "x" + height);
+        }
     }
 }
