@@ -1,6 +1,6 @@
 package tetris.game;
 
-import tetris.ui.SettingsManager;
+import javafx.scene.input.KeyCode;
 
 public class GameEngine {
     private GameBoard gameBoard;
@@ -37,9 +37,32 @@ public class GameEngine {
         isPaused = false;
     }
 
-    public void handleKeyPress(javafx.scene.input.KeyCode keyCode) {
-        if (!isGameRunning || isPaused || currentPiece == null) {
-            return;
+    public void handleKeyPress(KeyCode keyCode) {
+            if (!isGameRunning || isPaused || currentPiece == null) {
+                return;
+            }
+    
+            switch (keyCode) {
+                case LEFT:
+                case A:
+                    movePieceLeft();
+                    break;
+                case RIGHT:
+                case D:
+                    movePieceRight();
+                    break;
+                case DOWN:
+                case S:
+                    movePieceDown();
+                    break;
+                case UP:
+                case W:
+                    rotatePiece();
+                    break;
+                case SPACE:
+                    hardDrop();
+                    break;
+            }
         }
 
         SettingsManager settings = SettingsManager.getInstance();
