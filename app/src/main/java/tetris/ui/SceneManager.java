@@ -7,8 +7,8 @@ import java.io.IOException;
 
 public class SceneManager {
     private final Stage primaryStage;
-    private static final double WINDOW_WIDTH = 800;
-    private static final double WINDOW_HEIGHT = 600;
+    private static final double WINDOW_WIDTH = 600;
+    private static final double WINDOW_HEIGHT = 700;
 
     public SceneManager(Stage primaryStage) {
         this.primaryStage = primaryStage;
@@ -38,13 +38,33 @@ public class SceneManager {
     }
 
     public void showGameOverScreen() {
-        loadScene("/fxml/GameOverScreen.fxml");
+        loadScene("/fxml/GameOverScreen.fxml", 0);
+    }
+
+    public void showGameOverScreen(int finalScore) {
+        loadScene("/fxml/GameOverScreen.fxml", finalScore);
     }
 
     private void loadScene(String fxmlPath) {
+        loadScene(fxmlPath, 0);
+    }
+
+    private void loadScene(String fxmlPath, int finalScore) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
-            Scene scene = new Scene(loader.load(), WINDOW_WIDTH, WINDOW_HEIGHT);
+            Scene scene;
+            
+            // CSS 스타일 로드 (GameScreen의 경우)
+            if (fxmlPath.contains("GameScreen")) {
+                scene = new Scene(loader.load());
+                String cssPath = getClass().getResource("/css/GameScreen.css").toExternalForm();
+                scene.getStylesheets().add(cssPath);
+                // 게임 화면은 컨텐츠에 맞게 크기 조정
+                primaryStage.sizeToScene();
+            } else {
+                // 다른 화면들은 기본 크기 사용
+                scene = new Scene(loader.load(), WINDOW_WIDTH, WINDOW_HEIGHT);
+            }
 
             // 컨트롤러에 SceneManager 설정
             Object controller = loader.getController();
@@ -57,7 +77,12 @@ public class SceneManager {
             } else if (controller instanceof tetris.ui.controllers.ScoreBoardController) {
                 ((tetris.ui.controllers.ScoreBoardController) controller).setSceneManager(this);
             } else if (controller instanceof tetris.ui.controllers.GameOverController) {
-                ((tetris.ui.controllers.GameOverController) controller).setSceneManager(this);
+                tetris.ui.controllers.GameOverController gameOverController = 
+                    (tetris.ui.controllers.GameOverController) controller;
+                gameOverController.setSceneManager(this);
+                if (finalScore > 0) {
+                    gameOverController.setFinalScore(finalScore);
+                }
             }
 
             primaryStage.setScene(scene);
@@ -70,5 +95,14 @@ public class SceneManager {
 
     public Stage getPrimaryStage() {
         return primaryStage;
+    }
+
+    public void setWindowSize(double width, double height) {
+        if (primaryStage != null) {
+            primaryStage.setWidth(width);
+            primaryStage.setHeight(height);
+            primaryStage.centerOnScreen();
+            System.out.println("창 크기 변경: " + width + "x" + height);
+        }
     }
 }

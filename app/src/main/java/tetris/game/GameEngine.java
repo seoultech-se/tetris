@@ -64,6 +64,22 @@ public class GameEngine {
                     break;
             }
         }
+
+        SettingsManager settings = SettingsManager.getInstance();
+        String keyName = keyCode.getName().toUpperCase();
+
+        if (keyName.equals(settings.getKeyLeft())) {
+            movePieceLeft();
+        } else if (keyName.equals(settings.getKeyRight())) {
+            movePieceRight();
+        } else if (keyName.equals(settings.getKeyDown())) {
+            movePieceDown();
+        } else if (keyName.equals(settings.getKeyRotate())) {
+            rotatePiece();
+        } else if (keyName.equals(settings.getKeyHardDrop()) || keyCode == javafx.scene.input.KeyCode.SPACE) {
+            hardDrop();
+        }
+    }
     private void movePieceLeft() {
         if (currentPiece != null) {
             currentPiece.moveLeft();
@@ -154,7 +170,23 @@ public class GameEngine {
                 break;
         }
 
-        level = (linesCleared / 10) + 1;
+        SettingsManager settings = SettingsManager.getInstance();
+        String difficulty = settings.getDifficulty();
+        int linesPerLevel;
+
+        switch (difficulty) {
+            case "Easy":
+                linesPerLevel = 12;
+                break;
+            case "Hard":
+                linesPerLevel = 8;
+                break;
+            default:    // Normal
+                linesPerLevel = 10;
+                break;
+        }
+
+        level = (linesCleared / linesPerLevel) + 1;
     }
 
     public GameBoard getGameBoard() {

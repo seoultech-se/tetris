@@ -1,4 +1,7 @@
 {
     "java.configuration.updateBuildConfiguration": "interactive",
-    "java.jdt.ls.vmargs": "-javaagent:/path/to/lombok.jar"
+    "java.jdt.ls.vmargs": "-javaagent:/path/to/lombok.jar",
+    "files.watcherExclude": {
+        "**/target": true
+    }
 }
