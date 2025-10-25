@@ -4,8 +4,17 @@
 package tetris;
 
 import org.junit.jupiter.api.Test;
+
+import tetris.game.Piece;
+import tetris.game.PieceFactory;
+import tetris.ui.SettingsManager;
+
 import org.junit.jupiter.api.BeforeAll;
 import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 class AppTest {
 
@@ -41,5 +50,54 @@ class AppTest {
         tetris.game.Piece piece = tetris.game.PieceFactory.createRandomPiece();
         assertNotNull(piece, "piece factory should create pieces");
         assertTrue(piece.getType() >= 1 && piece.getType() <= 7, "piece type should be valid");
+    }
+    
+    // Piece Generate Test
+    private static final int NUMBER_OF_TRIALS = 100000;
+    private static final double TOLERANCE = 0.05; // 5% tolerance
+
+    @Test
+    void testPieceFrequency_Easy() {
+
+        SettingsManager.getInstance().setDifficulty("Easy");
+        Map<Integer, Long> pieceCounts = runSimulation();
+        long iPieceCount = pieceCounts.getOrDefault(PieceFactory.I_PIECE, 0L);
+        double iPieceFrequency = (double) iPieceCount / NUMBER_OF_TRIALS;
+
+        // Easy: 12 I-Pieces, 60 others. Total 72. Expected P(I) = 12/72 ≈ 0.1667
+        double expectedFrequency = 12.0 / 72.0;
+        assertEquals(expectedFrequency, iPieceFrequency, TOLERANCE, "I-Piece frequency in Easy mode is out of expected range");
+    }
+
+    @Test
+    void Normal() {
+
+        SettingsManager.getInstance().setDifficulty("Normal");
+        Map<Integer, Long> pieceCounts = runSimulation();
+        long iPieceCount = pieceCounts.getOrDefault(PieceFactory.I_PIECE, 0L);
+        double iPieceFrequency = (double) iPieceCount / NUMBER_OF_TRIALS;
+
+        // Easy: 10 I-Pieces, 60 others. Total 70. Expected P(I) = 10/70 ≈ 0.1428
+        double expectedFrequency = 10.0 / 70.0;
+        assertEquals(expectedFrequency, iPieceFrequency, TOLERANCE,"I-Piece frequency in Normal mode is out of expected range");
+    }
+
+    @Test
+    void testPieceFrequency_Hard() {
+
+        SettingsManager.getInstance().setDifficulty("Hard");
+        Map<Integer, Long> pieceCounts = runSimulation();
+        long iPieceCount = pieceCounts.getOrDefault(PieceFactory.I_PIECE, 0L);
+        double iPieceFrequency = (double) iPieceCount / NUMBER_OF_TRIALS;
+
+        // Easy: 8 I-Pieces, 60 others. Total 68. Expected P(I) = 8/68 ≈ 0.1176
+        double expectedFrequency = 8.0 / 68.0;
+        assertEquals(expectedFrequency, iPieceFrequency, TOLERANCE,"I-Piece frequency in Hard mode is out of expected range");
+    }
+
+    private Map<Integer, Long> runSimulation() {
+        return IntStream.range(0, NUMBER_OF_TRIALS)
+                .mapToObj(i -> PieceFactory.createRandomPiece())
+                .collect(Collectors.groupingBy(Piece::getType, Collectors.counting()));
     }
 }
