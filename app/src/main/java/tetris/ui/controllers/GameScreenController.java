@@ -99,6 +99,7 @@ public class GameScreenController implements Initializable {
         if (gameCanvas != null) {
             gameCanvas.setWidth(GameBoard.BOARD_WIDTH * BLOCK_SIZE);
             gameCanvas.setHeight(GameBoard.BOARD_HEIGHT * BLOCK_SIZE);
+<<<<<<< HEAD
             gameCanvas.setFocusTraversable(true);
 
             // 키보드 이벤트 처리
@@ -114,6 +115,26 @@ public class GameScreenController implements Initializable {
     }
 
     // mapKeyCode 메서드 제거 (KeyCode 직접 사용)
+=======
+            // 포커스 비활성화 - Scene 레벨에서 키 입력 처리
+            gameCanvas.setFocusTraversable(false);
+        }
+    }
+    
+    public void setupKeyHandler() {
+        // Scene에 키 이벤트 핸들러 등록
+        if (gameCanvas != null && gameCanvas.getScene() != null) {
+            gameCanvas.getScene().setOnKeyPressed(event -> {
+                if (gameEngine != null && gameEngine.isGameRunning() && !gameEngine.isPaused()) {
+                    // 게임 진행 중에만 키 입력을 게임 엔진으로 전달
+                    gameEngine.handleKeyPress(event.getCode());
+                    // 이벤트를 consume하여 버튼으로 전파되지 않도록 차단
+                    event.consume();
+                }
+            });
+        }
+    }
+>>>>>>> a96a4a7907e91f5fdcba93ce7aed982fbbae97fb
 
     private void setupNextPieceCanvas() {
         if (nextPieceCanvas != null) {

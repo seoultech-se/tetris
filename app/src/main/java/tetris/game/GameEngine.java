@@ -1,6 +1,7 @@
 package tetris.game;
 
 import javafx.scene.input.KeyCode;
+import tetris.ui.SettingsManager;
 
 public class GameEngine {
     private GameBoard gameBoard;
@@ -36,6 +37,7 @@ public class GameEngine {
         isGameRunning = false;
         isPaused = false;
     }
+
 
     public void handleKeyPress(KeyCode keyCode) {
         if (!isGameRunning || isPaused || currentPiece == null) {
