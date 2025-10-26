@@ -1,6 +1,5 @@
 package tetris.game;
 
-import javafx.scene.input.KeyCode;
 import tetris.ui.SettingsManager;
 
 public class GameEngine {
@@ -38,37 +37,24 @@ public class GameEngine {
         isPaused = false;
     }
 
-
-    public void handleKeyPress(KeyCode keyCode) {
+    public void handleKeyPress(javafx.scene.input.KeyCode keyCode) {
         if (!isGameRunning || isPaused || currentPiece == null) {
             return;
         }
 
-        if (keyCode == null) return;
+        SettingsManager settings = SettingsManager.getInstance();
+        String keyName = keyCode.getName().toUpperCase();
 
-        switch (keyCode) {
-            case LEFT:
-            case A:
-                movePieceLeft();
-                break;
-            case RIGHT:
-            case D:
-                movePieceRight();
-                break;
-            case DOWN:
-            case S:
-                movePieceDown();
-                break;
-            case UP:
-            case W:
-                rotatePiece();
-                break;
-            case SPACE:
-                hardDrop();
-                break;
-            default:
-                // ignore other keys
-                break;
+        if (keyName.equals(settings.getKeyLeft())) {
+            movePieceLeft();
+        } else if (keyName.equals(settings.getKeyRight())) {
+            movePieceRight();
+        } else if (keyName.equals(settings.getKeyDown())) {
+            movePieceDown();
+        } else if (keyName.equals(settings.getKeyRotate())) {
+            rotatePiece();
+        } else if (keyName.equals(settings.getKeyHardDrop()) || keyCode == javafx.scene.input.KeyCode.SPACE) {
+            hardDrop();
         }
     }
     private void movePieceLeft() {
@@ -89,7 +75,7 @@ public class GameEngine {
         }
     }
 
-    private void movePieceDown() {
+    public void movePieceDown() {
         if (currentPiece != null) {
             currentPiece.moveDown();
             if (!gameBoard.isValidPosition(currentPiece)) {

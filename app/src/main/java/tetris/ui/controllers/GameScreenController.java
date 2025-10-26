@@ -10,7 +10,6 @@ import javafx.animation.AnimationTimer;
 import tetris.ui.SceneManager;
 import tetris.ui.SettingsManager;
 import tetris.game.GameEngine;
-import javafx.scene.input.KeyCode;
 import tetris.game.GameBoard;
 import tetris.game.Piece;
 
@@ -99,23 +98,6 @@ public class GameScreenController implements Initializable {
         if (gameCanvas != null) {
             gameCanvas.setWidth(GameBoard.BOARD_WIDTH * BLOCK_SIZE);
             gameCanvas.setHeight(GameBoard.BOARD_HEIGHT * BLOCK_SIZE);
-<<<<<<< HEAD
-            gameCanvas.setFocusTraversable(true);
-
-            // 키보드 이벤트 처리
-            gameCanvas.setOnKeyPressed(event -> {
-                if (gameEngine != null) {
-                    KeyCode keyCode = event.getCode();
-                    if (keyCode != null) {
-                        gameEngine.handleKeyPress(keyCode);
-                    }
-                }
-            });
-        }
-    }
-
-    // mapKeyCode 메서드 제거 (KeyCode 직접 사용)
-=======
             // 포커스 비활성화 - Scene 레벨에서 키 입력 처리
             gameCanvas.setFocusTraversable(false);
         }
@@ -134,7 +116,6 @@ public class GameScreenController implements Initializable {
             });
         }
     }
->>>>>>> a96a4a7907e91f5fdcba93ce7aed982fbbae97fb
 
     private void setupNextPieceCanvas() {
         if (nextPieceCanvas != null) {
