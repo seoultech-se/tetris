@@ -1,4 +1,0 @@
-{
-    "java.configuration.updateBuildConfiguration": "interactive",
-    "java.jdt.ls.vmargs": "-javaagent:/path/to/lombok.jar"
-}
