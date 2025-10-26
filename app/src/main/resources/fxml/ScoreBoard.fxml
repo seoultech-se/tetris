@@ -6,36 +6,35 @@
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
 <?import javafx.scene.text.Font?>
 
-<VBox alignment="CENTER" spacing="20.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="tetris.ui.controllers.ScoreBoardController">
+<StackPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="tetris.ui.controllers.ScoreBoardController" stylesheets="@../css/ScoreBoard.css" style="-fx-background-color: #000000;">
    <children>
-      <Label text="스코어보드" textFill="#2c3e50">
-         <font>
-            <Font name="System Bold" size="32.0" />
-         </font>
-      </Label>
-      <ListView fx:id="scoreListView" prefHeight="300.0" prefWidth="400.0">
-         <VBox.margin>
-            <Insets bottom="10.0" top="10.0" />
-         </VBox.margin>
-      </ListView>
-      <HBox alignment="CENTER" spacing="20.0">
+      <!-- 배경 이미지 - Controller에서 설정 -->
+      <ImageView fx:id="backgroundImageView" fitHeight="300.0" fitWidth="300.0" pickOnBounds="true" preserveRatio="false" >
+         <StackPane.alignment>TOP_CENTER</StackPane.alignment>
+      </ImageView>
+      
+      <VBox alignment="BOTTOM_CENTER" spacing="20.0">
          <children>
-            <Button mnemonicParsing="false" onAction="#onClearScores" prefWidth="120.0" text="기록 초기화">
-               <font>
-                  <Font size="16.0" />
-               </font>
-            </Button>
-            <Button mnemonicParsing="false" onAction="#onBackToMenu" prefWidth="120.0" text="메뉴로 돌아가기">
-               <font>
-                  <Font size="16.0" />
-               </font>
-            </Button>
+            <ListView fx:id="scoreListView" styleClass="score-list-view" prefHeight="440.0" prefWidth="480.0">
+               <VBox.margin>
+                  <Insets bottom="10.0" top="10.0" />
+               </VBox.margin>
+            </ListView>
+            <HBox alignment="CENTER" spacing="20.0">
+               <children>
+                  <Button mnemonicParsing="false" onAction="#onClearScores" text="초기화" />
+                  <Button mnemonicParsing="false" onAction="#onBackToMenu" text="메뉴로 돌아가기" />
+               </children>
+            </HBox>
          </children>
-      </HBox>
+         <padding>
+            <Insets bottom="40.0" left="50.0" right="50.0" top="40.0" />
+         </padding>
+      </VBox>
    </children>
-   <padding>
-      <Insets bottom="50.0" left="50.0" right="50.0" top="50.0" />
-   </padding>
-</VBox>
+</StackPane>
