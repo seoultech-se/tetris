@@ -8,3 +8,16 @@ build
 CLAUDE.md
 requirement/
 **/CLAUDE.md
+
+# monitoring 파일 무시
+.vscode/monitoring.json
+
+# 개인 설정 및 점수
+game_settings.properties
+scores.dat*
+
+app/bin/
+.metals
+
+# class
+*.class
