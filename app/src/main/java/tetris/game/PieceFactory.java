@@ -1,10 +1,10 @@
 package tetris.game;
 
-import java.util.Random;
+import java.util.ArrayList;
+import java.util.List;
+import tetris.ui.SettingsManager;
 
 public class PieceFactory {
-    private static final Random random = new Random();
-
     // 테트리스 피스 타입 정의
     public static final int I_PIECE = 1;
     public static final int O_PIECE = 2;
@@ -61,6 +61,9 @@ public class PieceFactory {
         {{7, 7}, {0, 7}, {0, 7}}
     };
 
+    private static List<Integer> pieceBag = new ArrayList<>();
+    private static int bagIndex = 0;
+
     public static Piece createPiece(int type) {
         switch (type) {
             case I_PIECE:
@@ -83,9 +86,47 @@ public class PieceFactory {
     }
 
     public static Piece createRandomPiece() {
-        int type = random.nextInt(7) + 1;
+        SettingsManager settings = SettingsManager.getInstance();
+        String difficulty = settings.getDifficulty();
+         
+        if (bagIndex >= pieceBag.size()) {
+            refillBag(difficulty);
+        }
+
+        // 가방에서 다음 블럭을 순서대로 꺼내기
+        int type = pieceBag.get(bagIndex++);
         return createPiece(type);
     }
+
+    private static void refillBag(String difficulty) {
+        pieceBag.clear();
+        
+        for (int i = 2; i <= 7; i++) {
+            for (int j = 0; j < 10; j++) {
+                pieceBag.add(i);
+            }
+        }
+
+        // 난이도에 따라 I 블록의 개수 조절
+        int iPieceCount;
+        if ("Easy".equals(difficulty)) {
+            iPieceCount = 12;
+        } else if ("Hard".equals(difficulty)) {
+            iPieceCount = 8;
+        } else {    // Normal
+            iPieceCount = 10;
+        }
+
+        for (int i = 0; i < iPieceCount; i++) {
+            pieceBag.add(I_PIECE);
+        }
+
+        // 가방을 무작위로 섞음
+        java.util.Collections.shuffle(pieceBag);
+        bagIndex = 0;
+    }
+
+
 
     public static Piece createIPiece() {
         return createPiece(I_PIECE);

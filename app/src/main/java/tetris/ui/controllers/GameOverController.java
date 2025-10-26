@@ -2,8 +2,10 @@ package tetris.ui.controllers;
 
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import tetris.data.ScoreManager;
 import tetris.ui.SceneManager;
 
 import java.net.URL;
@@ -40,8 +42,23 @@ public class GameOverController implements Initializable {
     private void onSaveScore() {
         String playerName = playerNameField.getText();
         if (playerName != null && !playerName.trim().isEmpty()) {
-            // 스코어 저장 로직
-            saveScore(playerName, finalScore);
+            boolean isTopTen = saveScore(playerName, finalScore);
+            
+            if (isTopTen) {
+                int rank = ScoreManager.getInstance().getRank(finalScore);
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("축하합니다!");
+                alert.setHeaderText(null);
+                alert.setContentText(String.format("축하합니다! %d위에 랭크되었습니다!\n점수: %d점", rank, finalScore));
+                alert.showAndWait();
+            }
+        } else {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("경고");
+            alert.setHeaderText(null);
+            alert.setContentText("플레이어 이름을 입력해주세요.");
+            alert.showAndWait();
+            return;
         }
         onBackToMenu();
     }
@@ -60,8 +77,7 @@ public class GameOverController implements Initializable {
         }
     }
 
-    private void saveScore(String playerName, int score) {
-        // 실제 스코어 저장 구현
-        System.out.println("Score saved: " + playerName + " - " + score);
+    private boolean saveScore(String playerName, int score) {
+        return ScoreManager.getInstance().addScore(playerName, score);
     }
 }
