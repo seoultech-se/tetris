@@ -6,6 +6,7 @@ on:
     branches:
       - 'main'
       - 'dev'
+      - 'dev2'
 
 jobs:
   build:
