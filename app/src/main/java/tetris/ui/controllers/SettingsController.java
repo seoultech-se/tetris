@@ -72,8 +72,8 @@ public class SettingsController implements Initializable {
             difficultyComboBox.setValue("Normal");
         }
         if (screenSizeComboBox != null) {
-            screenSizeComboBox.getItems().addAll("작게", "중간", "크게");
-            screenSizeComboBox.setValue("중간");
+            screenSizeComboBox.getItems().addAll("창 모드", "전체 화면");
+            screenSizeComboBox.setValue("창 모드");
         }
     }
 
