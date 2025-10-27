@@ -4,9 +4,12 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import tetris.data.ScoreManager;
 import tetris.ui.SceneManager;
 
@@ -33,6 +36,9 @@ public class ScoreBoardController implements Initializable {
 
     @FXML
     private ToggleButton hardButton;
+
+    @FXML
+    private ImageView backgroundImageView;
 
     private SceneManager sceneManager;
     private String currentGameMode = "NORMAL";
@@ -86,7 +92,42 @@ public class ScoreBoardController implements Initializable {
             });
         }
         
+        setupListViewCellFactory();
         loadScores();
+        loadBackgroundImage();
+    }
+    
+    private void setupListViewCellFactory() {
+        if (scoreListView != null) {
+            scoreListView.setCellFactory(param -> new ListCell<String>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setText(null);
+                        setGraphic(null);
+                        setStyle("-fx-background-color: transparent;");
+                    } else {
+                        setText(item);
+                        setStyle("-fx-font-size: 18px; -fx-text-fill: #ffffff; -fx-font-weight: bold;");
+                    }
+                }
+            });
+        }
+    }
+    
+    private void loadBackgroundImage() {
+        if (backgroundImageView != null) {
+            try {
+                URL imageUrl = getClass().getResource("/assets/img/Scoreboard.png");
+                if (imageUrl != null) {
+                    Image image = new Image(imageUrl.toExternalForm());
+                    backgroundImageView.setImage(image);
+                }
+            } catch (Exception e) {
+                System.err.println("배경 이미지 로드 실패: " + e.getMessage());
+            }
+        }
     }
     
     private void showDifficultyButtons(boolean show) {

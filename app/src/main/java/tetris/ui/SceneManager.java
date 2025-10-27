@@ -4,11 +4,12 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import java.io.IOException;
+import java.net.URL;
 
 public class SceneManager {
     private final Stage primaryStage;
     private static final double WINDOW_WIDTH = 600;
-    private static final double WINDOW_HEIGHT = 700;
+    private static final double WINDOW_HEIGHT = 900;
 
     public SceneManager(Stage primaryStage) {
         this.primaryStage = primaryStage;
@@ -52,18 +53,30 @@ public class SceneManager {
     private void loadScene(String fxmlPath, int finalScore) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
-            Scene scene;
+            Scene scene = new Scene(loader.load(), WINDOW_WIDTH, WINDOW_HEIGHT);
             
-            // CSS 스타일 로드 (GameScreen의 경우)
+            // CSS 스타일 로드
+            String cssPath = null;
             if (fxmlPath.contains("GameScreen")) {
-                scene = new Scene(loader.load());
-                String cssPath = getClass().getResource("/css/GameScreen.css").toExternalForm();
-                scene.getStylesheets().add(cssPath);
-                // 게임 화면은 컨텐츠에 맞게 크기 조정
-                primaryStage.sizeToScene();
-            } else {
-                // 다른 화면들은 기본 크기 사용
-                scene = new Scene(loader.load(), WINDOW_WIDTH, WINDOW_HEIGHT);
+                cssPath = "/css/GameScreen.css";
+            } else if (fxmlPath.contains("MainMenu")) {
+                cssPath = "/css/MainMenu.css";
+            } else if (fxmlPath.contains("SettingsScreen")) {
+                cssPath = "/css/SettingsScreen.css";
+            } else if (fxmlPath.contains("ScoreBoard")) {
+                cssPath = "/css/ScoreBoard.css";
+            } else if (fxmlPath.contains("GameOverScreen")) {
+                cssPath = "/css/GameOverScreen.css";
+            }
+            
+            if (cssPath != null) {
+                URL cssUrl = getClass().getResource(cssPath);
+                if (cssUrl != null) {
+                    scene.getStylesheets().add(cssUrl.toExternalForm());
+                    System.out.println("CSS 로드 성공: " + cssPath);
+                } else {
+                    System.err.println("CSS 파일을 찾을 수 없습니다: " + cssPath);
+                }
             }
 
             // 컨트롤러에 SceneManager 설정
@@ -95,14 +108,5 @@ public class SceneManager {
 
     public Stage getPrimaryStage() {
         return primaryStage;
-    }
-
-    public void setWindowSize(double width, double height) {
-        if (primaryStage != null) {
-            primaryStage.setWidth(width);
-            primaryStage.setHeight(height);
-            primaryStage.centerOnScreen();
-            System.out.println("창 크기 변경: " + width + "x" + height);
-        }
     }
 }

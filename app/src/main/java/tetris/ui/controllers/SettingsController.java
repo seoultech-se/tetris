@@ -72,8 +72,8 @@ public class SettingsController implements Initializable {
             difficultyComboBox.setValue("Normal");
         }
         if (screenSizeComboBox != null) {
-            screenSizeComboBox.getItems().addAll("작게", "중간", "크게");
-            screenSizeComboBox.setValue("중간");
+            screenSizeComboBox.getItems().addAll("창 모드", "전체 화면");
+            screenSizeComboBox.setValue("창 모드");
         }
     }
 
@@ -185,7 +185,6 @@ public class SettingsController implements Initializable {
         if (screenSizeComboBox != null) {
             String selectedSize = screenSizeComboBox.getValue();
             settingsManager.setScreenSize(selectedSize);
-            applyScreenSize(selectedSize);
         }
         // 키 설정 저장
         if (keyLeftField != null && !keyLeftField.getText().isEmpty()) {
@@ -208,27 +207,6 @@ public class SettingsController implements Initializable {
         System.out.println("Settings saved");
     }
 
-    private void applyScreenSize(String size) {
-        if (sceneManager == null) return;
-        
-        double width, height;
-        switch (size) {
-            case "작게":
-                width = 500;
-                height = 600;
-                break;
-            case "크게":
-                width = 900;
-                height = 1000;
-                break;
-            default: // "중간"
-                width = 700;
-                height = 800;
-                break;
-        }
-        sceneManager.setWindowSize(width, height);
-        System.out.println("화면 크기 변경: " + size + " (" + width + "x" + height + ")");
-    }
 
     @FXML
     private void onClearScoreboard() {
