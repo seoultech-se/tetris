@@ -10,11 +10,15 @@ public class ScoreEntry implements Serializable, Comparable<ScoreEntry> {
     private final String playerName;
     private final int score;
     private final LocalDateTime date;
+    private final String difficulty;
+    private final String gameMode; // "NORMAL" or "ITEM"
     
-    public ScoreEntry(String playerName, int score) {
+    public ScoreEntry(String playerName, int score, String difficulty, String gameMode) {
         this.playerName = playerName;
         this.score = score;
         this.date = LocalDateTime.now();
+        this.difficulty = difficulty;
+        this.gameMode = gameMode;
     }
     
     public String getPlayerName() {
@@ -27,6 +31,14 @@ public class ScoreEntry implements Serializable, Comparable<ScoreEntry> {
     
     public LocalDateTime getDate() {
         return date;
+    }
+    
+    public String getDifficulty() {
+        return difficulty;
+    }
+    
+    public String getGameMode() {
+        return gameMode;
     }
     
     public String getFormattedDate() {

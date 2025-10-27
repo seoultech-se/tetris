@@ -234,17 +234,18 @@ public class SettingsController implements Initializable {
     private void onClearScoreboard() {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("스코어보드 초기화");
-        alert.setHeaderText("모든 점수 기록을 삭제하시겠습니까?");
-        alert.setContentText("이 작업은 되돌릴 수 없습니다.");
+        alert.setHeaderText("모든 게임 모드의 점수 기록을 삭제하시겠습니까?");
+        alert.setContentText("일반 모드와 아이템 모드의 모든 기록이 삭제됩니다. 이 작업은 되돌릴 수 없습니다.");
         
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            ScoreManager.getInstance().clearScores();
+            ScoreManager.getInstance().clearScores("NORMAL");
+            ScoreManager.getInstance().clearScores("ITEM");
             
             Alert infoAlert = new Alert(Alert.AlertType.INFORMATION);
             infoAlert.setTitle("초기화 완료");
             infoAlert.setHeaderText(null);
-            infoAlert.setContentText("스코어보드가 초기화되었습니다.");
+            infoAlert.setContentText("모든 스코어보드가 초기화되었습니다.");
             infoAlert.showAndWait();
         }
     }

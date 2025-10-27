@@ -4,6 +4,7 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
@@ -15,6 +16,44 @@
             <Font name="System Bold" size="32.0" />
          </font>
       </Label>
+      
+      <!-- 게임 모드 선택 버튼 -->
+      <HBox alignment="CENTER" spacing="10.0">
+         <children>
+            <ToggleButton fx:id="normalModeButton" prefWidth="150.0" text="일반 모드">
+               <font>
+                  <Font size="14.0" />
+               </font>
+            </ToggleButton>
+            <ToggleButton fx:id="itemModeButton" prefWidth="150.0" text="아이템 모드">
+               <font>
+                  <Font size="14.0" />
+               </font>
+            </ToggleButton>
+         </children>
+      </HBox>
+      
+      <!-- 난이도 선택 버튼 (일반 모드일 때만 표시) -->
+      <HBox alignment="CENTER" spacing="10.0">
+         <children>
+            <ToggleButton fx:id="easyButton" prefWidth="100.0" text="Easy">
+               <font>
+                  <Font size="12.0" />
+               </font>
+            </ToggleButton>
+            <ToggleButton fx:id="normalButton" prefWidth="100.0" text="Normal">
+               <font>
+                  <Font size="12.0" />
+               </font>
+            </ToggleButton>
+            <ToggleButton fx:id="hardButton" prefWidth="100.0" text="Hard">
+               <font>
+                  <Font size="12.0" />
+               </font>
+            </ToggleButton>
+         </children>
+      </HBox>
+      
       <ListView fx:id="scoreListView" prefHeight="300.0" prefWidth="400.0">
          <VBox.margin>
             <Insets bottom="10.0" top="10.0" />
