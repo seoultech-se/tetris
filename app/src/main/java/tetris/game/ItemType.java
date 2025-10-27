@@ -32,11 +32,18 @@ public enum ItemType {
      * 폭탄 아이템 (Bomb)
      * 블록이 착지할 때 십자가 형태로 주변 블록을 터뜨림 (3x3 범위)
      */
-    BOMB;
+    BOMB,
+
+    /**
+     * 블록 넘기기 아이템 (Skip)
+     * NEXT에 등장했을 때 N키를 누르면 현재 블록을 버리고 다음 블록을 가져옴
+     * 다음 블록은 현재 블록과 반드시 달라야 함
+     */
+    SKIP;
 
     /**
      * 아이템 타입의 표시 문자를 반환
-     * @return LINE_CLEAR의 경우 'L', WEIGHT의 경우 'W', DOUBLE_SCORE의 경우 'D', BOMB의 경우 'B', 그 외는 빈 문자열
+     * @return LINE_CLEAR의 경우 'L', WEIGHT의 경우 'W', DOUBLE_SCORE의 경우 'D', BOMB의 경우 'B', SKIP의 경우 'S', 그 외는 빈 문자열
      */
     public String getDisplayChar() {
         switch (this) {
@@ -48,6 +55,8 @@ public enum ItemType {
                 return "D";
             case BOMB:
                 return "B";
+            case SKIP:
+                return "S";
             default:
                 return "";
         }

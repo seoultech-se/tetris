@@ -37,6 +37,9 @@ public class GameScreenController implements Initializable {
     private Label doubleScoreTimerLabel;
 
     @FXML
+    private Label skipNotificationLabel;
+
+    @FXML
     private Canvas nextPieceCanvas;
 
     private SceneManager sceneManager;
@@ -347,6 +350,7 @@ public class GameScreenController implements Initializable {
             updateLevel(gameEngine.getLevel());
             updateLines(gameEngine.getLinesCleared());
             updateDoubleScoreTimer();
+            updateSkipNotification();
         }
     }
 
@@ -396,6 +400,17 @@ public class GameScreenController implements Initializable {
                 doubleScoreTimerLabel.setStyle("-fx-text-fill: #FFD700; -fx-font-weight: bold;");
             } else {
                 doubleScoreTimerLabel.setText("");
+            }
+        }
+    }
+
+    public void updateSkipNotification() {
+        if (skipNotificationLabel != null && gameEngine != null) {
+            if (gameEngine.hasSkipItem()) {
+                skipNotificationLabel.setText("N키를 눌러\n블록 넘기기!");
+                skipNotificationLabel.setStyle("-fx-text-fill: #00FF00; -fx-font-weight: bold;");
+            } else {
+                skipNotificationLabel.setText("");
             }
         }
     }

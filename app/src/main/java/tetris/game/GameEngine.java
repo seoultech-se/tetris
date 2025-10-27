@@ -64,6 +64,9 @@ public class GameEngine {
             rotatePiece();
         } else if (keyName.equals(settings.getKeyHardDrop()) || keyCode == javafx.scene.input.KeyCode.SPACE) {
             hardDrop();
+        } else if (keyCode == javafx.scene.input.KeyCode.N && hasSkipItem()) {
+            // N키를 누르고 nextPiece가 SKIP 아이템을 가지고 있으면 블록 넘기기
+            skipCurrentPiece();
         }
     }
     private void movePieceLeft() {
@@ -320,5 +323,79 @@ public class GameEngine {
         }
         long remaining = doubleScoreEndTime - System.nanoTime();
         return (int) Math.max(0, remaining / 1_000_000_000L);
+    }
+
+    /**
+     * nextPiece가 SKIP 아이템을 가지고 있는지 확인
+     * @return SKIP 아이템이 있으면 true
+     */
+    public boolean hasSkipItem() {
+        if (nextPiece == null || !nextPiece.hasItem()) {
+            return false;
+        }
+
+        int[][] shape = nextPiece.getShape();
+        for (int row = 0; row < shape.length; row++) {
+            for (int col = 0; col < shape[row].length; col++) {
+                if (shape[row][col] != 0) {
+                    ItemType itemType = nextPiece.getItemAt(row, col);
+                    if (itemType == ItemType.SKIP) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 블록 넘기기 (SKIP 아이템 사용)
+     * 현재 블록을 버리고 다음 블록을 가져옴
+     * 다음 블록은 현재 블록과 반드시 달라야 함
+     */
+    public void skipCurrentPiece() {
+        if (nextPiece == null) {
+            return;
+        }
+
+        // 현재 블록의 타입 저장
+        int oldType = currentPiece.getType();
+
+        // 다음 블록을 현재 블록으로 설정
+        currentPiece = nextPiece;
+        currentPiece.setPosition(gameBoard.getSpawnX(), gameBoard.getSpawnY());
+
+        // 새로운 다음 블록 생성 (이전 블록과 달라야 함)
+        generateNextPieceDifferentFrom(oldType);
+
+        // 게임 오버 체크
+        if (!gameBoard.isValidPosition(currentPiece)) {
+            stopGame();
+        }
+    }
+
+    /**
+     * 특정 타입과 다른 블록을 생성
+     * @param excludeType 제외할 블록 타입
+     */
+    private void generateNextPieceDifferentFrom(int excludeType) {
+        SettingsManager settings = SettingsManager.getInstance();
+        String gameMode = settings.getGameMode();
+
+        // ITEM 모드이고 10줄마다 아이템 블록 생성
+        boolean shouldHaveItem = "ITEM".equals(gameMode) && linesClearedSinceLastItem >= 10;
+
+        int maxAttempts = 10;
+        int attempts = 0;
+
+        do {
+            nextPiece = PieceFactory.createRandomPiece(shouldHaveItem);
+            attempts++;
+        } while (nextPiece.getType() == excludeType && attempts < maxAttempts);
+
+        // 아이템이 생성되었으면 카운터 리셋
+        if (shouldHaveItem && nextPiece.hasItem()) {
+            linesClearedSinceLastItem = 0;
+        }
     }
 }
