@@ -5,6 +5,8 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ListView;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import tetris.data.ScoreManager;
 import tetris.ui.SceneManager;
 
@@ -17,11 +19,29 @@ public class ScoreBoardController implements Initializable {
     @FXML
     private ListView<String> scoreListView;
 
+    @FXML
+    private ImageView backgroundImageView;
+
     private SceneManager sceneManager;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         loadScores();
+        loadBackgroundImage();
+    }
+    
+    private void loadBackgroundImage() {
+        if (backgroundImageView != null) {
+            try {
+                URL imageUrl = getClass().getResource("/assets/img/Scoreboard.png");
+                if (imageUrl != null) {
+                    Image image = new Image(imageUrl.toExternalForm());
+                    backgroundImageView.setImage(image);
+                }
+            } catch (Exception e) {
+                System.err.println("배경 이미지 로드 실패: " + e.getMessage());
+            }
+        }
     }
 
     public void setSceneManager(SceneManager sceneManager) {

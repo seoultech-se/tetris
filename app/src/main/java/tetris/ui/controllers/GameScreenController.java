@@ -179,6 +179,11 @@ public class GameScreenController implements Initializable {
         // 배경을 검은색으로 설정
         gc.setFill(Color.BLACK);
         gc.fillRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
+        
+        // 접근성 모드에서는 회색 격자 표시
+        if (settingsManager != null && settingsManager.isAccessibilityModeEnabled()) {
+            drawGrid(gc);
+        }
 
         // 게임 보드 렌더링
         GameBoard board = gameEngine.getGameBoard();
@@ -199,6 +204,25 @@ public class GameScreenController implements Initializable {
 
         // 테두리 렌더링
         renderBorder(gc);
+    }
+
+    // 접근성 모드용 보드 격자선 렌더링
+    private void drawGrid(GraphicsContext gc) {
+        gc.setStroke(Color.web("#444444"));
+        gc.setLineWidth(1);
+        double width = gameCanvas.getWidth();
+        double height = gameCanvas.getHeight();
+
+        // 세로선
+        for (int x = 0; x <= GameBoard.BOARD_WIDTH; x++) {
+            double px = x * BLOCK_SIZE;
+            gc.strokeLine(px, 0, px, height);
+        }
+        // 가로선
+        for (int y = 0; y <= GameBoard.BOARD_HEIGHT; y++) {
+            double py = y * BLOCK_SIZE;
+            gc.strokeLine(0, py, width, py);
+        }
     }
 
     private void renderNextPiece() {
@@ -248,9 +272,6 @@ public class GameScreenController implements Initializable {
     private void renderBlock(GraphicsContext gc, int x, int y, Color color, int pieceType) {
         // 접근성 모드가 켜져 있으면 색 대신 심볼로 채운다
         if (settingsManager != null && settingsManager.isAccessibilityModeEnabled()) {
-            // 배경을 검게 유지
-            gc.setFill(Color.BLACK);
-            gc.fillRect(x, y, BLOCK_SIZE, BLOCK_SIZE);
 
             String symbol = "?";
             if (pieceType >= 0 && pieceType < PIECE_SYMBOLS.length) {

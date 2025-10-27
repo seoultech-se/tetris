@@ -2,46 +2,39 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
 
-<VBox alignment="CENTER" spacing="20.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="tetris.ui.controllers.MainMenuController">
+<StackPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="tetris.ui.controllers.MainMenuController" stylesheets="@../css/MainMenu.css">
    <children>
-      <Label text="TETRIS" textFill="#2c3e50">
-         <font>
-            <Font name="System Bold" size="48.0" />
-         </font>
-      </Label>
-      <VBox alignment="CENTER" spacing="15.0">
+      <ImageView fitHeight="900.0" fitWidth="600.0" pickOnBounds="true" preserveRatio="false">
+         <image>
+            <Image url="@/assets/img/Tetris_Background.png" />
+         </image>
+      </ImageView>
+      <VBox alignment="BOTTOM_CENTER" spacing="30.0">
          <children>
-            <Button fx:id="startButton" mnemonicParsing="false" onAction="#onStartGame" prefWidth="200.0" text="게임 시작">
-               <font>
-                  <Font size="18.0" />
-               </font>
-            </Button>
-            <Button fx:id="scoreBoardButton" mnemonicParsing="false" onAction="#onScoreBoard" prefWidth="200.0" text="스코어보드">
-               <font>
-                  <Font size="18.0" />
-               </font>
-            </Button>
-            <Button fx:id="settingsButton" mnemonicParsing="false" onAction="#onSettings" prefWidth="200.0" text="설정">
-               <font>
-                  <Font size="18.0" />
-               </font>
-            </Button>
-            <Button fx:id="exitButton" mnemonicParsing="false" onAction="#onExit" prefWidth="200.0" text="종료">
-               <font>
-                  <Font size="18.0" />
-               </font>
-            </Button>
+            <!-- 첫 번째 줄: 게임 시작, 스코어보드 -->
+            <HBox alignment="CENTER" spacing="30.0">
+               <children>
+                  <Button fx:id="startButton" mnemonicParsing="false" onAction="#onStartGame" text="게임 시작" />
+                  <Button fx:id="scoreBoardButton" mnemonicParsing="false" onAction="#onScoreBoard" text="스코어보드" />
+               </children>
+            </HBox>
+            <!-- 두 번째 줄: 설정, 종료 -->
+            <HBox alignment="CENTER" spacing="30.0">
+               <children>
+                  <Button fx:id="settingsButton" mnemonicParsing="false" onAction="#onSettings" text="설정" />
+                  <Button fx:id="exitButton" mnemonicParsing="false" onAction="#onExit" text="게임 종료" />
+               </children>
+            </HBox>
          </children>
-         <VBox.margin>
-            <Insets top="30.0" />
-         </VBox.margin>
+         <padding>
+            <Insets bottom="50.0" left="50.0" right="50.0" top="50.0" />
+         </padding>
       </VBox>
    </children>
-   <padding>
-      <Insets bottom="50.0" left="50.0" right="50.0" top="50.0" />
-   </padding>
-</VBox>
+</StackPane>

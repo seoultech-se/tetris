@@ -8,7 +8,7 @@ import java.io.IOException;
 public class SceneManager {
     private final Stage primaryStage;
     private static final double WINDOW_WIDTH = 600;
-    private static final double WINDOW_HEIGHT = 700;
+    private static final double WINDOW_HEIGHT = 900;
 
     public SceneManager(Stage primaryStage) {
         this.primaryStage = primaryStage;
@@ -52,18 +52,12 @@ public class SceneManager {
     private void loadScene(String fxmlPath, int finalScore) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
-            Scene scene;
+            Scene scene = new Scene(loader.load(), WINDOW_WIDTH, WINDOW_HEIGHT);
             
             // CSS 스타일 로드 (GameScreen의 경우)
             if (fxmlPath.contains("GameScreen")) {
-                scene = new Scene(loader.load());
                 String cssPath = getClass().getResource("/css/GameScreen.css").toExternalForm();
                 scene.getStylesheets().add(cssPath);
-                // 게임 화면은 컨텐츠에 맞게 크기 조정
-                primaryStage.sizeToScene();
-            } else {
-                // 다른 화면들은 기본 크기 사용
-                scene = new Scene(loader.load(), WINDOW_WIDTH, WINDOW_HEIGHT);
             }
 
             // 컨트롤러에 SceneManager 설정
@@ -95,14 +89,5 @@ public class SceneManager {
 
     public Stage getPrimaryStage() {
         return primaryStage;
-    }
-
-    public void setWindowSize(double width, double height) {
-        if (primaryStage != null) {
-            primaryStage.setWidth(width);
-            primaryStage.setHeight(height);
-            primaryStage.centerOnScreen();
-            System.out.println("창 크기 변경: " + width + "x" + height);
-        }
     }
 }
