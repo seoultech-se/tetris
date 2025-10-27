@@ -7,6 +7,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import tetris.data.ScoreManager;
 import tetris.ui.SceneManager;
+import tetris.ui.SettingsManager;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -45,7 +46,8 @@ public class GameOverController implements Initializable {
             boolean isTopTen = saveScore(playerName, finalScore);
             
             if (isTopTen) {
-                int rank = ScoreManager.getInstance().getRank(finalScore);
+                String gameMode = SettingsManager.getInstance().getGameMode();
+                int rank = ScoreManager.getInstance().getRank(finalScore, gameMode);
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
                 alert.setTitle("축하합니다!");
                 alert.setHeaderText(null);
@@ -78,6 +80,8 @@ public class GameOverController implements Initializable {
     }
 
     private boolean saveScore(String playerName, int score) {
-        return ScoreManager.getInstance().addScore(playerName, score);
+        String difficulty = SettingsManager.getInstance().getDifficulty();
+        String gameMode = SettingsManager.getInstance().getGameMode();
+        return ScoreManager.getInstance().addScore(playerName, score, difficulty, gameMode);
     }
 }

@@ -107,6 +107,15 @@ public class GameScreenController implements Initializable {
         // Scene에 키 이벤트 핸들러 등록
         if (gameCanvas != null && gameCanvas.getScene() != null) {
             gameCanvas.getScene().setOnKeyPressed(event -> {
+                // ESC 키로 일시정지/재개
+                if (event.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
+                    if (gameEngine != null && gameEngine.isGameRunning()) {
+                        onPause();
+                        event.consume();
+                    }
+                    return;
+                }
+                
                 if (gameEngine != null && gameEngine.isGameRunning() && !gameEngine.isPaused()) {
                     // 게임 진행 중에만 키 입력을 게임 엔진으로 전달
                     gameEngine.handleKeyPress(event.getCode());
