@@ -9,6 +9,7 @@ public class GameEngine {
     private int score;
     private int level;
     private int linesCleared;
+    private int linesClearedSinceLastItem;  // 마지막 아이템 이후 삭제된 줄 수
     private boolean isGameRunning;
     private boolean isPaused;
 
@@ -17,6 +18,7 @@ public class GameEngine {
         this.score = 0;
         this.level = 1;
         this.linesCleared = 0;
+        this.linesClearedSinceLastItem = 0;
         this.isGameRunning = false;
         this.isPaused = false;
         generateNextPiece();
@@ -136,11 +138,23 @@ public class GameEngine {
     }
 
     private void generateNextPiece() {
-        nextPiece = PieceFactory.createRandomPiece();
+        SettingsManager settings = SettingsManager.getInstance();
+        String gameMode = settings.getGameMode();
+
+        // ITEM 모드이고 10줄마다 아이템 블록 생성
+        boolean shouldHaveItem = "ITEM".equals(gameMode) && linesClearedSinceLastItem >= 10;
+
+        nextPiece = PieceFactory.createRandomPiece(shouldHaveItem);
+
+        // 아이템이 생성되었으면 카운터 리셋
+        if (shouldHaveItem && nextPiece.hasItem()) {
+            linesClearedSinceLastItem = 0;
+        }
     }
 
     private void updateScore(int clearedLines) {
         this.linesCleared += clearedLines;
+        this.linesClearedSinceLastItem += clearedLines;  // 아이템 카운터도 업데이트
 
         switch (clearedLines) {
             case 1:

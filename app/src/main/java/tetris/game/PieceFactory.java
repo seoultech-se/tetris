@@ -85,10 +85,22 @@ public class PieceFactory {
         }
     }
 
+    /**
+     * 무작위 블록 생성 (아이템 없음)
+     * @return 생성된 블록
+     */
     public static Piece createRandomPiece() {
+        return createRandomPiece(false);
+    }
+
+    /**
+     * 무작위 블록 생성 (아이템 포함 여부 지정 가능)
+     * @param shouldHaveItem 아이템 포함 여부
+     * @return 생성된 블록
+     */
+    public static Piece createRandomPiece(boolean shouldHaveItem) {
         SettingsManager settings = SettingsManager.getInstance();
         String difficulty = settings.getDifficulty();
-        String gameMode = settings.getGameMode();
 
         if (bagIndex >= pieceBag.size()) {
             refillBag(difficulty);
@@ -98,12 +110,9 @@ public class PieceFactory {
         int type = pieceBag.get(bagIndex++);
         Piece piece = createPiece(type);
 
-        // ITEM 모드일 경우, 일정 확률로 LINE_CLEAR 아이템 추가
-        if ("ITEM".equals(gameMode)) {
-            double itemProbability = 0.2; // 20% 확률로 아이템 생성
-            if (Math.random() < itemProbability) {
-                addItemToPiece(piece, ItemType.LINE_CLEAR);
-            }
+        // 아이템을 추가해야 하는 경우
+        if (shouldHaveItem) {
+            addItemToPiece(piece, ItemType.LINE_CLEAR);
         }
 
         return piece;
