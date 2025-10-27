@@ -13,6 +13,9 @@ public class Piece {
     private int itemRow;  // 아이템이 있는 행 (shape 배열 기준)
     private int itemCol;  // 아이템이 있는 열 (shape 배열 기준)
 
+    // 무게추 아이템 관련
+    private boolean hasLanded;  // 블록이 한 번이라도 착지했는지 여부 (무게추 전용)
+
     public Piece(int[][][] rotations, int type) {
         this.rotations = rotations;
         this.type = type;
@@ -20,6 +23,7 @@ public class Piece {
         this.shape = rotations[0];
         this.x = 0;
         this.y = 0;
+        this.hasLanded = false;
 
         // 아이템 그리드 초기화 (모든 셀을 NONE으로)
         this.itemGrid = new ItemType[shape.length][shape[0].length];
@@ -91,6 +95,7 @@ public class Piece {
         copy.y = this.y;
         copy.rotation = this.rotation;
         copy.shape = this.shape;
+        copy.hasLanded = this.hasLanded;
 
         // 아이템 정보 복사
         copy.itemGrid = new ItemType[this.itemGrid.length][this.itemGrid[0].length];
@@ -156,5 +161,29 @@ public class Piece {
      */
     public boolean hasItem() {
         return itemRow != -1 && itemCol != -1;
+    }
+
+    /**
+     * 블록이 착지했는지 여부를 반환
+     * @return 착지했으면 true, 아니면 false
+     */
+    public boolean hasLanded() {
+        return hasLanded;
+    }
+
+    /**
+     * 블록의 착지 상태를 설정
+     * @param hasLanded 착지 여부
+     */
+    public void setLanded(boolean hasLanded) {
+        this.hasLanded = hasLanded;
+    }
+
+    /**
+     * 이 블록이 WEIGHT 타입인지 확인
+     * @return WEIGHT 타입이면 true, 아니면 false
+     */
+    public boolean isWeightPiece() {
+        return this.type == PieceFactory.WEIGHT_PIECE;
     }
 }

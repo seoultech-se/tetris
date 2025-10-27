@@ -13,6 +13,7 @@ public class PieceFactory {
     public static final int Z_PIECE = 5;
     public static final int J_PIECE = 6;
     public static final int L_PIECE = 7;
+    public static final int WEIGHT_PIECE = 8;  // 무게추 아이템 블록
 
     // I 피스 (일자형)
     private static final int[][][] I_ROTATIONS = {
@@ -61,6 +62,13 @@ public class PieceFactory {
         {{7, 7}, {0, 7}, {0, 7}}
     };
 
+    // 무게추 피스 (Weight) - 회전 불가
+    // 모양:   WW
+    //       WWWW
+    private static final int[][][] WEIGHT_ROTATIONS = {
+        {{0, 8, 8, 0}, {8, 8, 8, 8}}
+    };
+
     private static List<Integer> pieceBag = new ArrayList<>();
     private static int bagIndex = 0;
 
@@ -80,6 +88,8 @@ public class PieceFactory {
                 return new Piece(J_ROTATIONS, J_PIECE);
             case L_PIECE:
                 return new Piece(L_ROTATIONS, L_PIECE);
+            case WEIGHT_PIECE:
+                return createWeightPiece();
             default:
                 return createPiece(I_PIECE);
         }
@@ -102,6 +112,25 @@ public class PieceFactory {
         SettingsManager settings = SettingsManager.getInstance();
         String difficulty = settings.getDifficulty();
 
+        // 아이템을 생성해야 하는 경우 50% 확률로 LINE_CLEAR 또는 WEIGHT 선택
+        if (shouldHaveItem) {
+            double random = Math.random();
+            if (random < 0.5) {
+                // LINE_CLEAR 아이템 블록 생성
+                if (bagIndex >= pieceBag.size()) {
+                    refillBag(difficulty);
+                }
+                int type = pieceBag.get(bagIndex++);
+                Piece piece = createPiece(type);
+                addItemToPiece(piece, ItemType.LINE_CLEAR);
+                return piece;
+            } else {
+                // WEIGHT 블록 생성 (무게추는 블록 전체가 아이템)
+                return createWeightPiece();
+            }
+        }
+
+        // 일반 블록 생성
         if (bagIndex >= pieceBag.size()) {
             refillBag(difficulty);
         }
@@ -109,11 +138,6 @@ public class PieceFactory {
         // 가방에서 다음 블럭을 순서대로 꺼내기
         int type = pieceBag.get(bagIndex++);
         Piece piece = createPiece(type);
-
-        // 아이템을 추가해야 하는 경우
-        if (shouldHaveItem) {
-            addItemToPiece(piece, ItemType.LINE_CLEAR);
-        }
 
         return piece;
     }
@@ -174,6 +198,26 @@ public class PieceFactory {
 
     public static Piece createLPiece() {
         return createPiece(L_PIECE);
+    }
+
+    /**
+     * 무게추 블록 생성
+     * @return 무게추 블록 (모든 셀에 WEIGHT 아이템 표시)
+     */
+    public static Piece createWeightPiece() {
+        Piece piece = new Piece(WEIGHT_ROTATIONS, WEIGHT_PIECE);
+
+        // 무게추 블록의 모든 셀에 WEIGHT 아이템 표시
+        int[][] shape = piece.getShape();
+        for (int row = 0; row < shape.length; row++) {
+            for (int col = 0; col < shape[row].length; col++) {
+                if (shape[row][col] != 0) {
+                    piece.setItemAt(row, col, ItemType.WEIGHT);
+                }
+            }
+        }
+
+        return piece;
     }
 
     /**

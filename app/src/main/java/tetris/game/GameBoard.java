@@ -197,4 +197,48 @@ public class GameBoard {
 
         return rowsToClean.size();
     }
+
+    /**
+     * 무게추 블록이 이동할 때 밑에 있는 블록들을 지우는 처리
+     * @param piece 무게추 블록
+     */
+    public void processWeightEffect(Piece piece) {
+        if (piece == null || !piece.isWeightPiece()) {
+            return;
+        }
+
+        int[][] shape = piece.getShape();
+        int x = piece.getX();
+        int y = piece.getY();
+
+        // 무게추 블록의 가장 아래쪽 행을 찾기
+        int bottomRow = -1;
+        for (int row = shape.length - 1; row >= 0; row--) {
+            for (int col = 0; col < shape[row].length; col++) {
+                if (shape[row][col] != 0) {
+                    bottomRow = row;
+                    break;
+                }
+            }
+            if (bottomRow != -1) break;
+        }
+
+        if (bottomRow == -1) return;
+
+        // 무게추의 가장 아래 행의 각 블록 밑에 있는 보드의 블록들을 지우기
+        for (int col = 0; col < shape[bottomRow].length; col++) {
+            if (shape[bottomRow][col] != 0) {
+                int boardCol = x + col;
+                int boardRow = y + bottomRow + 1;  // 무게추 바로 밑
+
+                // 해당 열의 밑에 있는 모든 블록 지우기
+                if (boardCol >= 0 && boardCol < BOARD_WIDTH && boardRow >= 0 && boardRow < BOARD_HEIGHT) {
+                    if (board[boardRow][boardCol] != 0) {
+                        board[boardRow][boardCol] = 0;
+                        itemBoard[boardRow][boardCol] = ItemType.NONE;
+                    }
+                }
+            }
+        }
+    }
 }

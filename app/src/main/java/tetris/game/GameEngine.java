@@ -61,6 +61,11 @@ public class GameEngine {
     }
     private void movePieceLeft() {
         if (currentPiece != null) {
+            // 무게추가 이미 착지했으면 좌우 이동 불가
+            if (currentPiece.isWeightPiece() && currentPiece.hasLanded()) {
+                return;
+            }
+
             currentPiece.moveLeft();
             if (!gameBoard.isValidPosition(currentPiece)) {
                 currentPiece.moveRight();
@@ -70,6 +75,11 @@ public class GameEngine {
 
     private void movePieceRight() {
         if (currentPiece != null) {
+            // 무게추가 이미 착지했으면 좌우 이동 불가
+            if (currentPiece.isWeightPiece() && currentPiece.hasLanded()) {
+                return;
+            }
+
             currentPiece.moveRight();
             if (!gameBoard.isValidPosition(currentPiece)) {
                 currentPiece.moveLeft();
@@ -80,9 +90,31 @@ public class GameEngine {
     public void movePieceDown() {
         if (currentPiece != null) {
             currentPiece.moveDown();
+
             if (!gameBoard.isValidPosition(currentPiece)) {
+                // 이동 불가능 - 블록이 착지함
                 currentPiece.moveUp();
+
+                // 무게추는 착지 표시
+                if (currentPiece.isWeightPiece()) {
+                    currentPiece.setLanded(true);
+                }
+
                 placePiece();
+            } else {
+                // 이동 성공 - 무게추면 밑의 블록 지우기
+                if (currentPiece.isWeightPiece()) {
+                    gameBoard.processWeightEffect(currentPiece);
+
+                    // 블록을 지운 후 착지 여부 확인
+                    currentPiece.moveDown();
+                    if (!gameBoard.isValidPosition(currentPiece)) {
+                        currentPiece.moveUp();
+                        currentPiece.setLanded(true);
+                    } else {
+                        currentPiece.moveUp();
+                    }
+                }
             }
         }
     }

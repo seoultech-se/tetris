@@ -46,14 +46,15 @@ public class GameScreenController implements Initializable {
     // 블록 크기와 색상 설정 (ColorBlind Safe 팔레트)
     private static final int BLOCK_SIZE = 25;
     private static final Color[] PIECE_COLORS = {
-        Color.BLACK,                    
+        Color.BLACK,
         Color.web("#56B4E9"),          // 1 - I 피스 (하늘색)
         Color.web("#F0E442"),          // 2 - O 피스 (노랑)
         Color.web("#CC79A7"),          // 3 - T 피스 (핑크/보라)
         Color.web("#009E73"),          // 4 - S 피스 (초록)
         Color.web("#D55E00"),          // 5 - Z 피스 (적갈색)
         Color.web("#0072B2"),          // 6 - J 피스 (파랑)
-        Color.web("#E69F00")           // 7 - L 피스 (주황)
+        Color.web("#E69F00"),          // 7 - L 피스 (주황)
+        Color.web("#999999")           // 8 - WEIGHT 피스 (회색 - 무게추)
     };
 
     // 접근성 심볼 (0은 빈칸)
@@ -65,7 +66,8 @@ public class GameScreenController implements Initializable {
         "▲", // 4 - S
         "■", // 5 - Z
         "◆", // 6 - J (다이아몬드)
-        "◇"  // 7 - L (빈 다이아몬드)
+        "◇", // 7 - L (빈 다이아몬드)
+        "▼"  // 8 - WEIGHT (아래를 가리키는 화살표)
     };
 
     @Override
@@ -278,12 +280,15 @@ public class GameScreenController implements Initializable {
 
             gc.fillText(symbol, tx, ty);
 
-            // 아이템이 있으면 'L' 문자를 오른쪽 상단에 작게 표시
-            if (itemType != null && itemType == ItemType.LINE_CLEAR) {
-                Font smallFont = Font.font("Monospaced", BLOCK_SIZE / 3);
-                gc.setFont(smallFont);
-                gc.setFill(Color.YELLOW);  // 눈에 잘 띄는 색상
-                gc.fillText("L", x + BLOCK_SIZE - BLOCK_SIZE / 3, y + BLOCK_SIZE / 3);
+            // 아이템이 있으면 아이템 문자를 오른쪽 상단에 작게 표시
+            if (itemType != null && itemType != ItemType.NONE) {
+                String itemChar = itemType.getDisplayChar();
+                if (!itemChar.isEmpty()) {
+                    Font smallFont = Font.font("Monospaced", BLOCK_SIZE / 3);
+                    gc.setFont(smallFont);
+                    gc.setFill(Color.YELLOW);  // 눈에 잘 띄는 색상
+                    gc.fillText(itemChar, x + BLOCK_SIZE - BLOCK_SIZE / 3, y + BLOCK_SIZE / 3);
+                }
             }
             return;
         }
@@ -297,22 +302,25 @@ public class GameScreenController implements Initializable {
         gc.setLineWidth(1);
         gc.strokeRect(x, y, BLOCK_SIZE, BLOCK_SIZE);
 
-        // 아이템이 있으면 'L' 문자를 블록 중앙에 표시
-        if (itemType != null && itemType == ItemType.LINE_CLEAR) {
-            int fontSize = (int) (BLOCK_SIZE * 0.6);  // 블록 크기의 60%
-            Font font = Font.font("Arial", javafx.scene.text.FontWeight.BOLD, fontSize);
-            gc.setFont(font);
-            gc.setFill(Color.WHITE);
+        // 아이템이 있으면 문자를 블록 중앙에 표시
+        if (itemType != null && itemType != ItemType.NONE) {
+            String itemChar = itemType.getDisplayChar();
+            if (!itemChar.isEmpty()) {
+                int fontSize = (int) (BLOCK_SIZE * 0.6);  // 블록 크기의 60%
+                Font font = Font.font("Arial", javafx.scene.text.FontWeight.BOLD, fontSize);
+                gc.setFont(font);
+                gc.setFill(Color.WHITE);
 
-            Text text = new Text("L");
-            text.setFont(font);
-            double textWidth = text.getLayoutBounds().getWidth();
-            double textHeight = text.getLayoutBounds().getHeight();
+                Text text = new Text(itemChar);
+                text.setFont(font);
+                double textWidth = text.getLayoutBounds().getWidth();
+                double textHeight = text.getLayoutBounds().getHeight();
 
-            double tx = x + (BLOCK_SIZE - textWidth) / 2.0;
-            double ty = y + (BLOCK_SIZE + textHeight) / 2.0 - 2;
+                double tx = x + (BLOCK_SIZE - textWidth) / 2.0;
+                double ty = y + (BLOCK_SIZE + textHeight) / 2.0 - 2;
 
-            gc.fillText("L", tx, ty);
+                gc.fillText(itemChar, tx, ty);
+            }
         }
     }
     
