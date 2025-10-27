@@ -53,15 +53,121 @@ public class Piece {
     }
 
     public void rotate() {
+        // 회전 전 아이템 정보 저장
+        ItemType savedItemType = ItemType.NONE;
+        int blockIndex = -1;
+
+        // 아이템이 있는 블록의 논리적 인덱스 찾기
+        if (hasItem()) {
+            int currentBlockIndex = 0;
+            for (int row = 0; row < shape.length; row++) {
+                for (int col = 0; col < shape[row].length; col++) {
+                    if (shape[row][col] != 0) {
+                        if (row == itemRow && col == itemCol) {
+                            blockIndex = currentBlockIndex;
+                            savedItemType = itemGrid[row][col];
+                            break;
+                        }
+                        currentBlockIndex++;
+                    }
+                }
+                if (blockIndex != -1) break;
+            }
+        }
+
+        // 회전 수행
         int newRotation = (rotation + 1) % rotations.length;
         rotation = newRotation;
         shape = rotations[rotation];
+
+        // 아이템 그리드를 새 shape 크기에 맞게 재생성
+        itemGrid = new ItemType[shape.length][shape[0].length];
+        for (int i = 0; i < itemGrid.length; i++) {
+            for (int j = 0; j < itemGrid[i].length; j++) {
+                itemGrid[i][j] = ItemType.NONE;
+            }
+        }
+
+        // 아이템을 새 위치에 재배치
+        if (blockIndex != -1 && savedItemType != ItemType.NONE) {
+            int currentBlockIndex = 0;
+            boolean placed = false;
+            for (int row = 0; row < shape.length && !placed; row++) {
+                for (int col = 0; col < shape[row].length && !placed; col++) {
+                    if (shape[row][col] != 0) {
+                        if (currentBlockIndex == blockIndex) {
+                            itemGrid[row][col] = savedItemType;
+                            itemRow = row;
+                            itemCol = col;
+                            placed = true;
+                        }
+                        currentBlockIndex++;
+                    }
+                }
+            }
+        } else {
+            itemRow = -1;
+            itemCol = -1;
+        }
     }
 
     public void rotateBack() {
+        // 회전 전 아이템 정보 저장
+        ItemType savedItemType = ItemType.NONE;
+        int blockIndex = -1;
+
+        // 아이템이 있는 블록의 논리적 인덱스 찾기
+        if (hasItem()) {
+            int currentBlockIndex = 0;
+            for (int row = 0; row < shape.length; row++) {
+                for (int col = 0; col < shape[row].length; col++) {
+                    if (shape[row][col] != 0) {
+                        if (row == itemRow && col == itemCol) {
+                            blockIndex = currentBlockIndex;
+                            savedItemType = itemGrid[row][col];
+                            break;
+                        }
+                        currentBlockIndex++;
+                    }
+                }
+                if (blockIndex != -1) break;
+            }
+        }
+
+        // 회전 수행
         int newRotation = (rotation - 1 + rotations.length) % rotations.length;
         rotation = newRotation;
         shape = rotations[rotation];
+
+        // 아이템 그리드를 새 shape 크기에 맞게 재생성
+        itemGrid = new ItemType[shape.length][shape[0].length];
+        for (int i = 0; i < itemGrid.length; i++) {
+            for (int j = 0; j < itemGrid[i].length; j++) {
+                itemGrid[i][j] = ItemType.NONE;
+            }
+        }
+
+        // 아이템을 새 위치에 재배치
+        if (blockIndex != -1 && savedItemType != ItemType.NONE) {
+            int currentBlockIndex = 0;
+            boolean placed = false;
+            for (int row = 0; row < shape.length && !placed; row++) {
+                for (int col = 0; col < shape[row].length && !placed; col++) {
+                    if (shape[row][col] != 0) {
+                        if (currentBlockIndex == blockIndex) {
+                            itemGrid[row][col] = savedItemType;
+                            itemRow = row;
+                            itemCol = col;
+                            placed = true;
+                        }
+                        currentBlockIndex++;
+                    }
+                }
+            }
+        } else {
+            itemRow = -1;
+            itemCol = -1;
+        }
     }
 
     public void setPosition(int x, int y) {
