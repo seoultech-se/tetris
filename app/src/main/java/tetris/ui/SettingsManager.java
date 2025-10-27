@@ -15,7 +15,7 @@ public class SettingsManager {
     private boolean soundEffectsEnabled = true;
     private boolean musicEnabled = true;
     private boolean accessibilityModeEnabled = false;
-    private String screenSize = "중간";
+    private String screenSize = "창 모드";
     
     // 키 설정 (기본값: WASD + Space)
     private String keyLeft = "A";
@@ -129,7 +129,7 @@ public class SettingsManager {
         soundEffectsEnabled = true;
         musicEnabled = true;
         accessibilityModeEnabled = false;
-        screenSize = "중간";
+        screenSize = "창 모드";
         keyLeft = "A";
         keyRight = "D";
         keyDown = "S";
@@ -176,7 +176,7 @@ public class SettingsManager {
             soundEffectsEnabled = Boolean.parseBoolean(props.getProperty("soundEffectsEnabled", "true"));
             musicEnabled = Boolean.parseBoolean(props.getProperty("musicEnabled", "true"));
             accessibilityModeEnabled = Boolean.parseBoolean(props.getProperty("accessibilityModeEnabled", "false"));
-            screenSize = props.getProperty("screenSize", "중간");
+            screenSize = props.getProperty("screenSize", "창 모드");
             keyLeft = props.getProperty("keyLeft", "A");
             keyRight = props.getProperty("keyRight", "D");
             keyDown = props.getProperty("keyDown", "S");
