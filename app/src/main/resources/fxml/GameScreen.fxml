@@ -48,6 +48,17 @@
                </children>
             </VBox>
 
+            <!-- 점수 2배 타이머 -->
+            <VBox alignment="CENTER" styleClass="double-score-timer-container">
+               <children>
+                  <Label fx:id="doubleScoreTimerLabel" text="" styleClass="double-score-timer-label">
+                     <font>
+                        <Font name="System Bold" size="14.0" />
+                     </font>
+                  </Label>
+               </children>
+            </VBox>
+
             <!-- 컨트롤 버튼들 -->
             <HBox styleClass="control-buttons-container">
                <children>

@@ -112,10 +112,10 @@ public class PieceFactory {
         SettingsManager settings = SettingsManager.getInstance();
         String difficulty = settings.getDifficulty();
 
-        // 아이템을 생성해야 하는 경우 50% 확률로 LINE_CLEAR 또는 WEIGHT 선택
+        // 아이템을 생성해야 하는 경우 1/3 확률로 LINE_CLEAR, WEIGHT, DOUBLE_SCORE 중 선택
         if (shouldHaveItem) {
             double random = Math.random();
-            if (random < 0.5) {
+            if (random < 0.333) {
                 // LINE_CLEAR 아이템 블록 생성
                 if (bagIndex >= pieceBag.size()) {
                     refillBag(difficulty);
@@ -124,9 +124,18 @@ public class PieceFactory {
                 Piece piece = createPiece(type);
                 addItemToPiece(piece, ItemType.LINE_CLEAR);
                 return piece;
-            } else {
+            } else if (random < 0.666) {
                 // WEIGHT 블록 생성 (무게추는 블록 전체가 아이템)
                 return createWeightPiece();
+            } else {
+                // DOUBLE_SCORE 아이템 블록 생성
+                if (bagIndex >= pieceBag.size()) {
+                    refillBag(difficulty);
+                }
+                int type = pieceBag.get(bagIndex++);
+                Piece piece = createPiece(type);
+                addItemToPiece(piece, ItemType.DOUBLE_SCORE);
+                return piece;
             }
         }
 

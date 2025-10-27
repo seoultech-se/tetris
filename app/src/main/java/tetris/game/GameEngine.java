@@ -13,6 +13,11 @@ public class GameEngine {
     private boolean isGameRunning;
     private boolean isPaused;
 
+    // 점수 2배 아이템 관련
+    private boolean isDoubleScoreActive;
+    private long doubleScoreEndTime;  // 나노초 단위
+    private static final long DOUBLE_SCORE_DURATION = 30_000_000_000L;  // 30초
+
     public GameEngine() {
         this.gameBoard = new GameBoard();
         this.score = 0;
@@ -21,6 +26,8 @@ public class GameEngine {
         this.linesClearedSinceLastItem = 0;
         this.isGameRunning = false;
         this.isPaused = false;
+        this.isDoubleScoreActive = false;
+        this.doubleScoreEndTime = 0;
         generateNextPiece();
         spawnNewPiece();
     }
@@ -140,6 +147,22 @@ public class GameEngine {
 
     private void placePiece() {
         if (currentPiece != null) {
+            // DOUBLE_SCORE 아이템 확인 및 활성화 (블록 배치 전에 확인)
+            if (currentPiece.hasItem()) {
+                int[][] shape = currentPiece.getShape();
+                for (int row = 0; row < shape.length; row++) {
+                    for (int col = 0; col < shape[row].length; col++) {
+                        if (shape[row][col] != 0) {
+                            ItemType itemType = currentPiece.getItemAt(row, col);
+                            if (itemType == ItemType.DOUBLE_SCORE) {
+                                activateDoubleScore();
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
             // 블록을 보드에 배치
             gameBoard.placePiece(currentPiece);
 
@@ -188,20 +211,28 @@ public class GameEngine {
         this.linesCleared += clearedLines;
         this.linesClearedSinceLastItem += clearedLines;  // 아이템 카운터도 업데이트
 
+        int baseScore = 0;
         switch (clearedLines) {
             case 1:
-                score += 100 * level;
+                baseScore = 100 * level;
                 break;
             case 2:
-                score += 300 * level;
+                baseScore = 300 * level;
                 break;
             case 3:
-                score += 500 * level;
+                baseScore = 500 * level;
                 break;
             case 4:
-                score += 800 * level;
+                baseScore = 800 * level;
                 break;
         }
+
+        // 점수 2배 아이템이 활성화되어 있으면 2배 적용
+        if (isDoubleScoreActive) {
+            baseScore *= 2;
+        }
+
+        score += baseScore;
 
         SettingsManager settings = SettingsManager.getInstance();
         String difficulty = settings.getDifficulty();
@@ -252,5 +283,42 @@ public class GameEngine {
 
     public boolean isPaused() {
         return isPaused;
+    }
+
+    /**
+     * 점수 2배 아이템을 활성화
+     */
+    public void activateDoubleScore() {
+        isDoubleScoreActive = true;
+        doubleScoreEndTime = System.nanoTime() + DOUBLE_SCORE_DURATION;
+    }
+
+    /**
+     * 점수 2배 아이템의 상태를 업데이트 (매 프레임마다 호출)
+     */
+    public void updateDoubleScoreStatus() {
+        if (isDoubleScoreActive && System.nanoTime() >= doubleScoreEndTime) {
+            isDoubleScoreActive = false;
+        }
+    }
+
+    /**
+     * 점수 2배 아이템이 활성화되어 있는지 확인
+     * @return 활성화되어 있으면 true
+     */
+    public boolean isDoubleScoreActive() {
+        return isDoubleScoreActive;
+    }
+
+    /**
+     * 점수 2배 아이템의 남은 시간을 초 단위로 반환
+     * @return 남은 시간 (초), 비활성화 상태면 0
+     */
+    public int getDoubleScoreRemainingTime() {
+        if (!isDoubleScoreActive) {
+            return 0;
+        }
+        long remaining = doubleScoreEndTime - System.nanoTime();
+        return (int) Math.max(0, remaining / 1_000_000_000L);
     }
 }

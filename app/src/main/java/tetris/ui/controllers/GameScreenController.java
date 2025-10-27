@@ -34,6 +34,9 @@ public class GameScreenController implements Initializable {
     private Label linesLabel;
 
     @FXML
+    private Label doubleScoreTimerLabel;
+
+    @FXML
     private Canvas nextPieceCanvas;
 
     private SceneManager sceneManager;
@@ -159,6 +162,9 @@ public class GameScreenController implements Initializable {
                     }
                     lastUpdateTime = now;
                 }
+
+                // 점수 2배 상태 업데이트
+                gameEngine.updateDoubleScoreStatus();
 
                 renderGame();
                 renderNextPiece();
@@ -338,6 +344,7 @@ public class GameScreenController implements Initializable {
             updateScore(gameEngine.getScore());
             updateLevel(gameEngine.getLevel());
             updateLines(gameEngine.getLinesCleared());
+            updateDoubleScoreTimer();
         }
     }
 
@@ -376,6 +383,18 @@ public class GameScreenController implements Initializable {
     public void updateLines(int lines) {
         if (linesLabel != null) {
             linesLabel.setText("Lines: " + lines);
+        }
+    }
+
+    public void updateDoubleScoreTimer() {
+        if (doubleScoreTimerLabel != null && gameEngine != null) {
+            if (gameEngine.isDoubleScoreActive()) {
+                int remainingTime = gameEngine.getDoubleScoreRemainingTime();
+                doubleScoreTimerLabel.setText("2X SCORE: " + remainingTime + "s");
+                doubleScoreTimerLabel.setStyle("-fx-text-fill: #FFD700; -fx-font-weight: bold;");
+            } else {
+                doubleScoreTimerLabel.setText("");
+            }
         }
     }
 
