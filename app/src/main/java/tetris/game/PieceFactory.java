@@ -88,14 +88,25 @@ public class PieceFactory {
     public static Piece createRandomPiece() {
         SettingsManager settings = SettingsManager.getInstance();
         String difficulty = settings.getDifficulty();
-         
+        String gameMode = settings.getGameMode();
+
         if (bagIndex >= pieceBag.size()) {
             refillBag(difficulty);
         }
 
         // 가방에서 다음 블럭을 순서대로 꺼내기
         int type = pieceBag.get(bagIndex++);
-        return createPiece(type);
+        Piece piece = createPiece(type);
+
+        // ITEM 모드일 경우, 일정 확률로 LINE_CLEAR 아이템 추가
+        if ("ITEM".equals(gameMode)) {
+            double itemProbability = 0.2; // 20% 확률로 아이템 생성
+            if (Math.random() < itemProbability) {
+                addItemToPiece(piece, ItemType.LINE_CLEAR);
+            }
+        }
+
+        return piece;
     }
 
     private static void refillBag(String difficulty) {
@@ -154,5 +165,31 @@ public class PieceFactory {
 
     public static Piece createLPiece() {
         return createPiece(L_PIECE);
+    }
+
+    /**
+     * 블록의 무작위 위치에 아이템을 추가
+     * @param piece 아이템을 추가할 블록
+     * @param itemType 추가할 아이템 타입
+     */
+    private static void addItemToPiece(Piece piece, ItemType itemType) {
+        int[][] shape = piece.getShape();
+        List<int[]> validPositions = new ArrayList<>();
+
+        // 블록이 있는 모든 셀의 위치를 찾기
+        for (int i = 0; i < shape.length; i++) {
+            for (int j = 0; j < shape[i].length; j++) {
+                if (shape[i][j] != 0) {  // 블록이 있는 셀
+                    validPositions.add(new int[]{i, j});
+                }
+            }
+        }
+
+        // 유효한 위치가 있으면 무작위로 하나 선택
+        if (!validPositions.isEmpty()) {
+            int randomIndex = (int) (Math.random() * validPositions.size());
+            int[] position = validPositions.get(randomIndex);
+            piece.setItemAt(position[0], position[1], itemType);
+        }
     }
 }

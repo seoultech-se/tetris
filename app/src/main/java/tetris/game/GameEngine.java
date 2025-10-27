@@ -106,9 +106,19 @@ public class GameEngine {
 
     private void placePiece() {
         if (currentPiece != null) {
+            // 블록을 보드에 배치
             gameBoard.placePiece(currentPiece);
-            int clearedLines = gameBoard.clearLines();
-            updateScore(clearedLines);
+
+            // 아이템 효과 처리 (LINE_CLEAR 아이템이 있으면 즉시 줄 삭제)
+            int itemClearedLines = gameBoard.processItemEffects(currentPiece);
+
+            // 일반 줄 삭제 (꽉 찬 줄)
+            int normalClearedLines = gameBoard.clearLines();
+
+            // 총 삭제된 줄 수 (아이템 + 일반)
+            int totalClearedLines = itemClearedLines + normalClearedLines;
+            updateScore(totalClearedLines);
+
             spawnNewPiece();
 
             if (!gameBoard.isValidPosition(currentPiece)) {

@@ -12,6 +12,7 @@ import tetris.ui.SettingsManager;
 import tetris.game.GameEngine;
 import tetris.game.GameBoard;
 import tetris.game.Piece;
+import tetris.game.ItemType;
 
 import java.net.URL;
 import javafx.scene.text.Font;
@@ -186,7 +187,8 @@ public class GameScreenController implements Initializable {
             for (int col = 0; col < GameBoard.BOARD_WIDTH; col++) {
                 int cellValue = board.getCell(row, col);
                 if (cellValue > 0) {
-                    renderBlock(gc, col * BLOCK_SIZE, row * BLOCK_SIZE, PIECE_COLORS[cellValue], cellValue);
+                    ItemType itemType = board.getItemAt(row, col);
+                    renderBlock(gc, col * BLOCK_SIZE, row * BLOCK_SIZE, PIECE_COLORS[cellValue], cellValue, itemType);
                 }
             }
         }
@@ -218,12 +220,13 @@ public class GameScreenController implements Initializable {
             for (int row = 0; row < shape.length; row++) {
                 for (int col = 0; col < shape[row].length; col++) {
                     if (shape[row][col] != 0) {
-                        renderBlock(gc, (col + 1) * BLOCK_SIZE, (row + 1) * BLOCK_SIZE, color, nextPiece.getType());
+                        ItemType itemType = nextPiece.getItemAt(row, col);
+                        renderBlock(gc, (col + 1) * BLOCK_SIZE, (row + 1) * BLOCK_SIZE, color, nextPiece.getType(), itemType);
                     }
                 }
             }
         }
-        
+
         // 테두리 다시 그리기
         drawNextPieceCanvasBorder();
     }
@@ -239,13 +242,14 @@ public class GameScreenController implements Initializable {
                 if (shape[row][col] != 0) {
                     int x = (pieceX + col) * BLOCK_SIZE;
                     int y = (pieceY + row) * BLOCK_SIZE;
-                    renderBlock(gc, x, y, color, piece.getType());
+                    ItemType itemType = piece.getItemAt(row, col);
+                    renderBlock(gc, x, y, color, piece.getType(), itemType);
                 }
             }
         }
     }
 
-    private void renderBlock(GraphicsContext gc, int x, int y, Color color, int pieceType) {
+    private void renderBlock(GraphicsContext gc, int x, int y, Color color, int pieceType, ItemType itemType) {
         // 접근성 모드가 켜져 있으면 색 대신 심볼로 채운다
         if (settingsManager != null && settingsManager.isAccessibilityModeEnabled()) {
             // 배경을 검게 유지
@@ -273,6 +277,14 @@ public class GameScreenController implements Initializable {
             double ty = y + (BLOCK_SIZE + textHeight) / 2.0 - 4;
 
             gc.fillText(symbol, tx, ty);
+
+            // 아이템이 있으면 'L' 문자를 오른쪽 상단에 작게 표시
+            if (itemType != null && itemType == ItemType.LINE_CLEAR) {
+                Font smallFont = Font.font("Monospaced", BLOCK_SIZE / 3);
+                gc.setFont(smallFont);
+                gc.setFill(Color.YELLOW);  // 눈에 잘 띄는 색상
+                gc.fillText("L", x + BLOCK_SIZE - BLOCK_SIZE / 3, y + BLOCK_SIZE / 3);
+            }
             return;
         }
 
@@ -284,6 +296,24 @@ public class GameScreenController implements Initializable {
         gc.setStroke(Color.WHITE);
         gc.setLineWidth(1);
         gc.strokeRect(x, y, BLOCK_SIZE, BLOCK_SIZE);
+
+        // 아이템이 있으면 'L' 문자를 블록 중앙에 표시
+        if (itemType != null && itemType == ItemType.LINE_CLEAR) {
+            int fontSize = (int) (BLOCK_SIZE * 0.6);  // 블록 크기의 60%
+            Font font = Font.font("Arial", javafx.scene.text.FontWeight.BOLD, fontSize);
+            gc.setFont(font);
+            gc.setFill(Color.WHITE);
+
+            Text text = new Text("L");
+            text.setFont(font);
+            double textWidth = text.getLayoutBounds().getWidth();
+            double textHeight = text.getLayoutBounds().getHeight();
+
+            double tx = x + (BLOCK_SIZE - textWidth) / 2.0;
+            double ty = y + (BLOCK_SIZE + textHeight) / 2.0 - 2;
+
+            gc.fillText("L", tx, ty);
+        }
     }
     
     
