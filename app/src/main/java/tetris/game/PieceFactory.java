@@ -14,6 +14,7 @@ public class PieceFactory {
     public static final int J_PIECE = 6;
     public static final int L_PIECE = 7;
     public static final int WEIGHT_PIECE = 8;  // 무게추 아이템 블록
+    public static final int BOMB_PIECE = 9;     // 폭탄 아이템 블록 (2x2)
 
     // I 피스 (일자형)
     private static final int[][][] I_ROTATIONS = {
@@ -69,6 +70,13 @@ public class PieceFactory {
         {{0, 8, 8, 0}, {8, 8, 8, 8}}
     };
 
+    // 폭탄 피스 (Bomb) - 회전 불가, 2x2 정사각형
+    // 모양: BB
+    //       BB
+    private static final int[][][] BOMB_ROTATIONS = {
+        {{9, 9}, {9, 9}}
+    };
+
     private static List<Integer> pieceBag = new ArrayList<>();
     private static int bagIndex = 0;
 
@@ -90,6 +98,8 @@ public class PieceFactory {
                 return new Piece(L_ROTATIONS, L_PIECE);
             case WEIGHT_PIECE:
                 return createWeightPiece();
+            case BOMB_PIECE:
+                return createBombPiece();
             default:
                 return createPiece(I_PIECE);
         }
@@ -112,10 +122,10 @@ public class PieceFactory {
         SettingsManager settings = SettingsManager.getInstance();
         String difficulty = settings.getDifficulty();
 
-        // 아이템을 생성해야 하는 경우 1/3 확률로 LINE_CLEAR, WEIGHT, DOUBLE_SCORE 중 선택
+        // 아이템을 생성해야 하는 경우 1/4 확률로 LINE_CLEAR, WEIGHT, DOUBLE_SCORE, BOMB 중 선택
         if (shouldHaveItem) {
             double random = Math.random();
-            if (random < 0.333) {
+            if (random < 0.25) {
                 // LINE_CLEAR 아이템 블록 생성
                 if (bagIndex >= pieceBag.size()) {
                     refillBag(difficulty);
@@ -124,10 +134,10 @@ public class PieceFactory {
                 Piece piece = createPiece(type);
                 addItemToPiece(piece, ItemType.LINE_CLEAR);
                 return piece;
-            } else if (random < 0.666) {
+            } else if (random < 0.5) {
                 // WEIGHT 블록 생성 (무게추는 블록 전체가 아이템)
                 return createWeightPiece();
-            } else {
+            } else if (random < 0.75) {
                 // DOUBLE_SCORE 아이템 블록 생성
                 if (bagIndex >= pieceBag.size()) {
                     refillBag(difficulty);
@@ -136,6 +146,9 @@ public class PieceFactory {
                 Piece piece = createPiece(type);
                 addItemToPiece(piece, ItemType.DOUBLE_SCORE);
                 return piece;
+            } else {
+                // BOMB 블록 생성 (2x2 폭탄 블록)
+                return createBombPiece();
             }
         }
 
@@ -222,6 +235,26 @@ public class PieceFactory {
             for (int col = 0; col < shape[row].length; col++) {
                 if (shape[row][col] != 0) {
                     piece.setItemAt(row, col, ItemType.WEIGHT);
+                }
+            }
+        }
+
+        return piece;
+    }
+
+    /**
+     * 폭탄 블록 생성 (2x2)
+     * @return 폭탄 블록 (모든 셀에 BOMB 아이템 표시)
+     */
+    public static Piece createBombPiece() {
+        Piece piece = new Piece(BOMB_ROTATIONS, BOMB_PIECE);
+
+        // 폭탄 블록의 모든 셀에 BOMB 아이템 표시
+        int[][] shape = piece.getShape();
+        for (int row = 0; row < shape.length; row++) {
+            for (int col = 0; col < shape[row].length; col++) {
+                if (shape[row][col] != 0) {
+                    piece.setItemAt(row, col, ItemType.BOMB);
                 }
             }
         }

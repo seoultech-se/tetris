@@ -155,8 +155,8 @@ public class GameBoard {
     }
 
     /**
-     * LINE_CLEAR 아이템 효과를 처리
-     * 블록이 배치될 때 호출되어, LINE_CLEAR 아이템이 있는 줄을 즉시 삭제
+     * 아이템 효과를 처리 (LINE_CLEAR, BOMB)
+     * 블록이 배치될 때 호출되어, 아이템 효과를 적용
      * @param piece 배치된 블록
      * @return 삭제된 줄의 수
      */
@@ -166,8 +166,10 @@ public class GameBoard {
         }
 
         List<Integer> rowsToClean = new ArrayList<>();
+        List<Integer> bombRows = new ArrayList<>();
+        List<Integer> bombCols = new ArrayList<>();
 
-        // 블록이 배치된 위치에서 LINE_CLEAR 아이템이 있는 줄을 찾기
+        // 블록이 배치된 위치에서 아이템 찾기
         int[][] shape = piece.getShape();
         int x = piece.getX();
         int y = piece.getY();
@@ -176,19 +178,35 @@ public class GameBoard {
             for (int col = 0; col < shape[row].length; col++) {
                 if (shape[row][col] != 0) {
                     ItemType itemType = piece.getItemAt(row, col);
+                    int boardRow = y + row;
+                    int boardCol = x + col;
+
                     if (itemType == ItemType.LINE_CLEAR) {
-                        int boardRow = y + row;
+                        // LINE_CLEAR: 해당 줄 삭제
                         if (boardRow >= 0 && boardRow < BOARD_HEIGHT) {
                             if (!rowsToClean.contains(boardRow)) {
                                 rowsToClean.add(boardRow);
                             }
+                        }
+                    } else if (itemType == ItemType.BOMB) {
+                        // BOMB: 2x2 폭탄이 차지하는 모든 행과 열 수집
+                        if (boardRow >= 0 && boardRow < BOARD_HEIGHT && !bombRows.contains(boardRow)) {
+                            bombRows.add(boardRow);
+                        }
+                        if (boardCol >= 0 && boardCol < BOARD_WIDTH && !bombCols.contains(boardCol)) {
+                            bombCols.add(boardCol);
                         }
                     }
                 }
             }
         }
 
-        // 찾은 줄들을 삭제 (아래쪽부터)
+        // 폭탄 효과 처리: 해당 행과 열의 모든 블록 제거
+        if (!bombRows.isEmpty() || !bombCols.isEmpty()) {
+            processBombEffect(bombRows, bombCols);
+        }
+
+        // LINE_CLEAR 효과: 찾은 줄들을 삭제 (아래쪽부터)
         rowsToClean.sort((a, b) -> b - a);  // 내림차순 정렬
         for (int rowToClean : rowsToClean) {
             clearLine(rowToClean);
@@ -196,6 +214,43 @@ public class GameBoard {
         }
 
         return rowsToClean.size();
+    }
+
+    /**
+     * 폭탄 효과 처리: 2x2 폭탄이 차지하는 행과 열의 모든 블록 제거
+     * @param bombRows 폭탄이 차지하는 행들
+     * @param bombCols 폭탄이 차지하는 열들
+     */
+    private void processBombEffect(List<Integer> bombRows, List<Integer> bombCols) {
+        // 지정된 열의 모든 블록 제거
+        for (int col : bombCols) {
+            if (col >= 0 && col < BOARD_WIDTH) {
+                for (int row = 0; row < BOARD_HEIGHT; row++) {
+                    clearCell(row, col);
+                }
+            }
+        }
+
+        // 지정된 행의 모든 블록 제거
+        for (int row : bombRows) {
+            if (row >= 0 && row < BOARD_HEIGHT) {
+                for (int col = 0; col < BOARD_WIDTH; col++) {
+                    clearCell(row, col);
+                }
+            }
+        }
+    }
+
+    /**
+     * 특정 셀을 지움 (범위 체크 포함)
+     * @param row 행
+     * @param col 열
+     */
+    private void clearCell(int row, int col) {
+        if (row >= 0 && row < BOARD_HEIGHT && col >= 0 && col < BOARD_WIDTH) {
+            board[row][col] = 0;
+            itemBoard[row][col] = ItemType.NONE;
+        }
     }
 
     /**

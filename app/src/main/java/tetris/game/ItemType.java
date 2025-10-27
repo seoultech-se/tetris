@@ -26,11 +26,17 @@ public enum ItemType {
      * 점수 2배 아이템 (Double Score)
      * 블록이 착지할 때 발동되어 30초 동안 모든 점수가 2배
      */
-    DOUBLE_SCORE;
+    DOUBLE_SCORE,
+
+    /**
+     * 폭탄 아이템 (Bomb)
+     * 블록이 착지할 때 십자가 형태로 주변 블록을 터뜨림 (3x3 범위)
+     */
+    BOMB;
 
     /**
      * 아이템 타입의 표시 문자를 반환
-     * @return LINE_CLEAR의 경우 'L', WEIGHT의 경우 'W', DOUBLE_SCORE의 경우 'D', 그 외는 빈 문자열
+     * @return LINE_CLEAR의 경우 'L', WEIGHT의 경우 'W', DOUBLE_SCORE의 경우 'D', BOMB의 경우 'B', 그 외는 빈 문자열
      */
     public String getDisplayChar() {
         switch (this) {
@@ -40,6 +46,8 @@ public enum ItemType {
                 return "W";
             case DOUBLE_SCORE:
                 return "D";
+            case BOMB:
+                return "B";
             default:
                 return "";
         }

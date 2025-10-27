@@ -57,7 +57,8 @@ public class GameScreenController implements Initializable {
         Color.web("#D55E00"),          // 5 - Z 피스 (적갈색)
         Color.web("#0072B2"),          // 6 - J 피스 (파랑)
         Color.web("#E69F00"),          // 7 - L 피스 (주황)
-        Color.web("#999999")           // 8 - WEIGHT 피스 (회색 - 무게추)
+        Color.web("#999999"),          // 8 - WEIGHT 피스 (회색 - 무게추)
+        Color.web("#FF0000")           // 9 - BOMB 피스 (빨강 - 폭탄)
     };
 
     // 접근성 심볼 (0은 빈칸)
@@ -70,7 +71,8 @@ public class GameScreenController implements Initializable {
         "■", // 5 - Z
         "◆", // 6 - J (다이아몬드)
         "◇", // 7 - L (빈 다이아몬드)
-        "▼"  // 8 - WEIGHT (아래를 가리키는 화살표)
+        "▼", // 8 - WEIGHT (아래를 가리키는 화살표)
+        "✸"  // 9 - BOMB (폭발 효과)
     };
 
     @Override
