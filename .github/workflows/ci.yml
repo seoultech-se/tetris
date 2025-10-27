@@ -6,7 +6,6 @@ on:
     branches:
       - 'main'
       - 'dev'
-      - 'dev2'
 
 jobs:
   build:
@@ -15,10 +14,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Java 21
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -28,13 +27,3 @@ jobs:
 
       - name: Build with Gradle
         run: ./gradlew clean build
-
-      - name: Run tests
-        run: ./gradlew test
-
-      - name: Upload test results
-        if: failure()
-        uses: actions/upload-artifact@v3
-        with:
-          name: test-results
-          path: app/build/reports/tests/
