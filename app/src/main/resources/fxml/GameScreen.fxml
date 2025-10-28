@@ -45,6 +45,7 @@
                <children>
                   <Label fx:id="levelLabel" text="LEVEL: 1" styleClass="game-info-label" />
                   <Label fx:id="linesLabel" text="LINES: 0" styleClass="game-info-label" />
+                  <Label fx:id="nextItemLabel" text="" styleClass="game-info-label" />
                </children>
             </VBox>
 

@@ -34,6 +34,9 @@ public class GameScreenController implements Initializable {
     private Label linesLabel;
 
     @FXML
+    private Label nextItemLabel;
+
+    @FXML
     private Label doubleScoreTimerLabel;
 
     @FXML
@@ -349,6 +352,7 @@ public class GameScreenController implements Initializable {
             updateScore(gameEngine.getScore());
             updateLevel(gameEngine.getLevel());
             updateLines(gameEngine.getLinesCleared());
+            updateNextItemCounter();
             updateDoubleScoreTimer();
             updateSkipNotification();
         }
@@ -389,6 +393,24 @@ public class GameScreenController implements Initializable {
     public void updateLines(int lines) {
         if (linesLabel != null) {
             linesLabel.setText("Lines: " + lines);
+        }
+    }
+
+    public void updateNextItemCounter() {
+        if (nextItemLabel != null && gameEngine != null && settingsManager != null) {
+            // 아이템 모드일 때만 표시
+            if ("ITEM".equals(settingsManager.getGameMode())) {
+                int linesUntilItem = gameEngine.getLinesUntilNextItem();
+                if (linesUntilItem == 0) {
+                    nextItemLabel.setText("Next Item: Ready!");
+                    nextItemLabel.setStyle("-fx-text-fill: #00FF00; -fx-font-weight: bold;");
+                } else {
+                    nextItemLabel.setText("Next Item: " + linesUntilItem + " lines");
+                    nextItemLabel.setStyle("-fx-text-fill: #FFFFFF;");
+                }
+            } else {
+                nextItemLabel.setText("");
+            }
         }
     }
 

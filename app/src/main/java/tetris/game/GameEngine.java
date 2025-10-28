@@ -307,6 +307,12 @@ public class GameEngine {
         return linesCleared;
     }
 
+    public int getLinesUntilNextItem() {
+        // 다음 아이템까지 필요한 줄 수 반환 (10줄마다 아이템 생성)
+        int remaining = 10 - linesClearedSinceLastItem;
+        return Math.max(0, remaining);  // 음수가 되지 않도록
+    }
+
     public boolean isGameRunning() {
         return isGameRunning;
     }
