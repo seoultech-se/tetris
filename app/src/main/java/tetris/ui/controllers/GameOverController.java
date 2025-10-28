@@ -70,8 +70,52 @@ public class GameOverController implements Initializable {
             scoreboardTitleLabel.setText(modeText + diffText + " 스코어보드");
         }
         
+        // 상위 10위 안에 드는지 확인
+        boolean canSaveScore = checkIfCanSaveScore(score, gameMode, difficulty);
+        
+        // 상위 10위 안에 들지 못하면 입력 필드와 저장 버튼 숨기기
+        if (playerNameField != null) {
+            playerNameField.setVisible(canSaveScore);
+            playerNameField.setManaged(canSaveScore);
+        }
+        if (saveScoreButton != null) {
+            saveScoreButton.setVisible(canSaveScore);
+            saveScoreButton.setManaged(canSaveScore);
+        }
+        
         // 현재 모드와 난이도에 맞는 스코어 로드
         loadScores();
+    }
+    
+    private boolean checkIfCanSaveScore(int score, String gameMode, String difficulty) {
+        java.util.List<String> scores;
+        if (gameMode.equals("NORMAL")) {
+            scores = ScoreManager.getInstance().getFormattedScoresByDifficulty(gameMode, difficulty);
+        } else {
+            scores = ScoreManager.getInstance().getFormattedScores(gameMode);
+        }
+        
+        // 10개 미만이면 무조건 저장 가능
+        if (scores.isEmpty() || scores.size() < 10) {
+            return true;
+        }
+        
+        // 10개 이상이면 마지막 점수와 비교
+        String lastScoreEntry = scores.get(scores.size() - 1);
+        // "순위. 이름 - 점수점 (난이도)" 형식에서 점수 추출
+        try {
+            int dashIndex = lastScoreEntry.indexOf(" - ");
+            int pointIndex = lastScoreEntry.indexOf("점", dashIndex);
+            if (dashIndex > 0 && pointIndex > dashIndex) {
+                String scoreStr = lastScoreEntry.substring(dashIndex + 3, pointIndex).trim();
+                int lastScore = Integer.parseInt(scoreStr);
+                return score >= lastScore; // 마지막 점수 이상이면 저장 가능
+            }
+        } catch (Exception e) {
+            System.err.println("점수 파싱 오류: " + e.getMessage());
+        }
+        
+        return true; // 파싱 실패 시 일단 저장 가능하도록
     }
     
     private void setupListViewCellFactory() {
