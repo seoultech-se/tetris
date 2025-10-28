@@ -42,8 +42,10 @@ public class GameScreenController implements Initializable {
     private long lastUpdateTime = 0;
     private long fallSpeed = 1_000_000_000; // 1 second in nanoseconds
 
-    // 블록 크기와 색상 설정 (ColorBlind Safe 팔레트)
-    private static final int BLOCK_SIZE = 25;
+    // 블록 크기 (화면 크기에 따라 동적으로 설정)
+    private int BLOCK_SIZE = 30;
+    
+    // 블록 색상 설정 (ColorBlind Safe 팔레트)
     private static final Color[] PIECE_COLORS = {
         Color.BLACK,                    
         Color.web("#56B4E9"),          // 1 - I 피스 (하늘색)
@@ -71,6 +73,23 @@ public class GameScreenController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         // 설정 매니저 초기화
         settingsManager = SettingsManager.getInstance();
+        
+        // 화면 크기에 따라 블록 크기 설정
+        String screenSize = settingsManager.getScreenSize();
+        switch (screenSize) {
+            case "작게":
+                BLOCK_SIZE = 20; // 작게: 10칸 × 20 = 200px, 20칸 × 20 = 400px
+                break;
+            case "중간":
+                BLOCK_SIZE = 25; // 중간: 10칸 × 25 = 250px, 20칸 × 25 = 500px
+                break;
+            case "크게":
+                BLOCK_SIZE = 30; // 크게: 10칸 × 30 = 300px, 20칸 × 30 = 600px
+                break;
+            default:
+                BLOCK_SIZE = 25;
+                break;
+        }
         
         // 게임 엔진 초기화
         gameEngine = new GameEngine();

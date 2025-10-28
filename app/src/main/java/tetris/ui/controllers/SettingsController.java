@@ -4,7 +4,6 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.Slider;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.TextField;
@@ -19,16 +18,7 @@ import java.util.ResourceBundle;
 public class SettingsController implements Initializable {
 
     @FXML
-    private Slider volumeSlider;
-
-    @FXML
     private ComboBox<String> difficultyComboBox;
-
-    @FXML
-    private CheckBox soundEffectsCheckBox;
-
-    @FXML
-    private CheckBox musicCheckBox;
 
     @FXML
     private CheckBox accessibilityModeCheckBox;
@@ -72,8 +62,8 @@ public class SettingsController implements Initializable {
             difficultyComboBox.setValue("Normal");
         }
         if (screenSizeComboBox != null) {
-            screenSizeComboBox.getItems().addAll("창 모드", "전체 화면");
-            screenSizeComboBox.setValue("창 모드");
+            screenSizeComboBox.getItems().addAll("작게", "중간", "크게");
+            screenSizeComboBox.setValue("중간");
         }
     }
 
@@ -108,17 +98,8 @@ public class SettingsController implements Initializable {
 
     private void loadSettings() {
         // SettingsManager에서 설정 로드
-        if (volumeSlider != null) {
-            volumeSlider.setValue(settingsManager.getVolume());
-        }
         if (difficultyComboBox != null) {
             difficultyComboBox.setValue(settingsManager.getDifficulty());
-        }
-        if (soundEffectsCheckBox != null) {
-            soundEffectsCheckBox.setSelected(settingsManager.isSoundEffectsEnabled());
-        }
-        if (musicCheckBox != null) {
-            musicCheckBox.setSelected(settingsManager.isMusicEnabled());
         }
         if (accessibilityModeCheckBox != null) {
             accessibilityModeCheckBox.setSelected(settingsManager.isAccessibilityModeEnabled());
@@ -167,17 +148,8 @@ public class SettingsController implements Initializable {
 
     private void saveSettings() {
         // UI에서 설정 값들을 SettingsManager에 저장
-        if (volumeSlider != null) {
-            settingsManager.setVolume(volumeSlider.getValue());
-        }
         if (difficultyComboBox != null) {
             settingsManager.setDifficulty(difficultyComboBox.getValue());
-        }
-        if (soundEffectsCheckBox != null) {
-            settingsManager.setSoundEffectsEnabled(soundEffectsCheckBox.isSelected());
-        }
-        if (musicCheckBox != null) {
-            settingsManager.setMusicEnabled(musicCheckBox.isSelected());
         }
         if (accessibilityModeCheckBox != null) {
             settingsManager.setAccessibilityModeEnabled(accessibilityModeCheckBox.isSelected());
