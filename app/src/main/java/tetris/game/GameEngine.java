@@ -140,11 +140,38 @@ public class GameEngine {
 
     private void hardDrop() {
         if (currentPiece != null) {
-            while (gameBoard.isValidPosition(currentPiece)) {
-                currentPiece.moveDown();
+            // 무게추 블록인 경우, 한 칸씩 내려가면서 무게추 효과 적용
+            if (currentPiece.isWeightPiece()) {
+                while (gameBoard.isValidPosition(currentPiece)) {
+                    currentPiece.moveDown();
+
+                    if (gameBoard.isValidPosition(currentPiece)) {
+                        // 유효한 위치면 무게추 효과 처리 (아래 블록 삭제)
+                        gameBoard.processWeightEffect(currentPiece);
+
+                        // 무게추 효과 후 다시 위치 확인
+                        currentPiece.moveDown();
+                        if (!gameBoard.isValidPosition(currentPiece)) {
+                            currentPiece.moveUp();
+                            break;
+                        }
+                        currentPiece.moveUp();
+                    } else {
+                        // 더 이상 내려갈 수 없으면 한 칸 올리고 종료
+                        currentPiece.moveUp();
+                        break;
+                    }
+                }
+                currentPiece.setLanded(true);  // 무게추는 착지 후 좌우 이동 불가
+                placePiece();
+            } else {
+                // 일반 블록은 기존처럼 빠르게 하드드롭
+                while (gameBoard.isValidPosition(currentPiece)) {
+                    currentPiece.moveDown();
+                }
+                currentPiece.moveUp();
+                placePiece();
             }
-            currentPiece.moveUp();
-            placePiece();
         }
     }
 
