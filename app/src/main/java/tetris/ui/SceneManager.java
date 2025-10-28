@@ -8,8 +8,14 @@ import java.net.URL;
 
 public class SceneManager {
     private final Stage primaryStage;
-    private static final double WINDOW_WIDTH = 600;
-    private static final double WINDOW_HEIGHT = 900;
+    
+    // 화면 크기 상수 (작게, 중간, 크게)
+    private static final double SMALL_WIDTH = 480;
+    private static final double SMALL_HEIGHT = 720;
+    private static final double MEDIUM_WIDTH = 600;
+    private static final double MEDIUM_HEIGHT = 900;
+    private static final double LARGE_WIDTH = 720;
+    private static final double LARGE_HEIGHT = 1080;
 
     public SceneManager(Stage primaryStage) {
         this.primaryStage = primaryStage;
@@ -52,8 +58,33 @@ public class SceneManager {
 
     private void loadScene(String fxmlPath, int finalScore) {
         try {
+            // 현재 설정된 화면 크기 가져오기
+            String screenSize = SettingsManager.getInstance().getScreenSize();
+            double width = MEDIUM_WIDTH;
+            double height = MEDIUM_HEIGHT;
+            
+            switch (screenSize) {
+                case "작게":
+                    width = SMALL_WIDTH;
+                    height = SMALL_HEIGHT;
+                    break;
+                case "중간":
+                    width = MEDIUM_WIDTH;
+                    height = MEDIUM_HEIGHT;
+                    break;
+                case "크게":
+                    width = LARGE_WIDTH;
+                    height = LARGE_HEIGHT;
+                    break;
+                default:
+                    // 기본값은 중간
+                    width = MEDIUM_WIDTH;
+                    height = MEDIUM_HEIGHT;
+                    break;
+            }
+            
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
-            Scene scene = new Scene(loader.load(), WINDOW_WIDTH, WINDOW_HEIGHT);
+            Scene scene = new Scene(loader.load(), width, height);
             
             // CSS 스타일 로드
             String cssPath = null;
