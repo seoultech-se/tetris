@@ -30,7 +30,8 @@ public enum ItemType {
 
     /**
      * 폭탄 아이템 (Bomb)
-     * 블록이 착지할 때 십자가 형태로 주변 블록을 터뜨림 (3x3 범위)
+     * 1x1 단일 블록, '+' 표시
+     * 블록이 착지할 때 폭탄이 위치한 행과 열 전체를 십자가(+) 모양으로 삭제
      */
     BOMB,
 
@@ -54,7 +55,7 @@ public enum ItemType {
             case DOUBLE_SCORE:
                 return "D";
             case BOMB:
-                return "B";
+                return "+";
             case SKIP:
                 return "S";
             default:

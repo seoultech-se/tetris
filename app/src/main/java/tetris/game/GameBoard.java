@@ -217,12 +217,12 @@ public class GameBoard {
     }
 
     /**
-     * 폭탄 효과 처리: 2x2 폭탄이 차지하는 행과 열의 모든 블록 제거
-     * @param bombRows 폭탄이 차지하는 행들
-     * @param bombCols 폭탄이 차지하는 열들
+     * 폭탄 효과 처리: 1x1 폭탄이 위치한 행과 열을 십자가(+) 모양으로 제거
+     * @param bombRows 폭탄이 위치한 행
+     * @param bombCols 폭탄이 위치한 열
      */
     private void processBombEffect(List<Integer> bombRows, List<Integer> bombCols) {
-        // 지정된 열의 모든 블록 제거
+        // 폭탄이 위치한 열 전체 제거 (세로선)
         for (int col : bombCols) {
             if (col >= 0 && col < BOARD_WIDTH) {
                 for (int row = 0; row < BOARD_HEIGHT; row++) {
@@ -231,7 +231,7 @@ public class GameBoard {
             }
         }
 
-        // 지정된 행의 모든 블록 제거
+        // 폭탄이 위치한 행 전체 제거 (가로선)
         for (int row : bombRows) {
             if (row >= 0 && row < BOARD_HEIGHT) {
                 for (int col = 0; col < BOARD_WIDTH; col++) {

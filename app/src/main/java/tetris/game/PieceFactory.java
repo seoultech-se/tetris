@@ -70,11 +70,11 @@ public class PieceFactory {
         {{0, 8, 8, 0}, {8, 8, 8, 8}}
     };
 
-    // 폭탄 피스 (Bomb) - 회전 불가, 2x2 정사각형
-    // 모양: BB
-    //       BB
+    // 폭탄 피스 (Bomb) - 회전 불가, 1x1 단일 블록
+    // 모양: B
+    // 효과: 십자가 모양(상하좌우) 삭제
     private static final int[][][] BOMB_ROTATIONS = {
-        {{9, 9}, {9, 9}}
+        {{9}}
     };
 
     private static List<Integer> pieceBag = new ArrayList<>();
@@ -252,13 +252,13 @@ public class PieceFactory {
     }
 
     /**
-     * 폭탄 블록 생성 (2x2)
-     * @return 폭탄 블록 (모든 셀에 BOMB 아이템 표시)
+     * 폭탄 블록 생성 (1x1)
+     * @return 폭탄 블록 (십자가 모양으로 삭제)
      */
     public static Piece createBombPiece() {
         Piece piece = new Piece(BOMB_ROTATIONS, BOMB_PIECE);
 
-        // 폭탄 블록의 모든 셀에 BOMB 아이템 표시
+        // 폭탄 블록에 BOMB 아이템 표시
         int[][] shape = piece.getShape();
         for (int row = 0; row < shape.length; row++) {
             for (int col = 0; col < shape[row].length; col++) {
