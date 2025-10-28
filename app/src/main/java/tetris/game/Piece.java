@@ -9,9 +9,8 @@ public class Piece {
     private int[][][] rotations;
 
     // 아이템 정보
-    private ItemType[][] itemGrid;  // 각 블록 셀의 아이템 타입
-    private int itemRow;  // 아이템이 있는 행 (shape 배열 기준)
-    private int itemCol;  // 아이템이 있는 열 (shape 배열 기준)
+    private ItemType itemType;  // 아이템 타입 (NONE, LINE_CLEAR, DOUBLE_SCORE, SKIP 등)
+    private int itemBlockIndex;  // 아이템이 있는 블록의 논리적 인덱스 (0부터 시작, -1이면 없음)
 
     // 무게추 아이템 관련
     private boolean hasLanded;  // 블록이 한 번이라도 착지했는지 여부 (무게추 전용)
@@ -25,15 +24,9 @@ public class Piece {
         this.y = 0;
         this.hasLanded = false;
 
-        // 아이템 그리드 초기화 (모든 셀을 NONE으로)
-        this.itemGrid = new ItemType[shape.length][shape[0].length];
-        for (int i = 0; i < itemGrid.length; i++) {
-            for (int j = 0; j < itemGrid[i].length; j++) {
-                itemGrid[i][j] = ItemType.NONE;
-            }
-        }
-        this.itemRow = -1;
-        this.itemCol = -1;
+        // 아이템 정보 초기화
+        this.itemType = ItemType.NONE;
+        this.itemBlockIndex = -1;
     }
 
     public void moveLeft() {
@@ -53,121 +46,19 @@ public class Piece {
     }
 
     public void rotate() {
-        // 회전 전 아이템 정보 저장
-        ItemType savedItemType = ItemType.NONE;
-        int blockIndex = -1;
-
-        // 아이템이 있는 블록의 논리적 인덱스 찾기
-        if (hasItem()) {
-            int currentBlockIndex = 0;
-            for (int row = 0; row < shape.length; row++) {
-                for (int col = 0; col < shape[row].length; col++) {
-                    if (shape[row][col] != 0) {
-                        if (row == itemRow && col == itemCol) {
-                            blockIndex = currentBlockIndex;
-                            savedItemType = itemGrid[row][col];
-                            break;
-                        }
-                        currentBlockIndex++;
-                    }
-                }
-                if (blockIndex != -1) break;
-            }
-        }
-
-        // 회전 수행
+        // 회전 수행 (아이템 정보는 itemBlockIndex에 저장되어 있으므로 그대로 유지됨)
         int newRotation = (rotation + 1) % rotations.length;
         rotation = newRotation;
         shape = rotations[rotation];
-
-        // 아이템 그리드를 새 shape 크기에 맞게 재생성
-        itemGrid = new ItemType[shape.length][shape[0].length];
-        for (int i = 0; i < itemGrid.length; i++) {
-            for (int j = 0; j < itemGrid[i].length; j++) {
-                itemGrid[i][j] = ItemType.NONE;
-            }
-        }
-
-        // 아이템을 새 위치에 재배치
-        if (blockIndex != -1 && savedItemType != ItemType.NONE) {
-            int currentBlockIndex = 0;
-            boolean placed = false;
-            for (int row = 0; row < shape.length && !placed; row++) {
-                for (int col = 0; col < shape[row].length && !placed; col++) {
-                    if (shape[row][col] != 0) {
-                        if (currentBlockIndex == blockIndex) {
-                            itemGrid[row][col] = savedItemType;
-                            itemRow = row;
-                            itemCol = col;
-                            placed = true;
-                        }
-                        currentBlockIndex++;
-                    }
-                }
-            }
-        } else {
-            itemRow = -1;
-            itemCol = -1;
-        }
+        // itemType과 itemBlockIndex는 회전과 무관하게 유지됨
     }
 
     public void rotateBack() {
-        // 회전 전 아이템 정보 저장
-        ItemType savedItemType = ItemType.NONE;
-        int blockIndex = -1;
-
-        // 아이템이 있는 블록의 논리적 인덱스 찾기
-        if (hasItem()) {
-            int currentBlockIndex = 0;
-            for (int row = 0; row < shape.length; row++) {
-                for (int col = 0; col < shape[row].length; col++) {
-                    if (shape[row][col] != 0) {
-                        if (row == itemRow && col == itemCol) {
-                            blockIndex = currentBlockIndex;
-                            savedItemType = itemGrid[row][col];
-                            break;
-                        }
-                        currentBlockIndex++;
-                    }
-                }
-                if (blockIndex != -1) break;
-            }
-        }
-
-        // 회전 수행
+        // 역회전 수행 (아이템 정보는 itemBlockIndex에 저장되어 있으므로 그대로 유지됨)
         int newRotation = (rotation - 1 + rotations.length) % rotations.length;
         rotation = newRotation;
         shape = rotations[rotation];
-
-        // 아이템 그리드를 새 shape 크기에 맞게 재생성
-        itemGrid = new ItemType[shape.length][shape[0].length];
-        for (int i = 0; i < itemGrid.length; i++) {
-            for (int j = 0; j < itemGrid[i].length; j++) {
-                itemGrid[i][j] = ItemType.NONE;
-            }
-        }
-
-        // 아이템을 새 위치에 재배치
-        if (blockIndex != -1 && savedItemType != ItemType.NONE) {
-            int currentBlockIndex = 0;
-            boolean placed = false;
-            for (int row = 0; row < shape.length && !placed; row++) {
-                for (int col = 0; col < shape[row].length && !placed; col++) {
-                    if (shape[row][col] != 0) {
-                        if (currentBlockIndex == blockIndex) {
-                            itemGrid[row][col] = savedItemType;
-                            itemRow = row;
-                            itemCol = col;
-                            placed = true;
-                        }
-                        currentBlockIndex++;
-                    }
-                }
-            }
-        } else {
-            itemRow = -1;
-            itemCol = -1;
-        }
+        // itemType과 itemBlockIndex는 회전과 무관하게 유지됨
     }
 
     public void setPosition(int x, int y) {
@@ -204,14 +95,8 @@ public class Piece {
         copy.hasLanded = this.hasLanded;
 
         // 아이템 정보 복사
-        copy.itemGrid = new ItemType[this.itemGrid.length][this.itemGrid[0].length];
-        for (int i = 0; i < this.itemGrid.length; i++) {
-            for (int j = 0; j < this.itemGrid[i].length; j++) {
-                copy.itemGrid[i][j] = this.itemGrid[i][j];
-            }
-        }
-        copy.itemRow = this.itemRow;
-        copy.itemCol = this.itemCol;
+        copy.itemType = this.itemType;
+        copy.itemBlockIndex = this.itemBlockIndex;
 
         return copy;
     }
@@ -223,11 +108,23 @@ public class Piece {
      * @param itemType 아이템 타입
      */
     public void setItemAt(int row, int col, ItemType itemType) {
-        if (row >= 0 && row < itemGrid.length && col >= 0 && col < itemGrid[0].length) {
-            itemGrid[row][col] = itemType;
-            if (itemType != ItemType.NONE) {
-                this.itemRow = row;
-                this.itemCol = col;
+        if (row >= 0 && row < shape.length && col >= 0 && col < shape[0].length) {
+            if (shape[row][col] != 0) {  // 블록이 있는 위치에만 아이템 설정 가능
+                // row, col을 논리적 인덱스로 변환
+                int blockIndex = 0;
+                boolean found = false;
+                for (int r = 0; r < shape.length && !found; r++) {
+                    for (int c = 0; c < shape[r].length && !found; c++) {
+                        if (shape[r][c] != 0) {
+                            if (r == row && c == col) {
+                                this.itemType = itemType;
+                                this.itemBlockIndex = itemType != ItemType.NONE ? blockIndex : -1;
+                                found = true;
+                            }
+                            blockIndex++;
+                        }
+                    }
+                }
             }
         }
     }
@@ -239,8 +136,25 @@ public class Piece {
      * @return 아이템 타입
      */
     public ItemType getItemAt(int row, int col) {
-        if (row >= 0 && row < itemGrid.length && col >= 0 && col < itemGrid[0].length) {
-            return itemGrid[row][col];
+        if (itemBlockIndex == -1 || itemType == ItemType.NONE) {
+            return ItemType.NONE;
+        }
+
+        if (row >= 0 && row < shape.length && col >= 0 && col < shape[0].length) {
+            if (shape[row][col] != 0) {  // 블록이 있는 위치만 확인
+                // row, col을 논리적 인덱스로 변환하여 확인
+                int blockIndex = 0;
+                for (int r = 0; r < shape.length; r++) {
+                    for (int c = 0; c < shape[r].length; c++) {
+                        if (shape[r][c] != 0) {
+                            if (r == row && c == col) {
+                                return blockIndex == itemBlockIndex ? itemType : ItemType.NONE;
+                            }
+                            blockIndex++;
+                        }
+                    }
+                }
+            }
         }
         return ItemType.NONE;
     }
@@ -250,7 +164,23 @@ public class Piece {
      * @return 아이템 행, 아이템이 없으면 -1
      */
     public int getItemRow() {
-        return itemRow;
+        if (itemBlockIndex == -1) {
+            return -1;
+        }
+
+        // 논리적 인덱스를 현재 shape의 row로 변환
+        int blockIndex = 0;
+        for (int r = 0; r < shape.length; r++) {
+            for (int c = 0; c < shape[r].length; c++) {
+                if (shape[r][c] != 0) {
+                    if (blockIndex == itemBlockIndex) {
+                        return r;
+                    }
+                    blockIndex++;
+                }
+            }
+        }
+        return -1;
     }
 
     /**
@@ -258,7 +188,23 @@ public class Piece {
      * @return 아이템 열, 아이템이 없으면 -1
      */
     public int getItemCol() {
-        return itemCol;
+        if (itemBlockIndex == -1) {
+            return -1;
+        }
+
+        // 논리적 인덱스를 현재 shape의 col로 변환
+        int blockIndex = 0;
+        for (int r = 0; r < shape.length; r++) {
+            for (int c = 0; c < shape[r].length; c++) {
+                if (shape[r][c] != 0) {
+                    if (blockIndex == itemBlockIndex) {
+                        return c;
+                    }
+                    blockIndex++;
+                }
+            }
+        }
+        return -1;
     }
 
     /**
@@ -266,7 +212,7 @@ public class Piece {
      * @return 아이템이 있으면 true, 없으면 false
      */
     public boolean hasItem() {
-        return itemRow != -1 && itemCol != -1;
+        return itemBlockIndex != -1 && itemType != ItemType.NONE;
     }
 
     /**
