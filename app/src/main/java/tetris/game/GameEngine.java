@@ -2,6 +2,8 @@ package tetris.game;
 
 import tetris.ui.SettingsManager;
 
+// 임시 커밋
+
 public class GameEngine {
     private GameBoard gameBoard;
     private Piece currentPiece;
@@ -105,7 +107,7 @@ public class GameEngine {
                 // 이동 불가능 - 블록이 착지함
                 currentPiece.moveUp();
 
-                // 무게추는 착지 표시
+                // 무게추는 착지 표시!
                 if (currentPiece.isWeightPiece()) {
                     currentPiece.setLanded(true);
                 }
