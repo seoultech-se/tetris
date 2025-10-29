@@ -69,7 +69,8 @@ public class MainMenuController implements Initializable {
         
         // 메뉴 버튼 리스트 초기화 (왼쪽에서 오른쪽, 위에서 아래 순서)
         menuButtons = new ArrayList<>();
-        menuButtons.add(startButton);
+        menuButtons.add(normalModeButton);
+        menuButtons.add(itemModeButton);
         menuButtons.add(scoreBoardButton);
         menuButtons.add(settingsButton);
         menuButtons.add(exitButton);
@@ -90,7 +91,7 @@ public class MainMenuController implements Initializable {
         
         // 첫 번째 버튼 선택
         selectButton(0);
-        startButton.requestFocus();
+        normalModeButton.requestFocus();
     }
 
     public void setSceneManager(SceneManager sceneManager) {
