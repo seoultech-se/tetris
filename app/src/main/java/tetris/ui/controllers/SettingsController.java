@@ -4,7 +4,6 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.Slider;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.TextField;
@@ -19,16 +18,7 @@ import java.util.ResourceBundle;
 public class SettingsController implements Initializable {
 
     @FXML
-    private Slider volumeSlider;
-
-    @FXML
     private ComboBox<String> difficultyComboBox;
-
-    @FXML
-    private CheckBox soundEffectsCheckBox;
-
-    @FXML
-    private CheckBox musicCheckBox;
 
     @FXML
     private CheckBox accessibilityModeCheckBox;
@@ -108,17 +98,8 @@ public class SettingsController implements Initializable {
 
     private void loadSettings() {
         // SettingsManager에서 설정 로드
-        if (volumeSlider != null) {
-            volumeSlider.setValue(settingsManager.getVolume());
-        }
         if (difficultyComboBox != null) {
             difficultyComboBox.setValue(settingsManager.getDifficulty());
-        }
-        if (soundEffectsCheckBox != null) {
-            soundEffectsCheckBox.setSelected(settingsManager.isSoundEffectsEnabled());
-        }
-        if (musicCheckBox != null) {
-            musicCheckBox.setSelected(settingsManager.isMusicEnabled());
         }
         if (accessibilityModeCheckBox != null) {
             accessibilityModeCheckBox.setSelected(settingsManager.isAccessibilityModeEnabled());
@@ -167,17 +148,8 @@ public class SettingsController implements Initializable {
 
     private void saveSettings() {
         // UI에서 설정 값들을 SettingsManager에 저장
-        if (volumeSlider != null) {
-            settingsManager.setVolume(volumeSlider.getValue());
-        }
         if (difficultyComboBox != null) {
             settingsManager.setDifficulty(difficultyComboBox.getValue());
-        }
-        if (soundEffectsCheckBox != null) {
-            settingsManager.setSoundEffectsEnabled(soundEffectsCheckBox.isSelected());
-        }
-        if (musicCheckBox != null) {
-            settingsManager.setMusicEnabled(musicCheckBox.isSelected());
         }
         if (accessibilityModeCheckBox != null) {
             settingsManager.setAccessibilityModeEnabled(accessibilityModeCheckBox.isSelected());
@@ -185,7 +157,6 @@ public class SettingsController implements Initializable {
         if (screenSizeComboBox != null) {
             String selectedSize = screenSizeComboBox.getValue();
             settingsManager.setScreenSize(selectedSize);
-            applyScreenSize(selectedSize);
         }
         // 키 설정 저장
         if (keyLeftField != null && !keyLeftField.getText().isEmpty()) {
@@ -208,43 +179,23 @@ public class SettingsController implements Initializable {
         System.out.println("Settings saved");
     }
 
-    private void applyScreenSize(String size) {
-        if (sceneManager == null) return;
-        
-        double width, height;
-        switch (size) {
-            case "작게":
-                width = 500;
-                height = 600;
-                break;
-            case "크게":
-                width = 900;
-                height = 1000;
-                break;
-            default: // "중간"
-                width = 700;
-                height = 800;
-                break;
-        }
-        sceneManager.setWindowSize(width, height);
-        System.out.println("화면 크기 변경: " + size + " (" + width + "x" + height + ")");
-    }
 
     @FXML
     private void onClearScoreboard() {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("스코어보드 초기화");
-        alert.setHeaderText("모든 점수 기록을 삭제하시겠습니까?");
-        alert.setContentText("이 작업은 되돌릴 수 없습니다.");
+        alert.setHeaderText("모든 게임 모드의 점수 기록을 삭제하시겠습니까?");
+        alert.setContentText("일반 모드와 아이템 모드의 모든 기록이 삭제됩니다. 이 작업은 되돌릴 수 없습니다.");
         
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            ScoreManager.getInstance().clearScores();
+            ScoreManager.getInstance().clearScores("NORMAL");
+            ScoreManager.getInstance().clearScores("ITEM");
             
             Alert infoAlert = new Alert(Alert.AlertType.INFORMATION);
             infoAlert.setTitle("초기화 완료");
             infoAlert.setHeaderText(null);
-            infoAlert.setContentText("스코어보드가 초기화되었습니다.");
+            infoAlert.setContentText("모든 스코어보드가 초기화되었습니다.");
             infoAlert.showAndWait();
         }
     }
