@@ -13,7 +13,6 @@ import tetris.game.GameEngine;
 import tetris.game.GameBoard;
 import tetris.game.Piece;
 import tetris.game.ItemType;
-
 import java.net.URL;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
@@ -225,8 +224,8 @@ public class GameScreenController implements Initializable {
         gc.setFill(Color.BLACK);
         gc.fillRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
         
-        // 접근성 모드에서는 회색 격자 표시
-        if (settingsManager != null && settingsManager.isAccessibilityModeEnabled()) {
+        // 색약모드에서는 회색 격자 표시
+        if (settingsManager != null && settingsManager.isColorBlindModeEnabled()) {
             drawGrid(gc);
         }
 
@@ -252,7 +251,7 @@ public class GameScreenController implements Initializable {
         renderBorder(gc);
     }
 
-    // 접근성 모드용 보드 격자선 렌더링
+    // 색약모드용 보드 격자선 렌더링
     private void drawGrid(GraphicsContext gc) {
         gc.setStroke(Color.web("#444444"));
         gc.setLineWidth(1);
@@ -318,8 +317,8 @@ public class GameScreenController implements Initializable {
     }
 
     private void renderBlock(GraphicsContext gc, int x, int y, Color color, int pieceType, ItemType itemType) {
-        // 접근성 모드가 켜져 있으면 색 대신 심볼로 채운다
-        if (settingsManager != null && settingsManager.isAccessibilityModeEnabled()) {
+        // 색약모드가 켜져 있으면 색 대신 심볼로 채운다
+        if (settingsManager != null && settingsManager.isColorBlindModeEnabled()) {
 
             String symbol = "?";
             if (pieceType >= 0 && pieceType < PIECE_SYMBOLS.length) {
@@ -390,7 +389,7 @@ public class GameScreenController implements Initializable {
     
 
     private void renderBorder(GraphicsContext gc) {
-        // 접근성 모드에서도 게임 보드 외곽 테두리 표시
+        // 색약모드에서도 게임 보드 외곽 테두리 표시
         gc.setStroke(Color.WHITE);
         gc.setLineWidth(3);
         gc.strokeRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
@@ -454,7 +453,7 @@ public class GameScreenController implements Initializable {
                     nextItemLabel.setText("Next Item: Ready!");
                     nextItemLabel.setStyle("-fx-text-fill: #00FF00; -fx-font-weight: bold;");
                 } else {
-                    nextItemLabel.setText("Next Item: " + linesUntilItem + " lines");
+                    nextItemLabel.setText("Next Item: " + linesUntilItem + " Lines");
                     nextItemLabel.setStyle("-fx-text-fill: #FFFFFF;");
                 }
             } else {

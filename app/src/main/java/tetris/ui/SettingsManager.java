@@ -14,7 +14,7 @@ public class SettingsManager {
     private String difficulty = "Normal";
     private boolean soundEffectsEnabled = true;
     private boolean musicEnabled = true;
-    private boolean accessibilityModeEnabled = false;
+    private boolean colorBlindModeEnabled = false;
     private String screenSize = "중간";
     private String gameMode = "NORMAL"; // NORMAL 또는 ITEM
 
@@ -52,8 +52,8 @@ public class SettingsManager {
         return musicEnabled;
     }
     
-    public boolean isAccessibilityModeEnabled() {
-        return accessibilityModeEnabled;
+    public boolean isColorBlindModeEnabled() {
+        return colorBlindModeEnabled;
     }
 
     public String getScreenSize() {
@@ -84,10 +84,6 @@ public class SettingsManager {
         return keyHardDrop;
     }
 
-    public String getGameMode() {
-        return gameMode;
-    }
-
     public void setVolume(double volume) {
         this.volume = Math.max(0.0, Math.min(100.0, volume));
     }
@@ -104,8 +100,8 @@ public class SettingsManager {
         this.musicEnabled = enabled;
     }
     
-    public void setAccessibilityModeEnabled(boolean enabled) {
-        this.accessibilityModeEnabled = enabled;
+    public void setColorBlindModeEnabled(boolean enabled) {
+        this.colorBlindModeEnabled = enabled;
     }
 
     public void setScreenSize(String screenSize) {
@@ -136,16 +132,12 @@ public class SettingsManager {
         this.keyHardDrop = key.toUpperCase();
     }
 
-    public void setGameMode(String gameMode) {
-        this.gameMode = gameMode;
-    }
-
     public void resetToDefaults() {
         volume = 50.0;
         difficulty = "Normal";
         soundEffectsEnabled = true;
         musicEnabled = true;
-        accessibilityModeEnabled = false;
+        colorBlindModeEnabled = false;
         screenSize = "중간";
         gameMode = "NORMAL";
         keyLeft = "A";
@@ -165,7 +157,7 @@ public class SettingsManager {
         props.setProperty("difficulty", difficulty);
         props.setProperty("soundEffectsEnabled", String.valueOf(soundEffectsEnabled));
         props.setProperty("musicEnabled", String.valueOf(musicEnabled));
-        props.setProperty("accessibilityModeEnabled", String.valueOf(accessibilityModeEnabled));
+        props.setProperty("colorBlindModeEnabled", String.valueOf(colorBlindModeEnabled));
         props.setProperty("screenSize", screenSize);
         props.setProperty("gameMode", gameMode);
         props.setProperty("keyLeft", keyLeft);
@@ -194,7 +186,7 @@ public class SettingsManager {
             difficulty = props.getProperty("difficulty", "Normal");
             soundEffectsEnabled = Boolean.parseBoolean(props.getProperty("soundEffectsEnabled", "true"));
             musicEnabled = Boolean.parseBoolean(props.getProperty("musicEnabled", "true"));
-            accessibilityModeEnabled = Boolean.parseBoolean(props.getProperty("accessibilityModeEnabled", "false"));
+            colorBlindModeEnabled = Boolean.parseBoolean(props.getProperty("colorBlindModeEnabled", "false"));
             screenSize = props.getProperty("screenSize", "중간");
             gameMode = props.getProperty("gameMode", "NORMAL");
             keyLeft = props.getProperty("keyLeft", "A");
