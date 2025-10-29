@@ -186,19 +186,30 @@ public class GameEngine {
 
             // 아이템 효과 처리 (LINE_CLEAR 아이템이 있으면 즉시 줄 삭제)
             int itemClearedLines = gameBoard.processItemEffects(currentPiece);
+            
+            // 일반 줄 삭제는 하지 않음 - 애니메이션 처리를 위해 별도로 호출
+            // int normalClearedLines = gameBoard.clearLines();
 
-            // 일반 줄 삭제 (꽉 찬 줄)
-            int normalClearedLines = gameBoard.clearLines();
-
-            // 총 삭제된 줄 수 (아이템 + 일반)
-            int totalClearedLines = itemClearedLines + normalClearedLines;
-            updateScore(totalClearedLines);
+            // 아이템으로 삭제된 줄만 점수 업데이트
+            if (itemClearedLines > 0) {
+                updateScore(itemClearedLines);
+            }
 
             spawnNewPiece();
 
             if (!gameBoard.isValidPosition(currentPiece)) {
                 stopGame();
             }
+        }
+    }
+    
+    /**
+     * 줄 삭제를 수동으로 처리 (애니메이션 후 호출)
+     */
+    public void clearLinesManually() {
+        int normalClearedLines = gameBoard.clearLines();
+        if (normalClearedLines > 0) {
+            updateScore(normalClearedLines);
         }
     }
 
@@ -418,5 +429,12 @@ public class GameEngine {
         if (shouldHaveItem && nextPiece.hasItem()) {
             linesClearedSinceLastItem = 0;
         }
+    }
+    
+    /**
+     * 삭제될 줄들의 행 번호를 반환 (애니메이션용)
+     */
+    public java.util.List<Integer> getFullLines() {
+        return gameBoard.getFullLines();
     }
 }

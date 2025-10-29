@@ -226,16 +226,46 @@ public class GameOverController implements Initializable {
         }
         playerNameField.setDisable(true);
 
-        // ★ 강조 인덱스 계산 (1-base rank → 0-base index)
+        // ★ 강조 인덱스 계산 - 방금 저장한 이름과 점수로 정확히 찾기
+        highlightedIndex = null;
         try {
             String gm = SettingsManager.getInstance().getGameMode();
             String diff = SettingsManager.getInstance().getDifficulty();
-            int rank = ScoreManager.getInstance().getRankByDifficulty(finalScore, gm, diff);
-            highlightedIndex = Math.max(0, rank - 1);
+            
+            // 먼저 스코어 목록을 가져옴
+            java.util.List<String> scores;
+            if (gm.equals("NORMAL")) {
+                scores = ScoreManager.getInstance().getFormattedScoresByDifficulty(gm, diff);
+            } else {
+                scores = ScoreManager.getInstance().getFormattedScores(gm);
+            }
+            
+            // 방금 저장한 이름과 점수를 포함하는 항목 찾기
+            String savedName = playerName.trim();
+            String scoreStr = finalScore + "점";
+            
+            for (int i = 0; i < scores.size(); i++) {
+                String entry = scores.get(i);
+                // "순위. 이름 - 점수점 (날짜)" 형식에서 이름과 점수 확인
+                if (entry.contains(savedName) && entry.contains(scoreStr)) {
+                    // 이름이 정확히 매칭되는지 확인 (부분 문자열 문제 방지)
+                    int dashIndex = entry.indexOf(" - ");
+                    if (dashIndex > 0) {
+                        String namePart = entry.substring(0, dashIndex);
+                        // "순위. 이름" 형식에서 이름만 추출
+                        int dotIndex = namePart.indexOf(". ");
+                        if (dotIndex > 0) {
+                            String extractedName = namePart.substring(dotIndex + 2).trim();
+                            if (extractedName.equals(savedName)) {
+                                highlightedIndex = i;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
         } catch (Exception e) {
-            // 혹시 랭크 계산 실패 시 강조 해제
-            highlightedIndex = null;
-            System.err.println("랭크 계산 실패: " + e.getMessage());
+            System.err.println("강조 인덱스 계산 실패: " + e.getMessage());
         }
 
         // 리스트 새로고침 + 스크롤
@@ -254,7 +284,8 @@ public class GameOverController implements Initializable {
         if (isTopTen && highlightedIndex != null) {
             String gm = SettingsManager.getInstance().getGameMode();
             String diff = SettingsManager.getInstance().getDifficulty();
-            int rank = highlightedIndex + 1;
+            // 동점자를 고려한 실제 순위 계산
+            int rank = ScoreManager.getInstance().getRankByDifficulty(finalScore, gm, diff);
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("축하합니다!");
             alert.setHeaderText(null);
