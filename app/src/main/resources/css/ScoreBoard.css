@@ -68,3 +68,83 @@
     -fx-background-color: transparent;
     -fx-border-width: 0;
 }
+
+/* 메뉴 버튼 기본 스타일 (작은 크기) */
+.menu-button, .toggle-button {
+    -fx-pref-width: 120px;
+    -fx-pref-height: 35px;
+    -fx-font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", sans-serif;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-background-color: #000000;
+    -fx-text-fill: #ffffff;
+    -fx-border-color: #555555;
+    -fx-border-width: 2px;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+}
+
+.menu-button:hover, .toggle-button:hover {
+    -fx-background-color: #111111;
+    -fx-border-color: #777777;
+}
+
+.menu-button:selected,
+.toggle-button:selected {
+    -fx-background-color: #333333;
+    -fx-border-color: #00ff00;
+    -fx-border-width: 3px;
+    -fx-text-fill: #00ff00;
+}
+
+.menu-button:pressed,
+.toggle-button:pressed {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #000000;
+    -fx-border-color: #ffffff;
+}
+
+/* 일반 모드 버튼 색상 */
+.normal-mode-button {
+    -fx-background-color: #3498db;
+}
+
+.normal-mode-button:hover {
+    -fx-background-color: #2980b9;
+}
+
+.normal-mode-button:selected {
+    -fx-background-color: #00ff00;
+    -fx-border-color: #00ff00;
+    -fx-text-fill: #000000;
+}
+
+/* 아이템 모드 버튼 색상 */
+.item-mode-button {
+    -fx-background-color: #e74c3c;
+}
+
+.item-mode-button:hover {
+    -fx-background-color: #c0392b;
+}
+
+.item-mode-button:selected {
+    -fx-background-color: #00ff00;
+    -fx-border-color: #00ff00;
+    -fx-text-fill: #000000;
+}
+
+/* 난이도 버튼 색상 */
+.difficulty-button {
+    -fx-background-color: #9b59b6;
+}
+
+.difficulty-button:hover {
+    -fx-background-color: #8e44ad;
+}
+
+.difficulty-button:selected {
+    -fx-background-color: #00ff00;
+    -fx-border-color: #00ff00;
+    -fx-text-fill: #000000;
+}
