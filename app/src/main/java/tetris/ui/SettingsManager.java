@@ -84,10 +84,6 @@ public class SettingsManager {
         return keyHardDrop;
     }
 
-    public String getGameMode() {
-        return gameMode;
-    }
-
     public void setVolume(double volume) {
         this.volume = Math.max(0.0, Math.min(100.0, volume));
     }
@@ -134,10 +130,6 @@ public class SettingsManager {
 
     public void setKeyHardDrop(String key) {
         this.keyHardDrop = key.toUpperCase();
-    }
-
-    public void setGameMode(String gameMode) {
-        this.gameMode = gameMode;
     }
 
     public void resetToDefaults() {
