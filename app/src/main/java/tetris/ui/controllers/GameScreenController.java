@@ -243,7 +243,8 @@ public class GameScreenController implements Initializable {
 
     // 블록 낙하 속도 조절
     private void updateFallSpeed() {
-        fallSpeed = (long) (1_000_000_000 / (1 + 0.1 * gameEngine.getLevel()));
+        fallSpeed = (long) (1_000_000_000 * Math.pow(0.9, gameEngine.getLevel() - 1));
+        gameEngine.setFallSpeed(fallSpeed);
     }
 
     private void renderGame() {

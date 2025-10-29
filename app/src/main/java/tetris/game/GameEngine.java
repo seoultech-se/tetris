@@ -12,9 +12,12 @@ public class GameEngine {
     private int linesClearedSinceLastItem;  // 마지막 아이템 이후 삭제된 줄 수
     private boolean isGameRunning;
     private boolean isPaused;
+    private long currentFallSpeed = 1_000_000_000L;
+    
+    private static final long BASE_FALL_SPEED = 1_000_000_000L;
 
     // 아이템 생성 조건
-    private static final int LINES_TO_SPAWN_ITEM = 10;
+    private static final int LINES_TO_SPAWN_ITEM = 10; // 10줄 제거
 
     // 점수 2배 아이템 관련
     private boolean isDoubleScoreActive;
@@ -72,6 +75,16 @@ public class GameEngine {
             skipCurrentPiece();
         }
     }
+
+    public void setFallSpeed(long fallSpeed) {
+        this.currentFallSpeed = fallSpeed;
+    }
+
+    public int getFallSpeedBonusMultiplier() {
+        double multiplier = (double) BASE_FALL_SPEED / currentFallSpeed;
+        return Math.max(1, (int) Math.round(multiplier));
+    }
+
     private void movePieceLeft() {
         if (currentPiece != null) {
             // 무게추가 이미 착지했으면 좌우 이동 불가
@@ -113,6 +126,9 @@ public class GameEngine {
                 if (currentPiece.isWeightPiece()) {
                     gameBoard.processWeightEffect(currentPiece);
                 }
+
+                // 소프트드롭 점수 추가
+                updateScoreForSoftDrop();
             }
         }
     }
@@ -128,6 +144,8 @@ public class GameEngine {
 
     private void hardDrop() {
         if (currentPiece != null) {
+            int dropDistance = 0; // 하드드롭으로 떨어진 거리
+
             // 무게추 블록인 경우, 한 칸씩 내려가면서 무게추 효과 적용
             if (currentPiece.isWeightPiece()) {
                 while (gameBoard.isValidPosition(currentPiece)) {
@@ -149,6 +167,7 @@ public class GameEngine {
                         currentPiece.moveUp();
                         break;
                     }
+                    dropDistance++;
                 }
                 currentPiece.setLanded(true);  // 무게추는 착지 후 좌우 이동 불가
                 placePiece();
@@ -156,9 +175,16 @@ public class GameEngine {
                 // 일반 블록은 기존처럼 빠르게 하드드롭
                 while (gameBoard.isValidPosition(currentPiece)) {
                     currentPiece.moveDown();
+                    dropDistance++;
                 }
                 currentPiece.moveUp();
+                dropDistance--;
                 placePiece();
+            }
+
+            // 하드드롭 점수 추가
+            if (dropDistance > 0) {
+                updateScoreForHardDrop(dropDistance);
             }
         }
     }
@@ -234,6 +260,32 @@ public class GameEngine {
         if (shouldHaveItem && nextPiece.hasItem()) {
             linesClearedSinceLastItem = 0;
         }
+    }
+
+    private void updateScoreForSoftDrop() {
+        int base = 1;
+        int bonus = getFallSpeedBonusMultiplier();
+
+        int softDropScore = base * bonus;
+        
+        if (isDoubleScoreActive) {
+            softDropScore *= 2;
+        }
+
+        score += softDropScore;
+    }
+
+    private void updateScoreForHardDrop(int dropDistance) {
+        int basePerCell = 2;
+        int bonus = getFallSpeedBonusMultiplier();
+
+        int hardDropScore = dropDistance * basePerCell * bonus;
+
+        if (isDoubleScoreActive) {
+            hardDropScore *= 2;
+        }
+
+        score += hardDropScore;
     }
 
     private void updateScore(int clearedLines) {
