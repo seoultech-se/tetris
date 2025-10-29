@@ -126,10 +126,13 @@ public class GameScreenController implements Initializable {
                     gameEngine.handleKeyPress(event.getCode());
                     // 이벤트를 consume하여 버튼으로 전파되지 않도록 차단
                     event.consume();
+
                 }
             });
         }
     }
+
+    // mapKeyCode 메서드 제거 (KeyCode 직접 사용)
 
     private void setupNextPieceCanvas() {
         if (nextPieceCanvas != null) {

@@ -203,34 +203,6 @@ public class PieceFactory {
 
 
 
-    public static Piece createIPiece() {
-        return createPiece(I_PIECE);
-    }
-
-    public static Piece createOPiece() {
-        return createPiece(O_PIECE);
-    }
-
-    public static Piece createTPiece() {
-        return createPiece(T_PIECE);
-    }
-
-    public static Piece createSPiece() {
-        return createPiece(S_PIECE);
-    }
-
-    public static Piece createZPiece() {
-        return createPiece(Z_PIECE);
-    }
-
-    public static Piece createJPiece() {
-        return createPiece(J_PIECE);
-    }
-
-    public static Piece createLPiece() {
-        return createPiece(L_PIECE);
-    }
-
     /**
      * 무게추 블록 생성
      * @return 무게추 블록 (모든 셀에 WEIGHT 아이템 표시)

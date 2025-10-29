@@ -2,8 +2,6 @@ package tetris.game;
 
 import tetris.ui.SettingsManager;
 
-// 임시 커밋
-
 public class GameEngine {
     private GameBoard gameBoard;
     private Piece currentPiece;
@@ -14,6 +12,9 @@ public class GameEngine {
     private int linesClearedSinceLastItem;  // 마지막 아이템 이후 삭제된 줄 수
     private boolean isGameRunning;
     private boolean isPaused;
+
+    // 아이템 생성 조건
+    private static final int LINES_TO_SPAWN_ITEM = 10;
 
     // 점수 2배 아이템 관련
     private boolean isDoubleScoreActive;
@@ -106,26 +107,11 @@ public class GameEngine {
             if (!gameBoard.isValidPosition(currentPiece)) {
                 // 이동 불가능 - 블록이 착지함
                 currentPiece.moveUp();
-
-                // 무게추는 착지 표시!
-                if (currentPiece.isWeightPiece()) {
-                    currentPiece.setLanded(true);
-                }
-
                 placePiece();
             } else {
                 // 이동 성공 - 무게추면 밑의 블록 지우기
                 if (currentPiece.isWeightPiece()) {
                     gameBoard.processWeightEffect(currentPiece);
-
-                    // 블록을 지운 후 착지 여부 확인
-                    currentPiece.moveDown();
-                    if (!gameBoard.isValidPosition(currentPiece)) {
-                        currentPiece.moveUp();
-                        currentPiece.setLanded(true);
-                    } else {
-                        currentPiece.moveUp();
-                    }
                 }
             }
         }
@@ -229,7 +215,7 @@ public class GameEngine {
         String gameMode = settings.getGameMode();
 
         // ITEM 모드이고 10줄마다 아이템 블록 생성
-        boolean shouldHaveItem = "ITEM".equals(gameMode) && linesClearedSinceLastItem >= 10;
+        boolean shouldHaveItem = "ITEM".equals(gameMode) && linesClearedSinceLastItem >= LINES_TO_SPAWN_ITEM;
 
         nextPiece = PieceFactory.createRandomPiece(shouldHaveItem);
 
@@ -311,7 +297,7 @@ public class GameEngine {
 
     public int getLinesUntilNextItem() {
         // 다음 아이템까지 필요한 줄 수 반환 (10줄마다 아이템 생성)
-        int remaining = 10 - linesClearedSinceLastItem;
+        int remaining = LINES_TO_SPAWN_ITEM - linesClearedSinceLastItem;
         return Math.max(0, remaining);  // 음수가 되지 않도록
     }
 
@@ -418,7 +404,7 @@ public class GameEngine {
         String gameMode = settings.getGameMode();
 
         // ITEM 모드이고 10줄마다 아이템 블록 생성
-        boolean shouldHaveItem = "ITEM".equals(gameMode) && linesClearedSinceLastItem >= 10;
+        boolean shouldHaveItem = "ITEM".equals(gameMode) && linesClearedSinceLastItem >= LINES_TO_SPAWN_ITEM;
 
         int maxAttempts = 10;
         int attempts = 0;
