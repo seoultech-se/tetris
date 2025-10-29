@@ -16,8 +16,8 @@ public class SettingsManager {
     private boolean musicEnabled = true;
     private boolean accessibilityModeEnabled = false;
     private String screenSize = "중간";
-    private String gameMode = "NORMAL"; // "NORMAL" or "ITEM"
-    
+    private String gameMode = "NORMAL"; // NORMAL 또는 ITEM
+
     // 키 설정 (기본값: WASD + Space)
     private String keyLeft = "A";
     private String keyRight = "D";
@@ -58,6 +58,10 @@ public class SettingsManager {
 
     public String getScreenSize() {
         return screenSize;
+    }
+
+    public String getGameMode() {
+        return gameMode;
     }
 
     public String getKeyLeft() {
@@ -106,6 +110,10 @@ public class SettingsManager {
 
     public void setScreenSize(String screenSize) {
         this.screenSize = screenSize;
+    }
+
+    public void setGameMode(String gameMode) {
+        this.gameMode = gameMode;
     }
 
     public void setKeyLeft(String key) {
