@@ -1,6 +1,5 @@
 package tetris.game;
 
-import javafx.scene.input.KeyCode;
 import tetris.ui.SettingsManager;
 
 public class GameEngine {
@@ -50,7 +49,7 @@ public class GameEngine {
         isPaused = false;
     }
 
-    public void handleKeyPress(KeyCode keyCode) {
+    public void handleKeyPress(javafx.scene.input.KeyCode keyCode) {
         if (!isGameRunning || isPaused || currentPiece == null) {
             return;
         }
@@ -66,9 +65,9 @@ public class GameEngine {
             movePieceDown();
         } else if (keyName.equals(settings.getKeyRotate())) {
             rotatePiece();
-        } else if (keyName.equals(settings.getKeyHardDrop()) || keyCode == KeyCode.SPACE) {
+        } else if (keyName.equals(settings.getKeyHardDrop()) || keyCode == javafx.scene.input.KeyCode.SPACE) {
             hardDrop();
-        } else if (keyCode == KeyCode.N && hasSkipItem()) {
+        } else if (keyCode == javafx.scene.input.KeyCode.N && hasSkipItem()) {
             // N키를 누르고 nextPiece가 SKIP 아이템을 가지고 있으면 블록 넘기기
             skipCurrentPiece();
         }

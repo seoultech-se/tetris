@@ -10,7 +10,6 @@ import javafx.animation.AnimationTimer;
 import tetris.ui.SceneManager;
 import tetris.ui.SettingsManager;
 import tetris.game.GameEngine;
-import javafx.scene.input.KeyCode;
 import tetris.game.GameBoard;
 import tetris.game.Piece;
 import tetris.game.ItemType;
@@ -53,10 +52,8 @@ public class GameScreenController implements Initializable {
     private long lastUpdateTime = 0;
     private long fallSpeed = 1_000_000_000; // 1 second in nanoseconds
 
-    // 블록 크기 (화면 크기에 따라 동적으로 설정)
-    private int BLOCK_SIZE = 30;
-    
-    // 블록 색상 설정 (ColorBlind Safe 팔레트)
+    // 블록 크기와 색상 설정 (ColorBlind Safe 팔레트)
+    private static final int BLOCK_SIZE = 25;
     private static final Color[] PIECE_COLORS = {
         Color.BLACK,
         Color.web("#56B4E9"),          // 1 - I 피스 (하늘색)
@@ -88,23 +85,6 @@ public class GameScreenController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         // 설정 매니저 초기화
         settingsManager = SettingsManager.getInstance();
-        
-        // 화면 크기에 따라 블록 크기 설정
-        String screenSize = settingsManager.getScreenSize();
-        switch (screenSize) {
-            case "작게":
-                BLOCK_SIZE = 20; // 작게: 10칸 × 20 = 200px, 20칸 × 20 = 400px
-                break;
-            case "중간":
-                BLOCK_SIZE = 25; // 중간: 10칸 × 25 = 250px, 20칸 × 25 = 500px
-                break;
-            case "크게":
-                BLOCK_SIZE = 30; // 크게: 10칸 × 30 = 300px, 20칸 × 30 = 600px
-                break;
-            default:
-                BLOCK_SIZE = 25;
-                break;
-        }
         
         // 게임 엔진 초기화
         gameEngine = new GameEngine();
@@ -141,24 +121,18 @@ public class GameScreenController implements Initializable {
         // Scene에 키 이벤트 핸들러 등록
         if (gameCanvas != null && gameCanvas.getScene() != null) {
             gameCanvas.getScene().setOnKeyPressed(event -> {
-                // ESC 키로 일시정지/재개
-                if (event.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
-                    if (gameEngine != null && gameEngine.isGameRunning()) {
-                        onPause();
-                        event.consume();
-                    }
-                    return;
-                }
-                
                 if (gameEngine != null && gameEngine.isGameRunning() && !gameEngine.isPaused()) {
                     // 게임 진행 중에만 키 입력을 게임 엔진으로 전달
                     gameEngine.handleKeyPress(event.getCode());
                     // 이벤트를 consume하여 버튼으로 전파되지 않도록 차단
                     event.consume();
+
                 }
             });
         }
     }
+
+    // mapKeyCode 메서드 제거 (KeyCode 직접 사용)
 
     private void setupNextPieceCanvas() {
         if (nextPieceCanvas != null) {
@@ -225,11 +199,6 @@ public class GameScreenController implements Initializable {
         // 배경을 검은색으로 설정
         gc.setFill(Color.BLACK);
         gc.fillRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
-        
-        // 접근성 모드에서는 회색 격자 표시
-        if (settingsManager != null && settingsManager.isAccessibilityModeEnabled()) {
-            drawGrid(gc);
-        }
 
         // 게임 보드 렌더링
         GameBoard board = gameEngine.getGameBoard();
@@ -251,25 +220,6 @@ public class GameScreenController implements Initializable {
 
         // 테두리 렌더링
         renderBorder(gc);
-    }
-
-    // 접근성 모드용 보드 격자선 렌더링
-    private void drawGrid(GraphicsContext gc) {
-        gc.setStroke(Color.web("#444444"));
-        gc.setLineWidth(1);
-        double width = gameCanvas.getWidth();
-        double height = gameCanvas.getHeight();
-
-        // 세로선
-        for (int x = 0; x <= GameBoard.BOARD_WIDTH; x++) {
-            double px = x * BLOCK_SIZE;
-            gc.strokeLine(px, 0, px, height);
-        }
-        // 가로선
-        for (int y = 0; y <= GameBoard.BOARD_HEIGHT; y++) {
-            double py = y * BLOCK_SIZE;
-            gc.strokeLine(0, py, width, py);
-        }
     }
 
     private void renderNextPiece() {
@@ -321,6 +271,9 @@ public class GameScreenController implements Initializable {
     private void renderBlock(GraphicsContext gc, int x, int y, Color color, int pieceType, ItemType itemType) {
         // 접근성 모드가 켜져 있으면 색 대신 심볼로 채운다
         if (settingsManager != null && settingsManager.isAccessibilityModeEnabled()) {
+            // 배경을 검게 유지
+            gc.setFill(Color.BLACK);
+            gc.fillRect(x, y, BLOCK_SIZE, BLOCK_SIZE);
 
             String symbol = "?";
             if (pieceType >= 0 && pieceType < PIECE_SYMBOLS.length) {
