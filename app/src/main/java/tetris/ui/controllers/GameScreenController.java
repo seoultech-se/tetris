@@ -93,23 +93,6 @@ public class GameScreenController implements Initializable {
         // 설정 매니저 초기화
         settingsManager = SettingsManager.getInstance();
         
-        // 화면 크기에 따라 블록 크기 설정
-        String screenSize = settingsManager.getScreenSize();
-        switch (screenSize) {
-            case "작게":
-                BLOCK_SIZE = 20; // 작게: 10칸 × 20 = 200px, 20칸 × 20 = 400px
-                break;
-            case "중간":
-                BLOCK_SIZE = 25; // 중간: 10칸 × 25 = 250px, 20칸 × 25 = 500px
-                break;
-            case "크게":
-                BLOCK_SIZE = 30; // 크게: 10칸 × 30 = 300px, 20칸 × 30 = 600px
-                break;
-            default:
-                BLOCK_SIZE = 25;
-                break;
-        }
-        
         // 게임 엔진 초기화
         gameEngine = new GameEngine();
         setupGameCanvas();
@@ -145,24 +128,18 @@ public class GameScreenController implements Initializable {
         // Scene에 키 이벤트 핸들러 등록
         if (gameCanvas != null && gameCanvas.getScene() != null) {
             gameCanvas.getScene().setOnKeyPressed(event -> {
-                // ESC 키로 일시정지/재개
-                if (event.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
-                    if (gameEngine != null && gameEngine.isGameRunning()) {
-                        onPause();
-                        event.consume();
-                    }
-                    return;
-                }
-                
                 if (gameEngine != null && gameEngine.isGameRunning() && !gameEngine.isPaused()) {
                     // 게임 진행 중에만 키 입력을 게임 엔진으로 전달
                     gameEngine.handleKeyPress(event.getCode());
                     // 이벤트를 consume하여 버튼으로 전파되지 않도록 차단
                     event.consume();
+
                 }
             });
         }
     }
+
+    // mapKeyCode 메서드 제거 (KeyCode 직접 사용)
 
     private void setupNextPieceCanvas() {
         if (nextPieceCanvas != null) {
