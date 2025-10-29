@@ -51,6 +51,12 @@ public class GameScreenController implements Initializable {
     private long lastUpdateTime = 0;
     private long fallSpeed = 1_000_000_000; // 1 second in nanoseconds
 
+    // 줄 삭제 애니메이션 관련
+    private java.util.List<Integer> linesToClear = null;
+    private long clearAnimationStartTime = 0;
+    private static final long CLEAR_ANIMATION_DURATION = 100_000_000; // 0.1초
+    private boolean isAnimatingClear = false;
+
     // 블록 크기 (화면 크기에 따라 동적으로 설정)
     private int BLOCK_SIZE = 30;
     
@@ -191,9 +197,34 @@ public class GameScreenController implements Initializable {
                     return;
                 }
 
+                // 삭제 애니메이션 처리 중
+                if (isAnimatingClear) {
+                    long elapsed = now - clearAnimationStartTime;
+                    if (elapsed >= CLEAR_ANIMATION_DURATION) {
+                        // 애니메이션 종료, 실제로 줄 삭제
+                        gameEngine.clearLinesManually();
+                        isAnimatingClear = false;
+                        linesToClear = null;
+                        lastUpdateTime = now; // 타이머 리셋
+                    }
+                    renderGame();
+                    renderNextPiece();
+                    updateUI();
+                    return;
+                }
+
                 if (now - lastUpdateTime >= fallSpeed) {
                     if (gameEngine.isGameRunning() && !gameEngine.isPaused()) {
                         gameEngine.movePieceDown();
+                        
+                        // 블록이 떨어진 후 삭제할 줄이 있는지 확인
+                        java.util.List<Integer> fullLines = gameEngine.getFullLines();
+                        if (!fullLines.isEmpty()) {
+                            // 애니메이션 시작
+                            linesToClear = fullLines;
+                            isAnimatingClear = true;
+                            clearAnimationStartTime = now;
+                        }
                     }
                     lastUpdateTime = now;
                 }
@@ -236,15 +267,23 @@ public class GameScreenController implements Initializable {
                 int cellValue = board.getCell(row, col);
                 if (cellValue > 0) {
                     ItemType itemType = board.getItemAt(row, col);
-                    renderBlock(gc, col * BLOCK_SIZE, row * BLOCK_SIZE, PIECE_COLORS[cellValue], cellValue, itemType);
+                    
+                    // 삭제 애니메이션 중인 줄이면 하얀색으로 표시
+                    if (isAnimatingClear && linesToClear != null && linesToClear.contains(row)) {
+                        renderBlock(gc, col * BLOCK_SIZE, row * BLOCK_SIZE, Color.WHITE, cellValue, itemType);
+                    } else {
+                        renderBlock(gc, col * BLOCK_SIZE, row * BLOCK_SIZE, PIECE_COLORS[cellValue], cellValue, itemType);
+                    }
                 }
             }
         }
 
-        // 현재 피스 렌더링
-        Piece currentPiece = gameEngine.getCurrentPiece();
-        if (currentPiece != null) {
-            renderPiece(gc, currentPiece);
+        // 현재 피스 렌더링 (애니메이션 중이 아닐 때만)
+        if (!isAnimatingClear) {
+            Piece currentPiece = gameEngine.getCurrentPiece();
+            if (currentPiece != null) {
+                renderPiece(gc, currentPiece);
+            }
         }
 
         // 테두리 렌더링

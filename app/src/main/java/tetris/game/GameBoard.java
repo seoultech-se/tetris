@@ -94,6 +94,19 @@ public class GameBoard {
 
         return linesCleared;
     }
+    
+    /**
+     * 삭제될 줄들의 행 번호를 반환 (애니메이션용)
+     */
+    public List<Integer> getFullLines() {
+        List<Integer> fullLines = new ArrayList<>();
+        for (int row = BOARD_HEIGHT - 1; row >= 0; row--) {
+            if (isLineFull(row)) {
+                fullLines.add(row);
+            }
+        }
+        return fullLines;
+    }
 
     private boolean isLineFull(int row) {
         for (int col = 0; col < BOARD_WIDTH; col++) {
