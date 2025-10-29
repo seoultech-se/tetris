@@ -15,7 +15,12 @@
       </Label>
       <VBox alignment="CENTER" spacing="15.0">
          <children>
-            <Button fx:id="startButton" mnemonicParsing="false" onAction="#onStartGame" prefWidth="200.0" text="게임 시작">
+            <Button fx:id="normalModeButton" mnemonicParsing="false" onAction="#onStartNormalMode" prefWidth="200.0" text="일반 모드" style="-fx-background-color: #3498db; -fx-text-fill: white;">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Button>
+            <Button fx:id="itemModeButton" mnemonicParsing="false" onAction="#onStartItemMode" prefWidth="200.0" text="아이템 모드" style="-fx-background-color: #e74c3c; -fx-text-fill: white;">
                <font>
                   <Font size="18.0" />
                </font>

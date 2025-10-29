@@ -45,6 +45,29 @@
                <children>
                   <Label fx:id="levelLabel" text="LEVEL: 1" styleClass="game-info-label" />
                   <Label fx:id="linesLabel" text="LINES: 0" styleClass="game-info-label" />
+                  <Label fx:id="nextItemLabel" text="" styleClass="game-info-label" />
+               </children>
+            </VBox>
+
+            <!-- 점수 2배 타이머 -->
+            <VBox alignment="CENTER" styleClass="double-score-timer-container">
+               <children>
+                  <Label fx:id="doubleScoreTimerLabel" text="" styleClass="double-score-timer-label">
+                     <font>
+                        <Font name="System Bold" size="14.0" />
+                     </font>
+                  </Label>
+               </children>
+            </VBox>
+
+            <!-- SKIP 아이템 알림 -->
+            <VBox alignment="CENTER" styleClass="skip-notification-container">
+               <children>
+                  <Label fx:id="skipNotificationLabel" text="" styleClass="skip-notification-label">
+                     <font>
+                        <Font name="System Bold" size="12.0" />
+                     </font>
+                  </Label>
                </children>
             </VBox>
 
