@@ -21,7 +21,7 @@ public class SettingsController implements Initializable {
     private ComboBox<String> difficultyComboBox;
 
     @FXML
-    private CheckBox accessibilityModeCheckBox;
+    private CheckBox colorBlindModeCheckBox;
 
     @FXML
     private ComboBox<String> screenSizeComboBox;
@@ -101,8 +101,8 @@ public class SettingsController implements Initializable {
         if (difficultyComboBox != null) {
             difficultyComboBox.setValue(settingsManager.getDifficulty());
         }
-        if (accessibilityModeCheckBox != null) {
-            accessibilityModeCheckBox.setSelected(settingsManager.isAccessibilityModeEnabled());
+        if (colorBlindModeCheckBox != null) {
+            colorBlindModeCheckBox.setSelected(settingsManager.isColorBlindModeEnabled());
         }
         if (screenSizeComboBox != null) {
             screenSizeComboBox.setValue(settingsManager.getScreenSize());
@@ -151,8 +151,8 @@ public class SettingsController implements Initializable {
         if (difficultyComboBox != null) {
             settingsManager.setDifficulty(difficultyComboBox.getValue());
         }
-        if (accessibilityModeCheckBox != null) {
-            settingsManager.setAccessibilityModeEnabled(accessibilityModeCheckBox.isSelected());
+        if (colorBlindModeCheckBox != null) {
+            settingsManager.setColorBlindModeEnabled(colorBlindModeCheckBox.isSelected());
         }
         if (screenSizeComboBox != null) {
             String selectedSize = screenSizeComboBox.getValue();

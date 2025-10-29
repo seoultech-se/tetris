@@ -12,6 +12,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import tetris.data.ScoreManager;
 import tetris.ui.SceneManager;
+import tetris.ui.SettingsManager;
 
 import java.net.URL;
 import java.util.Optional;
@@ -123,6 +124,32 @@ public class ScoreBoardController implements Initializable {
                 if (imageUrl != null) {
                     Image image = new Image(imageUrl.toExternalForm());
                     backgroundImageView.setImage(image);
+                    
+                    // 화면 크기에 따라 이미지 크기 조정
+                    SettingsManager settingsManager = SettingsManager.getInstance();
+                    String screenSize = settingsManager.getScreenSize();
+                    
+                    switch (screenSize) {
+                        case "작게":
+                            backgroundImageView.setFitWidth(280);
+                            backgroundImageView.setFitHeight(210);
+                            break;
+                        case "중간":
+                            backgroundImageView.setFitWidth(350);
+                            backgroundImageView.setFitHeight(263);
+                            break;
+                        case "크게":
+                            backgroundImageView.setFitWidth(420);
+                            backgroundImageView.setFitHeight(315);
+                            break;
+                        default:
+                            backgroundImageView.setFitWidth(350);
+                            backgroundImageView.setFitHeight(263);
+                            break;
+                    }
+                    
+                    // 비율 유지
+                    backgroundImageView.setPreserveRatio(true);
                 }
             } catch (Exception e) {
                 System.err.println("배경 이미지 로드 실패: " + e.getMessage());
