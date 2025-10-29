@@ -1,0 +1,120 @@
+/* GameScreen 스타일 시트 */
+
+/* 전체 폰트 설정 */
+.root {
+    -fx-font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", sans-serif;
+    -fx-font-weight: bold;
+}
+
+/* 메인 컨테이너 */
+.main-container {
+    -fx-background-color: #000000;
+    -fx-padding: 20px;
+}
+
+/* 게임 보드 영역 */
+.game-board-container {
+    -fx-background-color: #000000;
+    -fx-padding: 20px;
+    -fx-border-color: #333333;
+    -fx-border-width: 2px;
+    -fx-border-radius: 10px;
+}
+
+.game-canvas {
+    -fx-border-color: #ffffff;
+    -fx-border-width: 2px;
+    -fx-border-radius: 6px;
+}
+
+/* 사이드바 영역 */
+.sidebar {
+    -fx-background-color: #000000;
+    -fx-padding: 20px;
+    -fx-spacing: 20px;
+    -fx-pref-width: 200px;
+}
+
+/* 다음 블록 미리보기 */
+.next-piece-container {
+    -fx-background-color: #111111;
+    -fx-padding: 15px;
+    -fx-border-color: #333333;
+    -fx-border-width: 2px;
+    -fx-border-radius: 8px;
+}
+
+
+/* 점수 영역 */
+.score-container {
+    -fx-background-color: #111111;
+    -fx-padding: 15px;
+    -fx-border-color: #333333;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+}
+
+.score-title {
+    -fx-text-fill: #ffffff;
+    -fx-font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", sans-serif;
+    -fx-font-weight: bold;
+    -fx-font-size: 16px;
+}
+
+.score-value {
+    -fx-text-fill: #00ff00;
+    -fx-font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", sans-serif;
+    -fx-font-weight: bold;
+    -fx-font-size: 24px;
+}
+
+/* 게임 정보 영역 */
+.game-info-container {
+    -fx-background-color: #111111;
+    -fx-padding: 15px;
+    -fx-spacing: 8px;
+    -fx-alignment: center-left;
+    -fx-border-color: #333333;
+    -fx-border-width: 2px;
+    -fx-border-radius: 8px;
+}
+
+.game-info-label {
+    -fx-text-fill: #ffffff;
+    -fx-font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", sans-serif;
+    -fx-font-weight: bold;
+    -fx-font-size: 16px;
+}
+
+/* 컨트롤 버튼 영역 */
+.control-buttons-container {
+    -fx-padding: 15px;
+    -fx-spacing: 15px;
+    -fx-alignment: center;
+}
+
+/* 버튼 스타일 */
+.button {
+    -fx-pref-width: 160px;
+    -fx-pref-height: 40px;
+    -fx-font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", sans-serif;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-background-color: #000000;
+    -fx-text-fill: #ffffff;
+    -fx-border-color: #555555;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+}
+
+.button:hover {
+    -fx-background-color: #111111;
+    -fx-border-color: #777777;
+}
+
+.button:pressed {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #000000;
+    -fx-border-color: #ffffff;
+}
