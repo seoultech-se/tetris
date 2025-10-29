@@ -16,7 +16,8 @@ public class SettingsManager {
     private boolean musicEnabled = true;
     private boolean accessibilityModeEnabled = false;
     private String screenSize = "중간";
-    
+    private String gameMode = "NORMAL"; // NORMAL 또는 ITEM
+
     // 키 설정 (기본값: WASD + Space)
     private String keyLeft = "A";
     private String keyRight = "D";
@@ -57,6 +58,10 @@ public class SettingsManager {
 
     public String getScreenSize() {
         return screenSize;
+    }
+
+    public String getGameMode() {
+        return gameMode;
     }
 
     public String getKeyLeft() {
@@ -103,6 +108,10 @@ public class SettingsManager {
         this.screenSize = screenSize;
     }
 
+    public void setGameMode(String gameMode) {
+        this.gameMode = gameMode;
+    }
+
     public void setKeyLeft(String key) {
         this.keyLeft = key.toUpperCase();
     }
@@ -130,6 +139,7 @@ public class SettingsManager {
         musicEnabled = true;
         accessibilityModeEnabled = false;
         screenSize = "중간";
+        gameMode = "NORMAL";
         keyLeft = "A";
         keyRight = "D";
         keyDown = "S";
@@ -149,6 +159,7 @@ public class SettingsManager {
         props.setProperty("musicEnabled", String.valueOf(musicEnabled));
         props.setProperty("accessibilityModeEnabled", String.valueOf(accessibilityModeEnabled));
         props.setProperty("screenSize", screenSize);
+        props.setProperty("gameMode", gameMode);
         props.setProperty("keyLeft", keyLeft);
         props.setProperty("keyRight", keyRight);
         props.setProperty("keyDown", keyDown);
@@ -177,6 +188,7 @@ public class SettingsManager {
             musicEnabled = Boolean.parseBoolean(props.getProperty("musicEnabled", "true"));
             accessibilityModeEnabled = Boolean.parseBoolean(props.getProperty("accessibilityModeEnabled", "false"));
             screenSize = props.getProperty("screenSize", "중간");
+            gameMode = props.getProperty("gameMode", "NORMAL");
             keyLeft = props.getProperty("keyLeft", "A");
             keyRight = props.getProperty("keyRight", "D");
             keyDown = props.getProperty("keyDown", "S");
