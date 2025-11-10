@@ -1,13 +1,17 @@
 package tetris.ui;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 /**
  * 게임 설정을 관리하는 싱글톤 클래스
  */
 public class SettingsManager {
-    private static final String SETTINGS_FILE = "game_settings.properties";
+    private static final String APP_NAME = "Tetris";
+    private static final String SETTINGS_FILENAME = "game_settings.properties";
     private static SettingsManager instance;
 
     private double volume = 50.0;
@@ -34,6 +38,48 @@ public class SettingsManager {
             instance = new SettingsManager();
         }
         return instance;
+    }
+    
+    /**
+     * 애플리케이션 데이터 디렉토리 경로를 반환
+     * macOS: ~/Library/Application Support/Tetris
+     * Windows: %APPDATA%/Tetris
+     * Linux: ~/.local/share/Tetris
+     */
+    private static Path getDataDirectory() {
+        String os = System.getProperty("os.name").toLowerCase();
+        String userHome = System.getProperty("user.home");
+        Path dataDir;
+        
+        if (os.contains("mac")) {
+            dataDir = Paths.get(userHome, "Library", "Application Support", APP_NAME);
+        } else if (os.contains("win")) {
+            String appData = System.getenv("APPDATA");
+            if (appData != null) {
+                dataDir = Paths.get(appData, APP_NAME);
+            } else {
+                dataDir = Paths.get(userHome, "AppData", "Roaming", APP_NAME);
+            }
+        } else {
+            // Linux and others
+            dataDir = Paths.get(userHome, ".local", "share", APP_NAME);
+        }
+        
+        // 디렉토리가 없으면 생성
+        try {
+            Files.createDirectories(dataDir);
+        } catch (IOException e) {
+            System.err.println("Failed to create data directory: " + e.getMessage());
+        }
+        
+        return dataDir;
+    }
+    
+    /**
+     * 설정 파일의 전체 경로를 반환
+     */
+    private static Path getSettingsFile() {
+        return getDataDirectory().resolve(SETTINGS_FILENAME);
     }
 
     public double getVolume() {
@@ -166,9 +212,10 @@ public class SettingsManager {
         props.setProperty("keyRotate", keyRotate);
         props.setProperty("keyHardDrop", keyHardDrop);
 
-        try (FileOutputStream out = new FileOutputStream(SETTINGS_FILE)) {
+        Path settingsPath = getSettingsFile();
+        try (FileOutputStream out = new FileOutputStream(settingsPath.toFile())) {
             props.store(out, "Tetris Game Settings");
-            System.out.println("설정이 저장되었습니다: " + SETTINGS_FILE);
+            System.out.println("설정이 저장되었습니다: " + settingsPath);
         } catch (IOException e) {
             System.err.println("설정 저장 실패: " + e.getMessage());
         }
@@ -179,7 +226,10 @@ public class SettingsManager {
      */
     private void loadFromFile() {
         Properties props = new Properties();
-        try (FileInputStream in = new FileInputStream(SETTINGS_FILE)) {
+        Path settingsPath = getSettingsFile();
+        File settingsFile = settingsPath.toFile();
+        
+        try (FileInputStream in = new FileInputStream(settingsFile)) {
             props.load(in);
             
             volume = Double.parseDouble(props.getProperty("volume", "50.0"));
@@ -195,7 +245,7 @@ public class SettingsManager {
             keyRotate = props.getProperty("keyRotate", "W");
             keyHardDrop = props.getProperty("keyHardDrop", "SPACE");
             
-            System.out.println("설정을 불러왔습니다: " + SETTINGS_FILE);
+            System.out.println("설정을 불러왔습니다: " + settingsPath);
         } catch (FileNotFoundException e) {
             System.out.println("설정 파일이 없습니다. 기본값을 사용합니다.");
         } catch (IOException | NumberFormatException e) {

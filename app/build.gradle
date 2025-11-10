@@ -9,6 +9,7 @@ plugins {
     // Apply the application plugin to add support for building a CLI application in Java.
     id 'application'
     id 'org.openjfx.javafxplugin' version '0.1.0'
+    id 'jacoco' // 코드 커버리지 측정
 }
 
 repositories {
@@ -53,6 +54,9 @@ application {
 tasks.named('test') {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
+    
+    // 테스트 실행 후 JaCoCo 리포트 생성
+    finalizedBy jacocoTestReport
 
     // JavaFX 테스트를 위한 JVM 인수
     jvmArgs = [
@@ -65,7 +69,249 @@ tasks.named('test') {
     ]
 }
 
+// JaCoCo 리포트 설정
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+    finalizedBy jacocoTestCoverageVerification
+}
+
+// 커버리지 검증 설정 (최소 50%)
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.50 // 50% 이상
+            }
+        }
+    }
+}
+
 javafx {
     version = '21'
     modules = [ 'javafx.controls', 'javafx.fxml' ]
+}
+
+// JAR 파일 생성 설정
+jar {
+    manifest {
+        attributes 'Main-Class': 'tetris.App'
+    }
+    
+    // Fat JAR 생성 (모든 의존성 포함)
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+// macOS DMG 패키징을 위한 설정
+tasks.register('packageMac') {
+    dependsOn 'build', 'downloadJavaFX'
+    description = 'Creates a macOS DMG package directly'
+    group = 'distribution'
+    
+    doLast {
+        def javaHome = System.getProperty('java.home')
+        // java.home이 jdk/Contents/Home인 경우와 그냥 Home인 경우 모두 처리
+        def jpackageExe = new File(javaHome, 'bin/jpackage').exists() 
+            ? new File(javaHome, 'bin/jpackage').absolutePath
+            : new File(new File(javaHome).parent, 'bin/jpackage').absolutePath
+        
+        // JavaFX SDK 경로 찾기
+        def javafxSdkDir = file("${project.buildDir}/javafx-sdk")
+        def javafxLibPath = new File(javafxSdkDir, "javafx-sdk-${javafx.version}/lib").exists() 
+            ? new File(javafxSdkDir, "javafx-sdk-${javafx.version}/lib").absolutePath
+            : new File(javafxSdkDir, "lib").exists() 
+                ? new File(javafxSdkDir, "lib").absolutePath
+                : null
+        
+        if (System.getProperty('os.name').toLowerCase().contains('mac')) {
+            def args = [
+                jpackageExe,
+                '--type', 'dmg',
+                '--input', "${project.buildDir}/libs",
+                '--main-jar', jar.archiveFileName.get(),
+                '--main-class', 'tetris.App',
+                '--name', 'Tetris',
+                '--app-version', '1.0.0',
+                '--vendor', 'Tetris Game',
+                '--dest', "${project.buildDir}/dist",
+                '--java-options', '--add-exports=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED'
+            ]
+            
+            // JavaFX SDK가 있으면 모듈 경로 추가
+            if (javafxLibPath && new File(javafxLibPath).exists()) {
+                args.addAll(['--module-path', javafxLibPath])
+                args.addAll(['--add-modules', 'javafx.controls,javafx.fxml'])
+            }
+            
+            args.addAll(['--mac-package-name', 'Tetris'])
+            args.addAll(['--mac-app-category', 'public.app-category.games'])
+            
+            exec {
+                commandLine args
+            }
+            println "DMG 파일이 생성되었습니다: ${project.buildDir}/dist/Tetris.dmg"
+        } else {
+            println 'This task can only be run on macOS'
+        }
+    }
+}
+
+// JavaFX SDK 다운로드 및 추출 태스크
+tasks.register('downloadJavaFX') {
+    description = 'Downloads JavaFX SDK for packaging'
+    group = 'distribution'
+    
+    def javafxVersion = '21'
+    def os = 'mac'
+    def arch = 'aarch64'
+    def javafxSdkUrl = "https://download2.gluonhq.com/openjfx/${javafxVersion}/openjfx-${javafxVersion}_${os}-${arch}_bin-sdk.zip"
+    def javafxSdkZip = file("${project.buildDir}/javafx-sdk.zip")
+    def javafxSdkDir = file("${project.buildDir}/javafx-sdk")
+    
+    outputs.dir javafxSdkDir
+    
+    doLast {
+        if (!javafxSdkDir.exists()) {
+            println "JavaFX SDK를 다운로드 중..."
+            javafxSdkDir.parentFile.mkdirs()
+            
+            exec {
+                commandLine 'curl', '-L', '-o', javafxSdkZip, javafxSdkUrl
+            }
+            
+            exec {
+                commandLine 'unzip', '-q', javafxSdkZip, '-d', javafxSdkDir.parent
+            }
+            
+            javafxSdkZip.delete()
+            println "JavaFX SDK 다운로드 완료: ${javafxSdkDir}"
+        }
+    }
+}
+
+// JavaFX 라이브러리 복사 태스크
+tasks.register('copyJavaFXLibraries') {
+    description = 'Copies JavaFX libraries to libs directory for jpackage'
+    group = 'distribution'
+    
+    doLast {
+        def libsDir = file("${project.buildDir}/libs")
+        libsDir.mkdirs()
+        
+        // JavaFX JAR 파일들을 찾아서 복사
+        configurations.runtimeClasspath.forEach { file ->
+            if (file.name.contains('javafx')) {
+                copy {
+                    from file
+                    into libsDir
+                }
+            }
+        }
+        
+        // Gradle 캐시에서 JavaFX 네이티브 JAR도 복사
+        def gradleCache = file("${System.getProperty('user.home')}/.gradle/caches/modules-2/files-2.1/org.openjfx")
+        if (gradleCache.exists()) {
+            gradleCache.eachDir { moduleDir ->
+                moduleDir.eachDir { versionDir ->
+                    versionDir.eachFileMatch(~/.*mac-aarch64\.jar$/) { jarFile ->
+                        copy {
+                            from jarFile
+                            into libsDir
+                        }
+                        println "복사됨: ${jarFile.name}"
+                    }
+                }
+            }
+        }
+    }
+}
+
+// 더 간단한 버전 - 직접 실행 가능한 macOS 앱 번들
+tasks.register('createMacApp') {
+    dependsOn 'build', 'copyJavaFXLibraries'
+    description = 'Creates a macOS .app bundle'
+    group = 'distribution'
+    
+    doLast {
+        def javaHome = System.getProperty('java.home')
+        // java.home이 jdk/Contents/Home인 경우와 그냥 Home인 경우 모두 처리
+        def jpackageExe = new File(javaHome, 'bin/jpackage').exists() 
+            ? new File(javaHome, 'bin/jpackage').absolutePath
+            : new File(new File(javaHome).parent, 'bin/jpackage').absolutePath
+        
+        // JavaFX SDK 경로 찾기
+        def javafxSdkDir = file("${project.buildDir}/javafx-sdk")
+        def javafxLibPath = new File(javafxSdkDir, "javafx-sdk-${javafx.version}/lib").exists() 
+            ? new File(javafxSdkDir, "javafx-sdk-${javafx.version}/lib").absolutePath
+            : new File(javafxSdkDir, "lib").exists() 
+                ? new File(javafxSdkDir, "lib").absolutePath
+                : null
+        
+        if (System.getProperty('os.name').toLowerCase().contains('mac')) {
+            def args = [
+                jpackageExe,
+                '--type', 'app-image',
+                '--input', "${project.buildDir}/libs",
+                '--main-jar', jar.archiveFileName.get(),
+                '--main-class', 'tetris.App',
+                '--name', 'Tetris',
+                '--app-version', '1.0.0',
+                '--vendor', 'Tetris Game',
+                '--dest', "${project.buildDir}/dist",
+                '--java-options', '--add-exports=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED'
+            ]
+            
+            // JavaFX SDK가 있으면 모듈 경로 추가
+            if (javafxLibPath && new File(javafxLibPath).exists()) {
+                args.addAll(['--module-path', javafxLibPath])
+                args.addAll(['--add-modules', 'javafx.controls,javafx.fxml'])
+            }
+            
+            args.addAll(['--mac-package-name', 'Tetris'])
+            args.addAll(['--mac-app-category', 'public.app-category.games'])
+            
+            exec {
+                commandLine args
+            }
+            println "앱 번들이 생성되었습니다: ${project.buildDir}/dist/Tetris.app"
+        } else {
+            println 'This task can only be run on macOS'
+        }
+    }
+}
+
+// DMG 파일 생성 (app-image를 기반으로)
+tasks.register('createMacDmg') {
+    dependsOn 'createMacApp'
+    description = 'Creates a macOS DMG from the .app bundle'
+    group = 'distribution'
+    
+    doLast {
+        if (System.getProperty('os.name').toLowerCase().contains('mac')) {
+            def appPath = "${project.buildDir}/dist/Tetris.app"
+            def dmgPath = "${project.buildDir}/dist/Tetris.dmg"
+            
+            // hdiutil을 사용하여 DMG 생성
+            exec {
+                commandLine 'hdiutil', 'create',
+                    '-volname', 'Tetris',
+                    '-srcfolder', appPath,
+                    '-ov',
+                    '-format', 'UDZO',
+                    dmgPath
+            }
+            
+            println "DMG 파일이 생성되었습니다: ${dmgPath}"
+        } else {
+            println 'This task can only be run on macOS'
+        }
+    }
 }

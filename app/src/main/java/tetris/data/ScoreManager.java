@@ -1,13 +1,17 @@
 package tetris.data;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public class ScoreManager {
-    private static final String NORMAL_SCORE_FILE = "scores_normal.dat";
-    private static final String ITEM_SCORE_FILE = "scores_item.dat";
+    private static final String APP_NAME = "Tetris";
+    private static final String NORMAL_SCORE_FILENAME = "scores_normal.dat";
+    private static final String ITEM_SCORE_FILENAME = "scores_item.dat";
     private static final int MAX_SCORES = 10;
     private static ScoreManager instance;
     
@@ -25,6 +29,48 @@ public class ScoreManager {
             instance = new ScoreManager();
         }
         return instance;
+    }
+    
+    /**
+     * 애플리케이션 데이터 디렉토리 경로를 반환
+     * macOS: ~/Library/Application Support/Tetris
+     * Windows: %APPDATA%/Tetris
+     * Linux: ~/.local/share/Tetris
+     */
+    private static Path getDataDirectory() {
+        String os = System.getProperty("os.name").toLowerCase();
+        String userHome = System.getProperty("user.home");
+        Path dataDir;
+        
+        if (os.contains("mac")) {
+            dataDir = Paths.get(userHome, "Library", "Application Support", APP_NAME);
+        } else if (os.contains("win")) {
+            String appData = System.getenv("APPDATA");
+            if (appData != null) {
+                dataDir = Paths.get(appData, APP_NAME);
+            } else {
+                dataDir = Paths.get(userHome, "AppData", "Roaming", APP_NAME);
+            }
+        } else {
+            // Linux and others
+            dataDir = Paths.get(userHome, ".local", "share", APP_NAME);
+        }
+        
+        // 디렉토리가 없으면 생성
+        try {
+            Files.createDirectories(dataDir);
+        } catch (IOException e) {
+            System.err.println("Failed to create data directory: " + e.getMessage());
+        }
+        
+        return dataDir;
+    }
+    
+    /**
+     * 점수 파일의 전체 경로를 반환
+     */
+    private static Path getScoreFile(String filename) {
+        return getDataDirectory().resolve(filename);
     }
     
     public boolean addScore(String playerName, int score, String difficulty, String gameMode) {
@@ -211,10 +257,11 @@ public class ScoreManager {
     }
     
     private void saveScores(String gameMode) {
-        String fileName = gameMode.equals("ITEM") ? ITEM_SCORE_FILE : NORMAL_SCORE_FILE;
+        String fileName = gameMode.equals("ITEM") ? ITEM_SCORE_FILENAME : NORMAL_SCORE_FILENAME;
+        Path scorePath = getScoreFile(fileName);
         List<ScoreEntry> targetScores = gameMode.equals("ITEM") ? itemScores : normalScores;
         
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(fileName))) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(scorePath.toFile()))) {
             oos.writeObject(targetScores);
         } catch (IOException e) {
             System.err.println("Failed to save scores: " + e.getMessage());
@@ -224,9 +271,10 @@ public class ScoreManager {
     @SuppressWarnings("unchecked")
     private void loadScores() {
         // Load normal scores
-        File normalFile = new File(NORMAL_SCORE_FILE);
+        Path normalPath = getScoreFile(NORMAL_SCORE_FILENAME);
+        File normalFile = normalPath.toFile();
         if (normalFile.exists()) {
-            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(NORMAL_SCORE_FILE))) {
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(normalFile))) {
                 normalScores = (List<ScoreEntry>) ois.readObject();
             } catch (IOException | ClassNotFoundException e) {
                 System.err.println("Failed to load normal scores: " + e.getMessage());
@@ -235,9 +283,10 @@ public class ScoreManager {
         }
         
         // Load item scores
-        File itemFile = new File(ITEM_SCORE_FILE);
+        Path itemPath = getScoreFile(ITEM_SCORE_FILENAME);
+        File itemFile = itemPath.toFile();
         if (itemFile.exists()) {
-            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(ITEM_SCORE_FILE))) {
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(itemFile))) {
                 itemScores = (List<ScoreEntry>) ois.readObject();
             } catch (IOException | ClassNotFoundException e) {
                 System.err.println("Failed to load item scores: " + e.getMessage());
