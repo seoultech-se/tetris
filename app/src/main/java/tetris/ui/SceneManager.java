@@ -44,6 +44,14 @@ public class SceneManager {
         loadScene("/fxml/ScoreBoard.fxml");
     }
 
+    public void showBattleModeSelection() {
+        loadScene("/fxml/BattleModeSelection.fxml");
+    }
+
+    public void showBattleGameScreen(String battleMode) {
+        loadBattleScene("/fxml/BattleGameScreen.fxml", battleMode);
+    }
+
     public void showGameOverScreen() {
         loadScene("/fxml/GameOverScreen.fxml", 0);
     }
@@ -98,6 +106,10 @@ public class SceneManager {
                 cssPath = "/css/ScoreBoard.css";
             } else if (fxmlPath.contains("GameOverScreen")) {
                 cssPath = "/css/GameOverScreen.css";
+            } else if (fxmlPath.contains("BattleModeSelection")) {
+                cssPath = "/css/MainMenu.css"; // 같은 스타일 사용
+            } else if (fxmlPath.contains("BattleGameScreen")) {
+                cssPath = "/css/GameScreen.css"; // 같은 스타일 사용
             }
             
             if (cssPath != null) {
@@ -120,6 +132,8 @@ public class SceneManager {
                 ((tetris.ui.controllers.SettingsController) controller).setSceneManager(this);
             } else if (controller instanceof tetris.ui.controllers.ScoreBoardController) {
                 ((tetris.ui.controllers.ScoreBoardController) controller).setSceneManager(this);
+            } else if (controller instanceof tetris.ui.controllers.BattleModeSelectionController) {
+                ((tetris.ui.controllers.BattleModeSelectionController) controller).setSceneManager(this);
             } else if (controller instanceof tetris.ui.controllers.GameOverController) {
                 tetris.ui.controllers.GameOverController gameOverController = 
                     (tetris.ui.controllers.GameOverController) controller;
@@ -133,6 +147,60 @@ public class SceneManager {
             primaryStage.show();
         } catch (IOException e) {
             System.err.println("Error loading scene: " + fxmlPath);
+            e.printStackTrace();
+        }
+    }
+
+    private void loadBattleScene(String fxmlPath, String battleMode) {
+        try {
+            String screenSize = SettingsManager.getInstance().getScreenSize();
+            double width = MEDIUM_WIDTH;
+            double height = MEDIUM_HEIGHT;
+
+            switch (screenSize) {
+                case "작게":
+                    width = SMALL_WIDTH;
+                    height = SMALL_HEIGHT;
+                    break;
+                case "중간":
+                    width = MEDIUM_WIDTH;
+                    height = MEDIUM_HEIGHT;
+                    break;
+                case "크게":
+                    width = LARGE_WIDTH;
+                    height = LARGE_HEIGHT;
+                    break;
+                default:
+                    width = MEDIUM_WIDTH;
+                    height = MEDIUM_HEIGHT;
+                    break;
+            }
+
+            // 대전 모드는 화면이 넓어야 하므로 가로로 확장
+            width = width * 1.6; // 2개 보드를 표시하기 위해 넓게
+
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+            Scene scene = new Scene(loader.load(), width, height);
+
+            // CSS 스타일 로드
+            URL cssUrl = getClass().getResource("/css/BattleGameScreen.css");
+            if (cssUrl != null) {
+                scene.getStylesheets().add(cssUrl.toExternalForm());
+            }
+
+            // 컨트롤러에 SceneManager와 배틀 모드 설정
+            Object controller = loader.getController();
+            if (controller instanceof tetris.ui.controllers.BattleGameScreenController) {
+                tetris.ui.controllers.BattleGameScreenController battleController =
+                    (tetris.ui.controllers.BattleGameScreenController) controller;
+                battleController.setSceneManager(this);
+                battleController.setBattleMode(battleMode);
+            }
+
+            primaryStage.setScene(scene);
+            primaryStage.show();
+        } catch (IOException e) {
+            System.err.println("Error loading battle scene: " + fxmlPath);
             e.printStackTrace();
         }
     }

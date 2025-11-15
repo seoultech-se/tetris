@@ -13,31 +13,25 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 
-public class MainMenuController implements Initializable {
+public class BattleModeSelectionController implements Initializable {
 
     @FXML
-    private Button normalModeButton;
+    private Button normalBattleButton;
 
     @FXML
-    private Button itemModeButton;
+    private Button itemBattleButton;
 
     @FXML
-    private Button battleModeButton;
+    private Button timeLimitBattleButton;
 
     @FXML
-    private Button settingsButton;
+    private Button backButton;
 
-    @FXML
-    private Button scoreBoardButton;
-
-    @FXML
-    private Button exitButton;
-    
     @FXML
     private ImageView backgroundImage;
 
     private SceneManager sceneManager;
-    
+
     private List<Button> menuButtons;
     private int currentIndex = 0;
 
@@ -65,16 +59,14 @@ public class MainMenuController implements Initializable {
                     break;
             }
         }
-        
-        // 메뉴 버튼 리스트 초기화 (왼쪽에서 오른쪽, 위에서 아래 순서)
+
+        // 메뉴 버튼 리스트 초기화
         menuButtons = new ArrayList<>();
-        menuButtons.add(normalModeButton);
-        menuButtons.add(itemModeButton);
-        menuButtons.add(battleModeButton);
-        menuButtons.add(scoreBoardButton);
-        menuButtons.add(settingsButton);
-        menuButtons.add(exitButton);
-        
+        menuButtons.add(normalBattleButton);
+        menuButtons.add(itemBattleButton);
+        menuButtons.add(timeLimitBattleButton);
+        menuButtons.add(backButton);
+
         // 모든 버튼에 마우스 호버 이벤트 핸들러 추가
         for (Button button : menuButtons) {
             button.setOnMouseEntered(e -> {
@@ -84,34 +76,27 @@ public class MainMenuController implements Initializable {
                 }
             });
         }
-        
+
         // 첫 번째 버튼 선택
         selectButton(0);
-        normalModeButton.requestFocus();
-        
-        // Scene 레벨에서 키 이벤트 처리 설정
+        normalBattleButton.requestFocus();
+
+        // 키 이벤트 처리 설정
         setupSceneKeyHandler();
-        
-        // 추가: 잠시 후 키 핸들러 다시 설정 (Scene이 완전히 로드된 후)
-        javafx.application.Platform.runLater(() -> {
-            setupSceneKeyHandler();
-        });
     }
 
     public void setSceneManager(SceneManager sceneManager) {
         this.sceneManager = sceneManager;
-        // SceneManager 설정 후 키 핸들러 다시 설정
         setupSceneKeyHandler();
     }
-    
+
     private void setupSceneKeyHandler() {
-        // Scene이 설정된 후 키 핸들러 등록
-        if (normalModeButton != null) {
-            normalModeButton.sceneProperty().addListener((obs, oldScene, newScene) -> {
+        if (normalBattleButton != null) {
+            normalBattleButton.sceneProperty().addListener((obs, oldScene, newScene) -> {
                 if (newScene != null) {
                     newScene.setOnKeyPressed(event -> {
                         KeyCode code = event.getCode();
-                        
+
                         switch (code) {
                             case UP:
                                 navigateToPreviousButton();
@@ -125,6 +110,10 @@ public class MainMenuController implements Initializable {
                                 selectCurrentButton();
                                 event.consume();
                                 break;
+                            case ESCAPE:
+                                onBack();
+                                event.consume();
+                                break;
                             default:
                                 break;
                         }
@@ -132,13 +121,12 @@ public class MainMenuController implements Initializable {
                 }
             });
         }
-        
-        // 추가: 모든 버튼에 키 이벤트 핸들러 추가
+
         for (Button button : menuButtons) {
             if (button != null) {
                 button.setOnKeyPressed(event -> {
                     KeyCode code = event.getCode();
-                    
+
                     switch (code) {
                         case UP:
                             navigateToPreviousButton();
@@ -152,6 +140,10 @@ public class MainMenuController implements Initializable {
                             selectCurrentButton();
                             event.consume();
                             break;
+                        case ESCAPE:
+                            onBack();
+                            event.consume();
+                            break;
                         default:
                             break;
                     }
@@ -159,104 +151,75 @@ public class MainMenuController implements Initializable {
             }
         }
     }
-    
+
     private void navigateToPreviousButton() {
         currentIndex = (currentIndex - 1 + menuButtons.size()) % menuButtons.size();
         selectButton(currentIndex);
         menuButtons.get(currentIndex).requestFocus();
     }
-    
+
     private void navigateToNextButton() {
         currentIndex = (currentIndex + 1) % menuButtons.size();
         selectButton(currentIndex);
         menuButtons.get(currentIndex).requestFocus();
     }
-    
+
     private void selectCurrentButton() {
         Button currentButton = menuButtons.get(currentIndex);
-        if (currentButton == normalModeButton) {
-            onStartNormalMode();
-        } else if (currentButton == itemModeButton) {
-            onStartItemMode();
-        } else if (currentButton == battleModeButton) {
-            onStartBattleMode();
-        } else if (currentButton == scoreBoardButton) {
-            onScoreBoard();
-        } else if (currentButton == settingsButton) {
-            onSettings();
-        } else if (currentButton == exitButton) {
-            onExit();
+        if (currentButton == normalBattleButton) {
+            onNormalBattle();
+        } else if (currentButton == itemBattleButton) {
+            onItemBattle();
+        } else if (currentButton == timeLimitBattleButton) {
+            onTimeLimitBattle();
+        } else if (currentButton == backButton) {
+            onBack();
         }
     }
 
     @FXML
-    private void onStartNormalMode() {
+    private void onNormalBattle() {
         if (sceneManager != null) {
-            SettingsManager.getInstance().setGameMode("NORMAL");
-            SettingsManager.getInstance().saveToFile();
-            sceneManager.showGameScreen();
+            sceneManager.showBattleGameScreen("NORMAL");
         }
     }
 
     @FXML
-    private void onStartItemMode() {
+    private void onItemBattle() {
         if (sceneManager != null) {
-            SettingsManager.getInstance().setGameMode("ITEM");
-            SettingsManager.getInstance().saveToFile();
-            sceneManager.showGameScreen();
+            sceneManager.showBattleGameScreen("ITEM");
         }
     }
 
     @FXML
-    private void onStartBattleMode() {
+    private void onTimeLimitBattle() {
         if (sceneManager != null) {
-            sceneManager.showBattleModeSelection();
+            sceneManager.showBattleGameScreen("TIME_LIMIT");
         }
     }
 
     @FXML
-    private void onSettings() {
+    private void onBack() {
         if (sceneManager != null) {
-            sceneManager.showSettingsScreen();
+            sceneManager.showMainMenu();
         }
     }
 
-    @FXML
-    private void onScoreBoard() {
-        if (sceneManager != null) {
-            sceneManager.showScoreBoard();
-        }
-    }
-
-    @FXML
-    private void onExit() {
-        System.exit(0);
-    }
-    
-    
-    /**
-     * 버튼 선택 및 스타일 적용
-     */
     private void selectButton(int index) {
         if (index < 0 || index >= menuButtons.size()) {
             return;
         }
-        
-        // 모든 버튼의 포커스 클래스 제거
+
         clearSelection();
-        
-        // 새로운 버튼 선택
         currentIndex = index;
         menuButtons.get(currentIndex).getStyleClass().add("focused");
         menuButtons.get(currentIndex).requestFocus();
     }
-    
-    /**
-     * 모든 버튼 선택 해제 (마우스 호버 시 사용)
-     */
+
     private void clearSelection() {
         for (Button button : menuButtons) {
             button.getStyleClass().remove("focused");
         }
     }
 }
+
