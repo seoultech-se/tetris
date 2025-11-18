@@ -28,6 +28,16 @@
                   <Font size="18.0" />
                </font>
             </Button>
+            <Button fx:id="battleModeButton" mnemonicParsing="false" focusTraversable="true" onAction="#onStartBattleMode" prefWidth="200.0" text="대전 모드" styleClass="menu-button battle-mode-button">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Button>
+            <Button fx:id="pvpModeButton" mnemonicParsing="false" focusTraversable="true" onAction="#onStartPVPMode" prefWidth="200.0" text="PVP 대전 모드" styleClass="menu-button pvp-mode-button">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Button>
             <Button fx:id="scoreBoardButton" mnemonicParsing="false" focusTraversable="true" onAction="#onScoreBoard" prefWidth="200.0" text="스코어보드" styleClass="menu-button score-board-button">
                <font>
                   <Font size="18.0" />
