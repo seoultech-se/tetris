@@ -41,6 +41,21 @@ public class SettingsController implements Initializable {
     @FXML
     private TextField keyHardDropField;
 
+    @FXML
+    private TextField keyLeftFieldP2;
+
+    @FXML
+    private TextField keyRightFieldP2;
+
+    @FXML
+    private TextField keyDownFieldP2;
+
+    @FXML
+    private TextField keyRotateFieldP2;
+
+    @FXML
+    private TextField keyHardDropFieldP2;
+
     private SceneManager sceneManager;
     private SettingsManager settingsManager;
 
@@ -74,6 +89,11 @@ public class SettingsController implements Initializable {
         setupSingleKeyField(keyDownField);
         setupSingleKeyField(keyRotateField);
         setupSingleKeyField(keyHardDropField);
+        setupSingleKeyField(keyLeftFieldP2);
+        setupSingleKeyField(keyRightFieldP2);
+        setupSingleKeyField(keyDownFieldP2);
+        setupSingleKeyField(keyRotateFieldP2);
+        setupSingleKeyField(keyHardDropFieldP2);
     }
 
     private void setupSingleKeyField(TextField field) {
@@ -83,13 +103,15 @@ public class SettingsController implements Initializable {
         field.textProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null && newValue.length() > 0) {
                 String upper = newValue.toUpperCase();
-                // SPACE는 예외로 허용
-                if (upper.equals("SPACE")) {
+                // SPACE, ENTER, UP, DOWN, LEFT, RIGHT는 예외로 허용
+                if (upper.equals("SPACE") || upper.equals("ENTER") || 
+                    upper.equals("UP") || upper.equals("DOWN") || 
+                    upper.equals("LEFT") || upper.equals("RIGHT")) {
                     return;
                 }
-                if (upper.length() > 1 && !upper.equals("SPACE")) {
+                if (upper.length() > 1) {
                     field.setText(upper.substring(0, 1));
-                } else if (!upper.equals("SPACE")) {
+                } else {
                     field.setText(upper);
                 }
             }
@@ -123,10 +145,36 @@ public class SettingsController implements Initializable {
         if (keyHardDropField != null) {
             keyHardDropField.setText(settingsManager.getKeyHardDrop());
         }
+        // Player2 키 설정 불러오기
+        if (keyLeftFieldP2 != null) {
+            keyLeftFieldP2.setText(settingsManager.getKeyLeftP2());
+        }
+        if (keyRightFieldP2 != null) {
+            keyRightFieldP2.setText(settingsManager.getKeyRightP2());
+        }
+        if (keyDownFieldP2 != null) {
+            keyDownFieldP2.setText(settingsManager.getKeyDownP2());
+        }
+        if (keyRotateFieldP2 != null) {
+            keyRotateFieldP2.setText(settingsManager.getKeyRotateP2());
+        }
+        if (keyHardDropFieldP2 != null) {
+            keyHardDropFieldP2.setText(settingsManager.getKeyHardDropP2());
+        }
     }
 
     @FXML
     private void onSaveSettings() {
+        // Player1과 Player2 키 중복 검사
+        if (!validateKeySettings()) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("키 설정 오류");
+            alert.setHeaderText("키 중복 발견");
+            alert.setContentText("Player1과 Player2가 같은 키를 사용할 수 없습니다. \n다른 키를 설정해주세요.");
+            alert.showAndWait();
+            return;
+        }
+        
         // 설정 저장 로직
         saveSettings();
         onBackToMenu();
@@ -174,9 +222,76 @@ public class SettingsController implements Initializable {
         if (keyHardDropField != null && !keyHardDropField.getText().isEmpty()) {
             settingsManager.setKeyHardDrop(keyHardDropField.getText());
         }
+        // Player2 키 설정 저장
+        if (keyLeftFieldP2 != null && !keyLeftFieldP2.getText().isEmpty()) {
+            settingsManager.setKeyLeftP2(keyLeftFieldP2.getText());
+        }
+        if (keyRightFieldP2 != null && !keyRightFieldP2.getText().isEmpty()) {
+            settingsManager.setKeyRightP2(keyRightFieldP2.getText());
+        }
+        if (keyDownFieldP2 != null && !keyDownFieldP2.getText().isEmpty()) {
+            settingsManager.setKeyDownP2(keyDownFieldP2.getText());
+        }
+        if (keyRotateFieldP2 != null && !keyRotateFieldP2.getText().isEmpty()) {
+            settingsManager.setKeyRotateP2(keyRotateFieldP2.getText());
+        }
+        if (keyHardDropFieldP2 != null && !keyHardDropFieldP2.getText().isEmpty()) {
+            settingsManager.setKeyHardDropP2(keyHardDropFieldP2.getText());
+        }
         // 파일에 저장
         settingsManager.saveToFile();
         System.out.println("Settings saved");
+    }
+
+    /**
+     * Player1과 Player2의 키 설정이 중복되지 않는지 검사
+     */
+    private boolean validateKeySettings() {
+        java.util.Set<String> p1Keys = new java.util.HashSet<>();
+        if (keyLeftField != null && !keyLeftField.getText().isEmpty()) {
+            p1Keys.add(keyLeftField.getText().toUpperCase());
+        }
+        if (keyRightField != null && !keyRightField.getText().isEmpty()) {
+            p1Keys.add(keyRightField.getText().toUpperCase());
+        }
+        if (keyDownField != null && !keyDownField.getText().isEmpty()) {
+            p1Keys.add(keyDownField.getText().toUpperCase());
+        }
+        if (keyRotateField != null && !keyRotateField.getText().isEmpty()) {
+            p1Keys.add(keyRotateField.getText().toUpperCase());
+        }
+        if (keyHardDropField != null && !keyHardDropField.getText().isEmpty()) {
+            p1Keys.add(keyHardDropField.getText().toUpperCase());
+        }
+
+        // Player2 키가 Player1 키와 중복되는지 확인
+        if (keyLeftFieldP2 != null && !keyLeftFieldP2.getText().isEmpty()) {
+            if (p1Keys.contains(keyLeftFieldP2.getText().toUpperCase())) {
+                return false;
+            }
+        }
+        if (keyRightFieldP2 != null && !keyRightFieldP2.getText().isEmpty()) {
+            if (p1Keys.contains(keyRightFieldP2.getText().toUpperCase())) {
+                return false;
+            }
+        }
+        if (keyDownFieldP2 != null && !keyDownFieldP2.getText().isEmpty()) {
+            if (p1Keys.contains(keyDownFieldP2.getText().toUpperCase())) {
+                return false;
+            }
+        }
+        if (keyRotateFieldP2 != null && !keyRotateFieldP2.getText().isEmpty()) {
+            if (p1Keys.contains(keyRotateFieldP2.getText().toUpperCase())) {
+                return false;
+            }
+        }
+        if (keyHardDropFieldP2 != null && !keyHardDropFieldP2.getText().isEmpty()) {
+            if (p1Keys.contains(keyHardDropFieldP2.getText().toUpperCase())) {
+                return false;
+            }
+        }
+        
+        return true;
     }
 
 
