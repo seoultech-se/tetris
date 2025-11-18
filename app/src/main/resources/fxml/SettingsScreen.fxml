@@ -30,7 +30,7 @@
             </HBox>
             
             <!-- 키 설정 섹션 -->
-            <Label text="키 설정" styleClass="section-label">
+            <Label text="Player1 키 설정" styleClass="section-label">
                <VBox.margin>
                   <Insets top="10.0" />
                </VBox.margin>
@@ -60,6 +60,40 @@
                <children>
                   <Label prefWidth="120.0" text="하드 드롭:" />
                   <TextField fx:id="keyHardDropField" prefWidth="120.0" promptText="키 입력" />
+               </children>
+            </HBox>
+            
+            <!-- Player2 키 설정 섹션 -->
+            <Label text="Player2 키 설정 (대전모드용)" styleClass="section-label">
+               <VBox.margin>
+                  <Insets top="10.0" />
+               </VBox.margin>
+            </Label>
+            
+            <HBox alignment="CENTER_LEFT" spacing="15.0">
+               <children>
+                  <Label prefWidth="120.0" text="왼쪽 이동:" />
+                  <TextField fx:id="keyLeftFieldP2" prefWidth="60.0" promptText="키 입력" />
+                  
+                  <Label prefWidth="120.0" text="오른쪽 이동:" />
+                  <TextField fx:id="keyRightFieldP2" prefWidth="60.0" promptText="키 입력" />
+               </children>
+            </HBox>
+            
+            <HBox alignment="CENTER_LEFT" spacing="15.0">
+               <children>
+                  <Label prefWidth="120.0" text="아래 이동:" />
+                  <TextField fx:id="keyDownFieldP2" prefWidth="60.0" promptText="키 입력" />
+                  
+                  <Label prefWidth="120.0" text="회전:" />
+                  <TextField fx:id="keyRotateFieldP2" prefWidth="60.0" promptText="키 입력" />
+               </children>
+            </HBox>
+            
+            <HBox alignment="CENTER_LEFT" spacing="15.0">
+               <children>
+                  <Label prefWidth="120.0" text="하드 드롭:" />
+                  <TextField fx:id="keyHardDropFieldP2" prefWidth="120.0" promptText="키 입력" />
                </children>
             </HBox>
             
