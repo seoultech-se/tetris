@@ -16,7 +16,9 @@ public class NetworkMessage implements Serializable {
         LINES_CLEARED,      // 줄 삭제 정보 전송
         GAME_OVER,
         PLAYER_ACTION,
-        DISCONNECT
+        DISCONNECT,
+        PING,
+        PONG
     }
     
     private MessageType type;
