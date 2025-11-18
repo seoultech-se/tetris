@@ -701,8 +701,10 @@ public class BattleGameScreenController implements Initializable {
 
     private void showGameOver() {
         if (sceneManager != null) {
+            updateUI();
+
             // 대전 모드는 스코어보드에 기록하지 않음
-            sceneManager.showMainMenu();
+            //sceneManager.showMainMenu();
         }
     }
 }

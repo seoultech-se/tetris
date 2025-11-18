@@ -180,6 +180,11 @@ public class PVPLobbyController implements Initializable {
                     public void onError(Exception e) {
                         e.printStackTrace();
                     }
+
+                    @Override
+                    public void onRttUpdate(long rtt) {
+                        // Not used in this screen
+                    }
                 });
             }
         }

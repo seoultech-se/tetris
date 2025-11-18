@@ -252,6 +252,11 @@ public class PVPNetworkSelectionController implements Initializable {
                     connectButton.setDisable(false);
                 });
             }
+
+            @Override
+            public void onRttUpdate(long rtt) {
+                // Not used in this screen
+            }
         });
 
         new Thread(() -> {
