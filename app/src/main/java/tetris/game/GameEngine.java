@@ -14,6 +14,9 @@ public class GameEngine {
     private boolean isPaused;
     private long currentFallSpeed = 1_000_000_000L;
     
+    // 블록 배치 후 콜백 (대전 모드 공격 적용용)
+    private Runnable onPiecePlacedCallback = null;
+    
     private static final long BASE_FALL_SPEED = 1_000_000_000L;
 
     // 아이템 생성 조건
@@ -23,6 +26,9 @@ public class GameEngine {
     private boolean isDoubleScoreActive;
     private long doubleScoreEndTime;  // 나노초 단위
     private static final long DOUBLE_SCORE_DURATION = 30_000_000_000L;  // 30초
+    
+    // 마지막으로 배치된 블록의 열 위치 (공격 메커니즘용)
+    private int lastPlacedBlockCol = -1;
 
     public GameEngine() {
         this.gameBoard = new GameBoard();
@@ -113,6 +119,9 @@ public class GameEngine {
         }
     }
 
+    // 블록이 방금 배치되었는지 여부 (공격 적용 타이밍용)
+    private boolean pieceJustPlaced = false;
+    
     public void movePieceDown() {
         if (currentPiece != null) {
             currentPiece.moveDown();
@@ -121,6 +130,7 @@ public class GameEngine {
                 // 이동 불가능 - 블록이 착지함
                 currentPiece.moveUp();
                 placePiece();
+                pieceJustPlaced = true; // 블록이 배치됨을 표시
             } else {
                 // 이동 성공 - 무게추면 밑의 블록 지우기
                 if (currentPiece.isWeightPiece()) {
@@ -129,8 +139,23 @@ public class GameEngine {
 
                 // 소프트드롭 점수 추가
                 updateScoreForSoftDrop();
+                pieceJustPlaced = false;
             }
         }
+    }
+    
+    /**
+     * 블록이 방금 배치되었는지 확인 (공격 적용 타이밍용)
+     */
+    public boolean isPieceJustPlaced() {
+        return pieceJustPlaced;
+    }
+    
+    /**
+     * 블록 배치 플래그 리셋 (공격 적용 후 호출)
+     */
+    public void resetPieceJustPlaced() {
+        pieceJustPlaced = false;
     }
 
     private void rotatePiece() {
@@ -207,6 +232,22 @@ public class GameEngine {
                 }
             }
 
+            // 마지막 블록 위치 저장 (가장 오른쪽 열)
+            int maxCol = -1;
+            int[][] shape = currentPiece.getShape();
+            int x = currentPiece.getX();
+            for (int row = 0; row < shape.length; row++) {
+                for (int col = 0; col < shape[row].length; col++) {
+                    if (shape[row][col] != 0) {
+                        int boardCol = x + col;
+                        if (boardCol > maxCol) {
+                            maxCol = boardCol;
+                        }
+                    }
+                }
+            }
+            lastPlacedBlockCol = Math.max(0, Math.min(maxCol, GameBoard.BOARD_WIDTH - 1));
+
             // 블록을 보드에 배치
             gameBoard.placePiece(currentPiece);
 
@@ -223,10 +264,23 @@ public class GameEngine {
 
             spawnNewPiece();
 
+            // 공격 블록이 추가된 후에도 게임 오버 체크
             if (!gameBoard.isValidPosition(currentPiece)) {
                 stopGame();
             }
+            
+            // 블록 배치 후 콜백 호출 (대전 모드 공격 적용용)
+            if (onPiecePlacedCallback != null) {
+                onPiecePlacedCallback.run();
+            }
         }
+    }
+    
+    /**
+     * 블록 배치 후 콜백 설정 (대전 모드 공격 적용용)
+     */
+    public void setOnPiecePlacedCallback(Runnable callback) {
+        this.onPiecePlacedCallback = callback;
     }
     
     /**
@@ -488,5 +542,12 @@ public class GameEngine {
      */
     public java.util.List<Integer> getFullLines() {
         return gameBoard.getFullLines();
+    }
+    
+    /**
+     * 마지막으로 배치된 블록의 열 위치 반환 (공격 메커니즘용)
+     */
+    public int getLastPlacedBlockCol() {
+        return lastPlacedBlockCol;
     }
 }

@@ -59,3 +59,4 @@ EOF
 echo "✅ ${APP_NAME}.app이 생성되었습니다: ${APP_DIR}"
 
 
+
