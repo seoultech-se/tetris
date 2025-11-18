@@ -113,3 +113,65 @@
     -fx-background-color: #7f8c8d;
 }
 
+/* PVP 네트워크 선택 화면 스타일 */
+.title-label {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+}
+
+.info-label {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: normal;
+}
+
+.ip-label {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+    -fx-background-color: rgba(0, 0, 0, 0.5);
+    -fx-padding: 10px 20px;
+    -fx-background-radius: 5px;
+}
+
+.status-label {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: normal;
+}
+
+.ip-field {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #000000;
+    -fx-border-color: #555555;
+    -fx-border-width: 2px;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+    -fx-padding: 5px 10px;
+}
+
+.ip-field:focused {
+    -fx-border-color: #00ff00;
+    -fx-border-width: 3px;
+}
+
+/* RadioButton 스타일 */
+.radio-button {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 16px;
+}
+
+.radio-button .radio {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #555555;
+    -fx-border-width: 2px;
+    -fx-border-radius: 10px;
+}
+
+.radio-button:selected .radio {
+    -fx-background-color: #00ff00;
+    -fx-border-color: #00ff00;
+}
+
+.radio-button .dot {
+    -fx-background-color: #00ff00;
+    -fx-background-insets: 0;
+}
+

@@ -1,46 +1,49 @@
 package tetris.ui.controllers;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
+import javafx.scene.layout.VBox;
+import tetris.network.GameClient;
+import tetris.network.GameServer;
+import tetris.network.NetworkMessage;
 import tetris.ui.SceneManager;
 import tetris.ui.SettingsManager;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 
-public class MainMenuController implements Initializable {
+public class PVPModeSelectionController implements Initializable {
 
     @FXML
-    private Button normalModeButton;
+    private Button normalPVPButton; // 서버 버튼으로 사용
 
     @FXML
-    private Button itemModeButton;
+    private Button itemPVPButton; // 클라이언트 버튼으로 사용
 
     @FXML
-    private Button battleModeButton;
+    private Button timeLimitPVPButton; // 사용 안함
 
     @FXML
-    private Button pvpModeButton;
+    private Button backButton;
 
-    @FXML
-    private Button settingsButton;
-
-    @FXML
-    private Button scoreBoardButton;
-
-    @FXML
-    private Button exitButton;
-    
     @FXML
     private ImageView backgroundImage;
 
     private SceneManager sceneManager;
-    
+    private GameServer gameServer;
+    private GameClient gameClient;
+    private boolean isServer = false;
+    private static final int SERVER_PORT = 7777;
+
     private List<Button> menuButtons;
     private int currentIndex = 0;
 
@@ -68,17 +71,13 @@ public class MainMenuController implements Initializable {
                     break;
             }
         }
-        
-        // 메뉴 버튼 리스트 초기화 (왼쪽에서 오른쪽, 위에서 아래 순서)
+
+        // 메뉴 버튼 리스트 초기화
         menuButtons = new ArrayList<>();
-        menuButtons.add(normalModeButton);
-        menuButtons.add(itemModeButton);
-        menuButtons.add(battleModeButton);
-        menuButtons.add(pvpModeButton);
-        menuButtons.add(scoreBoardButton);
-        menuButtons.add(settingsButton);
-        menuButtons.add(exitButton);
-        
+        menuButtons.add(normalPVPButton);
+        menuButtons.add(itemPVPButton);
+        menuButtons.add(backButton);
+
         // 모든 버튼에 마우스 호버 이벤트 핸들러 추가
         for (Button button : menuButtons) {
             button.setOnMouseEntered(e -> {
@@ -88,34 +87,27 @@ public class MainMenuController implements Initializable {
                 }
             });
         }
-        
+
         // 첫 번째 버튼 선택
         selectButton(0);
-        normalModeButton.requestFocus();
-        
-        // Scene 레벨에서 키 이벤트 처리 설정
+        normalPVPButton.requestFocus();
+
+        // 키 이벤트 처리 설정
         setupSceneKeyHandler();
-        
-        // 추가: 잠시 후 키 핸들러 다시 설정 (Scene이 완전히 로드된 후)
-        javafx.application.Platform.runLater(() -> {
-            setupSceneKeyHandler();
-        });
     }
 
     public void setSceneManager(SceneManager sceneManager) {
         this.sceneManager = sceneManager;
-        // SceneManager 설정 후 키 핸들러 다시 설정
         setupSceneKeyHandler();
     }
-    
+
     private void setupSceneKeyHandler() {
-        // Scene이 설정된 후 키 핸들러 등록
-        if (normalModeButton != null) {
-            normalModeButton.sceneProperty().addListener((obs, oldScene, newScene) -> {
+        if (normalPVPButton != null) {
+            normalPVPButton.sceneProperty().addListener((obs, oldScene, newScene) -> {
                 if (newScene != null) {
                     newScene.setOnKeyPressed(event -> {
                         KeyCode code = event.getCode();
-                        
+
                         switch (code) {
                             case UP:
                                 navigateToPreviousButton();
@@ -129,6 +121,10 @@ public class MainMenuController implements Initializable {
                                 selectCurrentButton();
                                 event.consume();
                                 break;
+                            case ESCAPE:
+                                onBack();
+                                event.consume();
+                                break;
                             default:
                                 break;
                         }
@@ -136,13 +132,12 @@ public class MainMenuController implements Initializable {
                 }
             });
         }
-        
-        // 추가: 모든 버튼에 키 이벤트 핸들러 추가
+
         for (Button button : menuButtons) {
             if (button != null) {
                 button.setOnKeyPressed(event -> {
                     KeyCode code = event.getCode();
-                    
+
                     switch (code) {
                         case UP:
                             navigateToPreviousButton();
@@ -156,6 +151,10 @@ public class MainMenuController implements Initializable {
                             selectCurrentButton();
                             event.consume();
                             break;
+                        case ESCAPE:
+                            onBack();
+                            event.consume();
+                            break;
                         default:
                             break;
                     }
@@ -163,110 +162,143 @@ public class MainMenuController implements Initializable {
             }
         }
     }
-    
+
     private void navigateToPreviousButton() {
         currentIndex = (currentIndex - 1 + menuButtons.size()) % menuButtons.size();
         selectButton(currentIndex);
         menuButtons.get(currentIndex).requestFocus();
     }
-    
+
     private void navigateToNextButton() {
         currentIndex = (currentIndex + 1) % menuButtons.size();
         selectButton(currentIndex);
         menuButtons.get(currentIndex).requestFocus();
     }
-    
+
     private void selectCurrentButton() {
         Button currentButton = menuButtons.get(currentIndex);
-        if (currentButton == normalModeButton) {
-            onStartNormalMode();
-        } else if (currentButton == itemModeButton) {
-            onStartItemMode();
-        } else if (currentButton == battleModeButton) {
-            onStartBattleMode();
-        } else if (currentButton == pvpModeButton) {
-            onStartPVPMode();
-        } else if (currentButton == scoreBoardButton) {
-            onScoreBoard();
-        } else if (currentButton == settingsButton) {
-            onSettings();
-        } else if (currentButton == exitButton) {
-            onExit();
+        if (currentButton == normalPVPButton) {
+            onNormalPVP(); // 서버 모드
+        } else if (currentButton == itemPVPButton) {
+            onItemPVP(); // 클라이언트 모드
+        } else if (currentButton == backButton) {
+            onBack();
         }
     }
 
     @FXML
-    private void onStartNormalMode() {
+    private void onNormalPVP() {
+        // 서버 모드 시작
         if (sceneManager != null) {
-            SettingsManager.getInstance().setGameMode("NORMAL");
-            SettingsManager.getInstance().saveToFile();
-            sceneManager.showGameScreen();
+            isServer = true;
+            startServer();
         }
     }
 
     @FXML
-    private void onStartItemMode() {
+    private void onItemPVP() {
+        // 클라이언트 모드 시작
         if (sceneManager != null) {
-            SettingsManager.getInstance().setGameMode("ITEM");
-            SettingsManager.getInstance().saveToFile();
-            sceneManager.showGameScreen();
+            isServer = false;
+            sceneManager.showPVPClientConnection();
         }
     }
 
     @FXML
-    private void onStartBattleMode() {
+    private void onTimeLimitPVP() {
+        // 사용 안함
+    }
+
+    private void startServer() {
+        try {
+            gameServer = new GameServer(SERVER_PORT);
+            String serverIP = gameServer.getServerIP();
+            
+            gameServer.setMessageHandler(new GameServer.MessageHandler() {
+                @Override
+                public void onMessageReceived(Object message) {
+                    Platform.runLater(() -> handleServerMessage(message));
+                }
+
+                @Override
+                public void onClientConnected() {
+                    Platform.runLater(() -> {
+                        System.out.println("클라이언트 연결됨!");
+                        
+                        // 연결 확인 메시지 전송
+                        try {
+                            gameServer.sendMessage(new NetworkMessage(
+                                NetworkMessage.MessageType.CONNECTION_ACCEPTED, 
+                                "서버 연결 성공"
+                            ));
+                            
+                            // 로비 화면으로 이동
+                            sceneManager.showPVPLobby(gameServer, null, true);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    });
+                }
+
+                @Override
+                public void onClientDisconnected() {
+                    Platform.runLater(() -> {
+                        System.out.println("클라이언트 연결 끊김");
+                    });
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    Platform.runLater(() -> {
+                        System.err.println("서버 오류: " + e.getMessage());
+                        e.printStackTrace();
+                    });
+                }
+            });
+            
+            gameServer.start();
+            
+            // 서버 대기 화면으로 이동
+            sceneManager.showPVPServerWaiting(gameServer, serverIP);
+            
+        } catch (IOException e) {
+            System.err.println("서버 시작 실패: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void handleServerMessage(Object message) {
+        if (message instanceof NetworkMessage) {
+            NetworkMessage netMsg = (NetworkMessage) message;
+            switch (netMsg.getType()) {
+                case CONNECTION_REQUEST:
+                    System.out.println("클라이언트 연결 요청 수신");
+                    break;
+            }
+        }
+    }
+
+    @FXML
+    private void onBack() {
         if (sceneManager != null) {
-            sceneManager.showBattleModeSelection();
+            sceneManager.showMainMenu();
         }
     }
 
-    @FXML
-    private void onStartPVPMode() {
-        if (sceneManager != null) {
-            sceneManager.showPVPModeSelection();
-        }
-    }
-
-    @FXML
-    private void onSettings() {
-        if (sceneManager != null) {
-            sceneManager.showSettingsScreen();
-        }
-    }
-
-    @FXML
-    private void onScoreBoard() {
-        if (sceneManager != null) {
-            sceneManager.showScoreBoard();
-        }
-    }
-
-    @FXML
-    private void onExit() {
-        System.exit(0);
-    }
-    
-    
-    /**
-     * 버튼 선택 및 스타일 적용
-     */
     private void selectButton(int index) {
         if (index < 0 || index >= menuButtons.size()) {
             return;
         }
-        
+
         // 모든 버튼의 포커스 클래스 제거
         clearSelection();
-        
+
         // 새로운 버튼 선택
         currentIndex = index;
         menuButtons.get(currentIndex).getStyleClass().add("focused");
         menuButtons.get(currentIndex).requestFocus();
     }
-    
-    /**
-     * 모든 버튼 선택 해제 (마우스 호버 시 사용)
-     */
+
     private void clearSelection() {
         for (Button button : menuButtons) {
             button.getStyleClass().remove("focused");

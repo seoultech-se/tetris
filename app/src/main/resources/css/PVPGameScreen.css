@@ -1,0 +1,9 @@
+/* PVP Game Screen Styles - Placeholder */
+.title-label {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.info-label {
+    -fx-text-fill: #cccccc;
+}
