@@ -247,7 +247,7 @@ public class BattleGameEngine {
     public void applyPendingAttacks(int playerNumber) {
         if (playerNumber == 1) {
             // 플레이어 1에게 대기 중인 공격 한 줄씩 적용
-            if (!pendingAttacksToPlayer1.isEmpty()) {
+            while(!pendingAttacksToPlayer1.isEmpty()) {
                 AttackInfo attack = pendingAttacksToPlayer1.poll();
                 player1Engine.getGameBoard().addAttackLines(1, attack.emptyCol);
                 // 공격 블록 추가 후 게임 오버 체크
@@ -257,7 +257,7 @@ public class BattleGameEngine {
             }
         } else if (playerNumber == 2) {
             // 플레이어 2에게 대기 중인 공격 한 줄씩 적용
-            if (!pendingAttacksToPlayer2.isEmpty()) {
+            while(!pendingAttacksToPlayer2.isEmpty()) {
                 AttackInfo attack = pendingAttacksToPlayer2.poll();
                 player2Engine.getGameBoard().addAttackLines(1, attack.emptyCol);
                 // 공격 블록 추가 후 게임 오버 체크
