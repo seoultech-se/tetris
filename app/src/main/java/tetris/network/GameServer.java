@@ -2,6 +2,7 @@ package tetris.network;
 
 import java.io.*;
 import java.net.*;
+import java.util.Enumeration;
 
 public class GameServer {
     private ServerSocket serverSocket;
@@ -56,9 +57,20 @@ public class GameServer {
         listenerThread = new Thread(() -> {
             while (isRunning && clientSocket != null && !clientSocket.isClosed()) {
                 try {
-                    Object message = in.readObject();
-                    if (messageHandler != null) {
-                        messageHandler.onMessageReceived(message);
+                    Object msg = in.readObject();
+                    if (msg instanceof NetworkMessage) {
+                        NetworkMessage netMsg = (NetworkMessage) msg;
+                        if (netMsg.getType() == NetworkMessage.MessageType.PING) {
+                            sendMessage(new NetworkMessage(NetworkMessage.MessageType.PONG, netMsg.getData()));
+                        } else {
+                            if (messageHandler != null) {
+                                messageHandler.onMessageReceived(msg);
+                            }
+                        }
+                    } else {
+                        if (messageHandler != null) {
+                            messageHandler.onMessageReceived(msg);
+                        }
                     }
                 } catch (EOFException | SocketException e) {
                     System.out.println("클라이언트 연결 종료");
@@ -86,9 +98,27 @@ public class GameServer {
 
     public String getServerIP() {
         try {
-            return InetAddress.getLocalHost().getHostAddress();
+            Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+            while (networkInterfaces.hasMoreElements()) {
+                NetworkInterface ni = networkInterfaces.nextElement();
+                if (ni.isLoopback() || !ni.isUp()) {
+                    continue;
+                }
+                Enumeration<InetAddress> addresses = ni.getInetAddresses();
+                while (addresses.hasMoreElements()) {
+                    InetAddress addr = addresses.nextElement();
+                    if (addr instanceof Inet4Address) {
+                        return addr.getHostAddress();
+                    }
+                }
+            }
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
+        try {
+            return InetAddress.getLocalHost().getHostAddress(); // Fallback
         } catch (UnknownHostException e) {
-            return "Unknown";
+            return "Unknown"; // Final fallback
         }
     }
 

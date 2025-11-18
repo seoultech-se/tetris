@@ -70,6 +70,9 @@ public class PVPGameScreenController implements Initializable {
     @FXML
     private Label statusLabel;
 
+    @FXML
+    private Label latencyLabel;
+
     private SceneManager sceneManager;
     private String gameMode;
     private GameServer gameServer;
@@ -236,6 +239,15 @@ public class PVPGameScreenController implements Initializable {
                 @Override
                 public void onError(Exception e) {
                     System.err.println("클라이언트 에러: " + e.getMessage());
+                }
+
+                @Override
+                public void onRttUpdate(long rtt) {
+                    Platform.runLater(() -> {
+                        if (latencyLabel != null) {
+                            latencyLabel.setText("RTT: " + rtt + " ms");
+                        }
+                    });
                 }
             });
         }
@@ -442,7 +454,7 @@ public class PVPGameScreenController implements Initializable {
         
         GameStateData stateData = new GameStateData(
             boardData, itemBoardData,
-            myEngine.getScore(), myEngine.getLevel(), myEngine.getLinesCleared(),
+            myEngine.getLevel(), myEngine.getLinesCleared(),
             !myEngine.isGameRunning(),
             currentShape, currentX, currentY, currentType,
             nextShape, nextType, incomingLines

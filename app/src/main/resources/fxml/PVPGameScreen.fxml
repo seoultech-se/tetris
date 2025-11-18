@@ -53,6 +53,7 @@
                   <Font size="24.0" />
                </font>
             </Label>
+            <Label fx:id="latencyLabel" text="RTT: - ms" styleClass="game-info-label" />
             <Button mnemonicParsing="false" focusTraversable="false" onAction="#onPause" text="일시 정지" prefWidth="100.0" prefHeight="35.0">
                <font>
                   <Font size="12.0" />

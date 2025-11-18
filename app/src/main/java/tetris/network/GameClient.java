@@ -9,6 +9,7 @@ public class GameClient {
     private ObjectInputStream in;
     private boolean isRunning = false;
     private Thread listenerThread;
+    private Thread pingThread;
     private MessageHandler messageHandler;
 
     public interface MessageHandler {
@@ -16,6 +17,7 @@ public class GameClient {
         void onConnected();
         void onDisconnected();
         void onError(Exception e);
+        void onRttUpdate(long rtt);
     }
 
     public void setMessageHandler(MessageHandler handler) {
@@ -34,15 +36,30 @@ public class GameClient {
         }
         
         startListening();
+        startPinging();
     }
 
     private void startListening() {
         listenerThread = new Thread(() -> {
             while (isRunning && socket != null && !socket.isClosed()) {
                 try {
-                    Object message = in.readObject();
-                    if (messageHandler != null) {
-                        messageHandler.onMessageReceived(message);
+                    Object msg = in.readObject();
+                    if (msg instanceof NetworkMessage) {
+                        NetworkMessage netMsg = (NetworkMessage) msg;
+                        if (netMsg.getType() == NetworkMessage.MessageType.PONG) {
+                            long rtt = System.currentTimeMillis() - (long) netMsg.getData();
+                            if (messageHandler != null) {
+                                messageHandler.onRttUpdate(rtt);
+                            }
+                        } else {
+                            if (messageHandler != null) {
+                                messageHandler.onMessageReceived(msg);
+                            }
+                        }
+                    } else {
+                        if (messageHandler != null) {
+                            messageHandler.onMessageReceived(msg);
+                        }
                     }
                 } catch (EOFException | SocketException e) {
                     System.out.println("서버 연결 종료");
@@ -61,6 +78,23 @@ public class GameClient {
         listenerThread.start();
     }
 
+    private void startPinging() {
+        pingThread = new Thread(() -> {
+            while (isRunning) {
+                try {
+                    sendMessage(new NetworkMessage(NetworkMessage.MessageType.PING, System.currentTimeMillis()));
+                    Thread.sleep(1000); // 1초마다 PING 전송
+                } catch (IOException e) {
+                    break;
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        });
+        pingThread.start();
+    }
+
     public void sendMessage(Object message) throws IOException {
         if (out != null) {
             out.writeObject(message);
@@ -70,6 +104,9 @@ public class GameClient {
 
     public void close() {
         isRunning = false;
+        if (pingThread != null) {
+            pingThread.interrupt();
+        }
         try {
             if (in != null) in.close();
             if (out != null) out.close();

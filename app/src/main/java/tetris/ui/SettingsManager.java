@@ -22,12 +22,19 @@ public class SettingsManager {
     private String screenSize = "중간";
     private String gameMode = "NORMAL"; // NORMAL 또는 ITEM
 
-    // 키 설정 (기본값: WASD + Space)
+    // Player1 키 설정 (기본값: WASD + Space)
     private String keyLeft = "A";
     private String keyRight = "D";
     private String keyDown = "S";
     private String keyRotate = "W";
     private String keyHardDrop = "SPACE";
+    
+    // Player2 키 설정 (기본값: 화살표 키)
+    private String keyLeftP2 = "LEFT";
+    private String keyRightP2 = "RIGHT";
+    private String keyDownP2 = "DOWN";
+    private String keyRotateP2 = "UP";
+    private String keyHardDropP2 = "ENTER";
     
     private SettingsManager() {
         loadFromFile();
@@ -130,6 +137,26 @@ public class SettingsManager {
         return keyHardDrop;
     }
 
+    public String getKeyLeftP2() {
+        return keyLeftP2;
+    }
+
+    public String getKeyRightP2() {
+        return keyRightP2;
+    }
+
+    public String getKeyDownP2() {
+        return keyDownP2;
+    }
+
+    public String getKeyRotateP2() {
+        return keyRotateP2;
+    }
+
+    public String getKeyHardDropP2() {
+        return keyHardDropP2;
+    }
+
     public void setVolume(double volume) {
         this.volume = Math.max(0.0, Math.min(100.0, volume));
     }
@@ -178,6 +205,26 @@ public class SettingsManager {
         this.keyHardDrop = key.toUpperCase();
     }
 
+    public void setKeyLeftP2(String key) {
+        this.keyLeftP2 = key.toUpperCase();
+    }
+
+    public void setKeyRightP2(String key) {
+        this.keyRightP2 = key.toUpperCase();
+    }
+
+    public void setKeyDownP2(String key) {
+        this.keyDownP2 = key.toUpperCase();
+    }
+
+    public void setKeyRotateP2(String key) {
+        this.keyRotateP2 = key.toUpperCase();
+    }
+
+    public void setKeyHardDropP2(String key) {
+        this.keyHardDropP2 = key.toUpperCase();
+    }
+
     public void resetToDefaults() {
         volume = 50.0;
         difficulty = "Normal";
@@ -191,6 +238,11 @@ public class SettingsManager {
         keyDown = "S";
         keyRotate = "W";
         keyHardDrop = "SPACE";
+        keyLeftP2 = "LEFT";
+        keyRightP2 = "RIGHT";
+        keyDownP2 = "DOWN";
+        keyRotateP2 = "UP";
+        keyHardDropP2 = "ENTER";
         saveToFile();
     }
 
@@ -211,6 +263,11 @@ public class SettingsManager {
         props.setProperty("keyDown", keyDown);
         props.setProperty("keyRotate", keyRotate);
         props.setProperty("keyHardDrop", keyHardDrop);
+        props.setProperty("keyLeftP2", keyLeftP2);
+        props.setProperty("keyRightP2", keyRightP2);
+        props.setProperty("keyDownP2", keyDownP2);
+        props.setProperty("keyRotateP2", keyRotateP2);
+        props.setProperty("keyHardDropP2", keyHardDropP2);
 
         Path settingsPath = getSettingsFile();
         try (FileOutputStream out = new FileOutputStream(settingsPath.toFile())) {
@@ -244,6 +301,11 @@ public class SettingsManager {
             keyDown = props.getProperty("keyDown", "S");
             keyRotate = props.getProperty("keyRotate", "W");
             keyHardDrop = props.getProperty("keyHardDrop", "SPACE");
+            keyLeftP2 = props.getProperty("keyLeftP2", "LEFT");
+            keyRightP2 = props.getProperty("keyRightP2", "RIGHT");
+            keyDownP2 = props.getProperty("keyDownP2", "DOWN");
+            keyRotateP2 = props.getProperty("keyRotateP2", "UP");
+            keyHardDropP2 = props.getProperty("keyHardDropP2", "ENTER");
             
             System.out.println("설정을 불러왔습니다: " + settingsPath);
         } catch (FileNotFoundException e) {

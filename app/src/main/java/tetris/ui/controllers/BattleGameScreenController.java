@@ -84,18 +84,32 @@ public class BattleGameScreenController implements Initializable {
     // 블록 크기
     private int BLOCK_SIZE = 25;
 
-    // 블록 색상 설정
+    // 블록 색상 설정 (ColorBlind Safe 팔레트)
     private static final Color[] PIECE_COLORS = {
         Color.BLACK,
-        Color.web("#56B4E9"),  // 1 - I
-        Color.web("#F0E442"),  // 2 - O
-        Color.web("#CC79A7"),  // 3 - T
-        Color.web("#009E73"),  // 4 - S
-        Color.web("#D55E00"),  // 5 - Z
-        Color.web("#0072B2"),  // 6 - J
-        Color.web("#E69F00"),  // 7 - L
-        Color.web("#999999"),  // 8 - 공격 블록 (회색)
-        Color.web("#FF0000")   // 9 - BOMB
+        Color.web("#56B4E9"),          // 1 - I 피스 (하늘색)
+        Color.web("#F0E442"),          // 2 - O 피스 (노랑)
+        Color.web("#CC79A7"),          // 3 - T 피스 (핑크/보라)
+        Color.web("#009E73"),          // 4 - S 피스 (초록)
+        Color.web("#D55E00"),          // 5 - Z 피스 (적갈색)
+        Color.web("#0072B2"),          // 6 - J 피스 (파랑)
+        Color.web("#E69F00"),          // 7 - L 피스 (주황)
+        Color.web("#999999"),          // 8 - WEIGHT 피스 (회색 - 무게추)
+        Color.web("#FF0000")           // 9 - BOMB 피스 (빨강 - 폭탄)
+    };
+
+    // 접근성 심볼 (0은 빈칸)
+    private static final String[] PIECE_SYMBOLS = {
+        " ", // 0
+        "O", // 1 - I (직선 형태를 텍스트로 대체)
+        "●", // 2 - O
+        "★", // 3 - T
+        "▲", // 4 - S
+        "■", // 5 - Z
+        "◆", // 6 - J (다이아몬드)
+        "◇", // 7 - L (빈 다이아몬드)
+        "▼", // 8 - 공격 블록 (아래를 가리키는 화살표)
+        "✸"  // 9 - BOMB (폭발 효과)
     };
 
     @Override
@@ -189,22 +203,30 @@ public class BattleGameScreenController implements Initializable {
                         }
                         
                         if (battleEngine != null && battleEngine.isGameRunning() && !battleEngine.isPaused()) {
-                            // 플레이어 1: WASD + Space
-                            if (code == javafx.scene.input.KeyCode.A || 
-                                code == javafx.scene.input.KeyCode.D ||
-                                code == javafx.scene.input.KeyCode.S ||
-                                code == javafx.scene.input.KeyCode.W ||
-                                code == javafx.scene.input.KeyCode.SPACE ||
+                            // Player1 키 설정
+                            javafx.scene.input.KeyCode p1Left = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyLeft());
+                            javafx.scene.input.KeyCode p1Right = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyRight());
+                            javafx.scene.input.KeyCode p1Down = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyDown());
+                            javafx.scene.input.KeyCode p1Rotate = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyRotate());
+                            javafx.scene.input.KeyCode p1HardDrop = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyHardDrop());
+                            
+                            // Player2 키 설정
+                            javafx.scene.input.KeyCode p2Left = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyLeftP2());
+                            javafx.scene.input.KeyCode p2Right = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyRightP2());
+                            javafx.scene.input.KeyCode p2Down = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyDownP2());
+                            javafx.scene.input.KeyCode p2Rotate = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyRotateP2());
+                            javafx.scene.input.KeyCode p2HardDrop = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyHardDropP2());
+                            
+                            // 플레이어 1 키 처리
+                            if (code == p1Left || code == p1Right || code == p1Down || 
+                                code == p1Rotate || code == p1HardDrop || 
                                 code == javafx.scene.input.KeyCode.N) {
                                 battleEngine.handlePlayer1KeyPress(code);
                                 event.consume();
                             }
-                            // 플레이어 2: 방향키 + Enter
-                            else if (code == javafx.scene.input.KeyCode.LEFT ||
-                                     code == javafx.scene.input.KeyCode.RIGHT ||
-                                     code == javafx.scene.input.KeyCode.DOWN ||
-                                     code == javafx.scene.input.KeyCode.UP ||
-                                     code == javafx.scene.input.KeyCode.ENTER) {
+                            // 플레이어 2 키 처리
+                            else if (code == p2Left || code == p2Right || code == p2Down || 
+                                     code == p2Rotate || code == p2HardDrop) {
                                 battleEngine.handlePlayer2KeyPress(code);
                                 event.consume();
                             }
@@ -344,6 +366,11 @@ public class BattleGameScreenController implements Initializable {
             player1Canvas.getHeight() / GameBoard.BOARD_HEIGHT
         );
 
+        // 색약모드에서는 회색 격자 표시
+        if (settingsManager != null && settingsManager.isColorBlindModeEnabled()) {
+            drawGrid(gc, player1Canvas, blockSize);
+        }
+
         GameBoard board = battleEngine.getPlayer1Engine().getGameBoard();
         for (int row = 0; row < GameBoard.BOARD_HEIGHT; row++) {
             for (int col = 0; col < GameBoard.BOARD_WIDTH; col++) {
@@ -388,6 +415,11 @@ public class BattleGameScreenController implements Initializable {
             player2Canvas.getWidth() / GameBoard.BOARD_WIDTH,
             player2Canvas.getHeight() / GameBoard.BOARD_HEIGHT
         );
+
+        // 색약모드에서는 회색 격자 표시
+        if (settingsManager != null && settingsManager.isColorBlindModeEnabled()) {
+            drawGrid(gc, player2Canvas, blockSize);
+        }
 
         GameBoard board = battleEngine.getPlayer2Engine().getGameBoard();
         for (int row = 0; row < GameBoard.BOARD_HEIGHT; row++) {
@@ -586,31 +618,100 @@ public class BattleGameScreenController implements Initializable {
     }
     
     private void renderBlockScaled(GraphicsContext gc, double x, double y, double size, Color color, int pieceType, ItemType itemType) {
-        gc.setFill(color);
-        gc.fillRect(x, y, size, size);
-
-        gc.setStroke(Color.WHITE);
-        gc.setLineWidth(1);
-        gc.strokeRect(x, y, size, size);
-
-        if (itemType != null && itemType != ItemType.NONE) {
-            String itemChar = itemType.getDisplayChar();
-            if (!itemChar.isEmpty()) {
-                double fontSize = size * 0.6;
-                Font font = Font.font("Arial", javafx.scene.text.FontWeight.BOLD, fontSize);
-                gc.setFont(font);
-                gc.setFill(Color.WHITE);
-
-                Text text = new Text(itemChar);
-                text.setFont(font);
-                double textWidth = text.getLayoutBounds().getWidth();
-                double textHeight = text.getLayoutBounds().getHeight();
-
-                double tx = x + (size - textWidth) / 2.0;
-                double ty = y + (size + textHeight) / 2.0 - 2;
-
-                gc.fillText(itemChar, tx, ty);
+        // 색약모드가 켜져 있으면 색 대신 심볼로 채운다
+        if (settingsManager != null && settingsManager.isColorBlindModeEnabled()) {
+            String symbol = "?";
+            if (pieceType >= 0 && pieceType < PIECE_SYMBOLS.length) {
+                symbol = PIECE_SYMBOLS[pieceType];
             }
+
+            // 아이콘을 블록 크기에 맞게 최대한 크게 설정
+            double fontSize = size - 2;
+            if (fontSize < 8) fontSize = 8;
+            Font font = Font.font("Monospaced", fontSize);
+            gc.setFont(font);
+            gc.setFill(Color.WHITE);
+
+            Text text = new Text(symbol);
+            text.setFont(font);
+            double textWidth = text.getLayoutBounds().getWidth();
+            double textHeight = text.getLayoutBounds().getHeight();
+
+            // 사각형 배경 (검정색)
+            gc.setFill(Color.BLACK);
+            gc.fillRect(x, y, size, size);
+
+            // 심볼 그리기 (정중앙 정렬)
+            gc.setFill(Color.WHITE);
+            double tx = x + (size - textWidth) / 2.0;
+            double ty = y + (size + textHeight) / 2.0 - 4;
+            gc.fillText(symbol, tx, ty);
+
+            // 아이템 표시는 별도로
+            if (itemType != null && itemType != ItemType.NONE) {
+                String itemChar = itemType.getDisplayChar();
+                if (!itemChar.isEmpty()) {
+                    double itemFontSize = size * 0.4;
+                    Font itemFont = Font.font("Arial", javafx.scene.text.FontWeight.BOLD, itemFontSize);
+                    gc.setFont(itemFont);
+                    gc.setFill(Color.YELLOW);
+
+                    Text itemText = new Text(itemChar);
+                    itemText.setFont(itemFont);
+                    double itemTextWidth = itemText.getLayoutBounds().getWidth();
+
+                    double itemTx = x + size - itemTextWidth - 2;
+                    double itemTy = y + itemFontSize + 2;
+                    gc.fillText(itemChar, itemTx, itemTy);
+                }
+            }
+        } else {
+            // 일반 모드
+            gc.setFill(color);
+            gc.fillRect(x, y, size, size);
+
+            gc.setStroke(Color.WHITE);
+            gc.setLineWidth(1);
+            gc.strokeRect(x, y, size, size);
+
+            if (itemType != null && itemType != ItemType.NONE) {
+                String itemChar = itemType.getDisplayChar();
+                if (!itemChar.isEmpty()) {
+                    double fontSize = size * 0.6;
+                    Font font = Font.font("Arial", javafx.scene.text.FontWeight.BOLD, fontSize);
+                    gc.setFont(font);
+                    gc.setFill(Color.WHITE);
+
+                    Text text = new Text(itemChar);
+                    text.setFont(font);
+                    double textWidth = text.getLayoutBounds().getWidth();
+                    double textHeight = text.getLayoutBounds().getHeight();
+
+                    double tx = x + (size - textWidth) / 2.0;
+                    double ty = y + (size + textHeight) / 2.0 - 2;
+
+                    gc.fillText(itemChar, tx, ty);
+                }
+            }
+        }
+    }
+
+    // 색약모드용 보드 격자선 렌더링
+    private void drawGrid(GraphicsContext gc, Canvas canvas, double blockSize) {
+        gc.setStroke(Color.web("#444444"));
+        gc.setLineWidth(1);
+        double width = canvas.getWidth();
+        double height = canvas.getHeight();
+
+        // 세로선
+        for (int x = 0; x <= GameBoard.BOARD_WIDTH; x++) {
+            double px = x * blockSize;
+            gc.strokeLine(px, 0, px, height);
+        }
+        // 가로선
+        for (int y = 0; y <= GameBoard.BOARD_HEIGHT; y++) {
+            double py = y * blockSize;
+            gc.strokeLine(0, py, width, py);
         }
     }
 
@@ -701,8 +802,10 @@ public class BattleGameScreenController implements Initializable {
 
     private void showGameOver() {
         if (sceneManager != null) {
+            updateUI();
+
             // 대전 모드는 스코어보드에 기록하지 않음
-            sceneManager.showMainMenu();
+            //sceneManager.showMainMenu();
         }
     }
 }
