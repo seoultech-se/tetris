@@ -289,6 +289,11 @@ public class SceneManager {
                     (tetris.ui.controllers.PVPGameScreenController) controller;
                 pvpController.setSceneManager(this);
                 pvpController.setGameMode(gameMode);
+
+                // PVPNetworkSelectionController에 게임 컨트롤러 참조 전달
+                System.out.println("[SCENE] Registering game controller to network handler");
+                tetris.ui.controllers.PVPNetworkSelectionController.setGameScreenController(pvpController);
+
                 pvpController.setNetworkObjects(gameServer, gameClient, isServer);
             }
 

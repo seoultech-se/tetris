@@ -61,9 +61,14 @@ public class GameClient {
     private void startListening() {
         System.out.println("[CLIENT] Starting message listener thread...");
         listenerThread = new Thread(() -> {
+            int consecutiveErrors = 0;
+            final int MAX_CONSECUTIVE_ERRORS = 5;
+
             while (isRunning && socket != null && !socket.isClosed()) {
                 try {
                     Object msg = in.readObject();
+                    consecutiveErrors = 0; // 성공적으로 읽으면 에러 카운트 리셋
+
                     if (msg instanceof NetworkMessage) {
                         NetworkMessage netMsg = (NetworkMessage) msg;
                         if (netMsg.getType() == NetworkMessage.MessageType.PONG) {
@@ -89,14 +94,29 @@ public class GameClient {
                         messageHandler.onDisconnected();
                     }
                     break;
-                } catch (IOException | ClassNotFoundException e) {
-                    System.err.println("[CLIENT] Error reading message: " + e.getMessage());
+                } catch (IOException e) {
+                    consecutiveErrors++;
+                    System.err.println("[CLIENT] IO Error reading message (" + consecutiveErrors + "/" + MAX_CONSECUTIVE_ERRORS + "): " + e.getMessage());
+
+                    if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+                        System.err.println("[CLIENT] Too many consecutive errors, stopping listener");
+                        if (isRunning && messageHandler != null) {
+                            messageHandler.onError(e);
+                        }
+                        break;
+                    }
+                    // readObject()는 블로킹이므로 sleep 없이 다음 시도
+                    System.out.println("[CLIENT] Retrying read...");
+                } catch (ClassNotFoundException e) {
+                    System.err.println("[CLIENT] Class not found error: " + e.getMessage());
+                    // ClassNotFoundException은 심각한 에러이므로 중단
                     if (isRunning && messageHandler != null) {
                         messageHandler.onError(e);
                     }
                     break;
                 }
             }
+            System.out.println("[CLIENT] Listener thread stopped");
         });
         listenerThread.start();
         System.out.println("[CLIENT] Listener thread started");
@@ -122,7 +142,7 @@ public class GameClient {
         System.out.println("[CLIENT] Ping thread started");
     }
 
-    public void sendMessage(Object message) throws IOException {
+    public synchronized void sendMessage(Object message) throws IOException {
         if (out != null) {
             if (message instanceof NetworkMessage) {
                 NetworkMessage netMsg = (NetworkMessage) message;
@@ -136,17 +156,34 @@ public class GameClient {
     }
 
     public void close() {
+        System.out.println("[CLIENT] Closing client...");
         isRunning = false;
-        if (pingThread != null) {
+        if (pingThread != null && pingThread.isAlive()) {
             pingThread.interrupt();
+            System.out.println("[CLIENT] Ping thread interrupted");
+        }
+        if (listenerThread != null && listenerThread.isAlive()) {
+            listenerThread.interrupt();
+            System.out.println("[CLIENT] Listener thread interrupted");
         }
         try {
-            if (in != null) in.close();
-            if (out != null) out.close();
-            if (socket != null) socket.close();
+            if (in != null) {
+                in.close();
+                System.out.println("[CLIENT] Input stream closed");
+            }
+            if (out != null) {
+                out.close();
+                System.out.println("[CLIENT] Output stream closed");
+            }
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+                System.out.println("[CLIENT] Socket closed");
+            }
         } catch (IOException e) {
+            System.err.println("[CLIENT] Error during cleanup: " + e.getMessage());
             e.printStackTrace();
         }
+        System.out.println("[CLIENT] Client closed successfully");
     }
 
     public boolean isConnected() {

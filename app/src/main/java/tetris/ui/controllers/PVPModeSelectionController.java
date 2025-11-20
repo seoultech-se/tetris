@@ -76,6 +76,7 @@ public class PVPModeSelectionController implements Initializable {
         menuButtons = new ArrayList<>();
         menuButtons.add(normalPVPButton);
         menuButtons.add(itemPVPButton);
+        menuButtons.add(timeLimitPVPButton);
         menuButtons.add(backButton);
 
         // 모든 버튼에 마우스 호버 이벤트 핸들러 추가
@@ -178,9 +179,11 @@ public class PVPModeSelectionController implements Initializable {
     private void selectCurrentButton() {
         Button currentButton = menuButtons.get(currentIndex);
         if (currentButton == normalPVPButton) {
-            onNormalPVP(); // 서버 모드
+            onNormalPVP();
         } else if (currentButton == itemPVPButton) {
-            onItemPVP(); // 클라이언트 모드
+            onItemPVP();
+        } else if (currentButton == timeLimitPVPButton) {
+            onTimeLimitPVP();
         } else if (currentButton == backButton) {
             onBack();
         }
@@ -188,25 +191,29 @@ public class PVPModeSelectionController implements Initializable {
 
     @FXML
     private void onNormalPVP() {
-        // 서버 모드 시작
+        // 일반 모드로 네트워크 설정 화면으로 이동
+        System.out.println("[PVP-MODE] Normal mode selected");
         if (sceneManager != null) {
-            isServer = true;
-            startServer();
+            sceneManager.showPVPNetworkSelection("NORMAL");
         }
     }
 
     @FXML
     private void onItemPVP() {
-        // 클라이언트 모드 시작
+        // 아이템 모드로 네트워크 설정 화면으로 이동
+        System.out.println("[PVP-MODE] Item mode selected");
         if (sceneManager != null) {
-            isServer = false;
-            sceneManager.showPVPClientConnection();
+            sceneManager.showPVPNetworkSelection("ITEM");
         }
     }
 
     @FXML
     private void onTimeLimitPVP() {
-        // 사용 안함
+        // 시간제한 모드로 네트워크 설정 화면으로 이동
+        System.out.println("[PVP-MODE] Time limit mode selected");
+        if (sceneManager != null) {
+            sceneManager.showPVPNetworkSelection("TIME_LIMIT");
+        }
     }
 
     private void startServer() {
@@ -222,18 +229,24 @@ public class PVPModeSelectionController implements Initializable {
 
                 @Override
                 public void onClientConnected() {
+                    System.out.println("[PVP-MODE-SERVER] Client connected callback triggered");
                     Platform.runLater(() -> {
-                        System.out.println("클라이언트 연결됨!");
-                        
+                        System.out.println("[PVP-MODE-SERVER] Platform.runLater executed");
+                        System.out.println("[PVP-MODE-SERVER] Client connected!");
+
                         // 연결 확인 메시지 전송
                         try {
+                            System.out.println("[PVP-MODE-SERVER] Sending CONNECTION_ACCEPTED");
                             gameServer.sendMessage(new NetworkMessage(
-                                NetworkMessage.MessageType.CONNECTION_ACCEPTED, 
-                                "서버 연결 성공"
+                                NetworkMessage.MessageType.CONNECTION_ACCEPTED,
+                                "Server connection successful"
                             ));
-                            
+                            System.out.println("[PVP-MODE-SERVER] CONNECTION_ACCEPTED sent");
+
                             // 로비 화면으로 이동
+                            System.out.println("[PVP-MODE-SERVER] Transitioning to PVP Lobby");
                             sceneManager.showPVPLobby(gameServer, null, true);
+                            System.out.println("[PVP-MODE-SERVER] PVP Lobby transition complete");
                         } catch (IOException e) {
                             e.printStackTrace();
                         }

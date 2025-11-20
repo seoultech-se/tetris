@@ -66,6 +66,14 @@ public class PVPNetworkSelectionController implements Initializable {
     private boolean isServer = false;
     private static final int SERVER_PORT = 7777;
 
+    // 게임 컨트롤러 참조 (메시지 전달용)
+    private static PVPGameScreenController gameScreenController;
+
+    public static void setGameScreenController(PVPGameScreenController controller) {
+        System.out.println("[UI] Game screen controller registered");
+        gameScreenController = controller;
+    }
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         // 배경 이미지 크기 설정
@@ -118,6 +126,19 @@ public class PVPNetworkSelectionController implements Initializable {
     @FXML
     private void onServerMode() {
         System.out.println("[UI] Server mode selected");
+
+        // 이미 서버가 실행 중이면 정리
+        if (gameServer != null) {
+            System.out.println("[UI] Cleaning up existing server...");
+            gameServer.close();
+            gameServer = null;
+            try {
+                Thread.sleep(500); // 포트가 완전히 해제될 때까지 대기
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
         isServer = true;
         modeSelectionBox.setVisible(false);
         modeSelectionBox.setManaged(false);
@@ -134,14 +155,22 @@ public class PVPNetworkSelectionController implements Initializable {
             gameServer.setMessageHandler(new GameServer.MessageHandler() {
                 @Override
                 public void onMessageReceived(Object message) {
-                    System.out.println("[UI-SERVER] Message received, forwarding to handler");
-                    Platform.runLater(() -> handleServerMessage(message));
+                    System.out.println("[UI-SERVER] Message received");
+                    // 게임 컨트롤러가 설정되어 있으면 그쪽으로 전달
+                    if (gameScreenController != null && message instanceof NetworkMessage) {
+                        System.out.println("[UI-SERVER] Forwarding to game controller");
+                        gameScreenController.receiveNetworkMessage((NetworkMessage) message);
+                    } else {
+                        System.out.println("[UI-SERVER] Game controller not ready, handling locally");
+                        Platform.runLater(() -> handleServerMessage(message));
+                    }
                 }
 
                 @Override
                 public void onClientConnected() {
                     System.out.println("[UI-SERVER] Client connected callback triggered");
                     Platform.runLater(() -> {
+                        System.out.println("[UI-SERVER] Platform.runLater executed");
                         connectionStatusLabel.setText("Client Connected!");
                         connectionStatusLabel.setStyle("-fx-text-fill: #00ff00;");
 
@@ -152,21 +181,15 @@ public class PVPNetworkSelectionController implements Initializable {
                                 NetworkMessage.MessageType.CONNECTION_ACCEPTED,
                                 gameMode
                             ));
-
-                            // 잠시 후 게임 시작
-                            new Thread(() -> {
-                                try {
-                                    System.out.println("[UI-SERVER] Waiting 1s before starting game");
-                                    Thread.sleep(1000);
-                                    Platform.runLater(() -> startGame());
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                }
-                            }).start();
+                            System.out.println("[UI-SERVER] CONNECTION_ACCEPTED sent successfully");
                         } catch (IOException e) {
                             System.err.println("[UI-SERVER] Failed to send CONNECTION_ACCEPTED: " + e.getMessage());
                             e.printStackTrace();
                         }
+
+                        // 즉시 게임 시작 (별도 스레드 없이)
+                        System.out.println("[UI-SERVER] Starting game immediately");
+                        startGame();
                     });
                 }
 
@@ -229,8 +252,15 @@ public class PVPNetworkSelectionController implements Initializable {
         gameClient.setMessageHandler(new GameClient.MessageHandler() {
             @Override
             public void onMessageReceived(Object message) {
-                System.out.println("[UI-CLIENT] Message received, forwarding to handler");
-                Platform.runLater(() -> handleClientMessage(message));
+                System.out.println("[UI-CLIENT] Message received");
+                // 게임 컨트롤러가 설정되어 있으면 그쪽으로 전달
+                if (gameScreenController != null && message instanceof NetworkMessage) {
+                    System.out.println("[UI-CLIENT] Forwarding to game controller");
+                    gameScreenController.receiveNetworkMessage((NetworkMessage) message);
+                } else {
+                    System.out.println("[UI-CLIENT] Game controller not ready, handling locally");
+                    Platform.runLater(() -> handleClientMessage(message));
+                }
             }
 
             @Override
@@ -315,7 +345,12 @@ public class PVPNetworkSelectionController implements Initializable {
             System.out.println("[UI-CLIENT] Handling message: " + netMsg.getType());
             switch (netMsg.getType()) {
                 case CONNECTION_ACCEPTED:
-                    System.out.println("[UI-CLIENT] CONNECTION_ACCEPTED received, starting game");
+                    // 서버가 보낸 게임 모드를 사용
+                    String serverGameMode = (String) netMsg.getData();
+                    System.out.println("[UI-CLIENT] CONNECTION_ACCEPTED received");
+                    System.out.println("[UI-CLIENT] Server game mode: " + serverGameMode);
+                    System.out.println("[UI-CLIENT] Updating local game mode from " + gameMode + " to " + serverGameMode);
+                    this.gameMode = serverGameMode;
                     clientStatusLabel.setText("Starting Game...");
                     startGame();
                     break;
@@ -349,13 +384,19 @@ public class PVPNetworkSelectionController implements Initializable {
     }
 
     private void cleanup() {
+        System.out.println("[UI] Cleaning up network objects...");
         if (gameServer != null) {
+            System.out.println("[UI] Closing game server...");
             gameServer.close();
             gameServer = null;
         }
         if (gameClient != null) {
+            System.out.println("[UI] Closing game client...");
             gameClient.close();
             gameClient = null;
         }
+        // 게임 컨트롤러 참조 제거
+        gameScreenController = null;
+        System.out.println("[UI] Cleanup complete");
     }
 }

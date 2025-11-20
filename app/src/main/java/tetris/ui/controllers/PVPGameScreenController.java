@@ -153,6 +153,18 @@ public class PVPGameScreenController implements Initializable {
         updateGameModeLabel();
     }
 
+    // PVPNetworkSelectionController에서 메시지 전달용
+    public void receiveNetworkMessage(NetworkMessage message) {
+        try {
+            System.out.println("[PVP-GAME] receiveNetworkMessage called with: " + message.getType());
+            handleNetworkMessage(message);
+            System.out.println("[PVP-GAME] Message handled successfully");
+        } catch (Exception e) {
+            System.err.println("[PVP-GAME] Error in receiveNetworkMessage: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
     public void setNetworkObjects(Object server, Object client, boolean isServer) {
         System.out.println("[PVP-GAME] setNetworkObjects called");
         this.gameServer = (GameServer) server;
@@ -198,74 +210,11 @@ public class PVPGameScreenController implements Initializable {
     }
 
     private void setupNetworkHandlers() {
-        if (isServer && gameServer != null) {
-            gameServer.setMessageHandler(new GameServer.MessageHandler() {
-                @Override
-                public void onMessageReceived(Object message) {
-                    if (message instanceof NetworkMessage) {
-                        handleNetworkMessage((NetworkMessage) message);
-                    }
-                }
-
-                @Override
-                public void onClientConnected() {
-                    System.out.println("클라이언트 연결됨");
-                }
-
-                @Override
-                public void onClientDisconnected() {
-                    Platform.runLater(() -> {
-                        statusLabel.setText("상대방 연결 끊김");
-                        if (gameLoop != null) {
-                            gameLoop.stop();
-                        }
-                    });
-                }
-
-                @Override
-                public void onError(Exception e) {
-                    System.err.println("서버 에러: " + e.getMessage());
-                }
-            });
-        } else if (!isServer && gameClient != null) {
-            gameClient.setMessageHandler(new GameClient.MessageHandler() {
-                @Override
-                public void onMessageReceived(Object message) {
-                    if (message instanceof NetworkMessage) {
-                        handleNetworkMessage((NetworkMessage) message);
-                    }
-                }
-
-                @Override
-                public void onConnected() {
-                    System.out.println("서버 연결됨");
-                }
-
-                @Override
-                public void onDisconnected() {
-                    Platform.runLater(() -> {
-                        statusLabel.setText("서버 연결 끊김");
-                        if (gameLoop != null) {
-                            gameLoop.stop();
-                        }
-                    });
-                }
-
-                @Override
-                public void onError(Exception e) {
-                    System.err.println("클라이언트 에러: " + e.getMessage());
-                }
-
-                @Override
-                public void onRttUpdate(long rtt) {
-                    Platform.runLater(() -> {
-                        if (latencyLabel != null) {
-                            latencyLabel.setText("RTT: " + rtt + " ms");
-                        }
-                    });
-                }
-            });
-        }
+        System.out.println("[PVP-GAME] Network handlers already set in PVPNetworkSelectionController");
+        System.out.println("[PVP-GAME] Skipping MessageHandler setup to avoid conflicts");
+        // MessageHandler는 PVPNetworkSelectionController에서 이미 설정되었으므로
+        // 여기서는 아무것도 하지 않습니다.
+        // 대신 PVPNetworkSelectionController의 핸들러가 이 컨트롤러의 메서드를 호출하도록 수정합니다.
     }
 
     private void handleNetworkMessage(NetworkMessage message) {
@@ -355,7 +304,7 @@ public class PVPGameScreenController implements Initializable {
         // 1) 나중에 Scene 이 붙는 경우 대비
         myCanvas.sceneProperty().addListener((obs, oldScene, newScene) -> {
             if (newScene != null) {
-                System.out.println("[PVP] Scene 변경 감지, 키 핸들러 등록");
+                System.out.println("[PVP] Scene change detected, registering key handler");
                 newScene.setOnKeyPressed(handler);
                 // 포커스 보장
                 Platform.runLater(() -> newScene.getRoot().requestFocus());
@@ -364,7 +313,7 @@ public class PVPGameScreenController implements Initializable {
 
         // 2) 이미 Scene 이 붙어 있는 상태라면 바로 등록
         if (myCanvas.getScene() != null) {
-            System.out.println("[PVP] Scene 이미 존재, 키 핸들러 즉시 등록");
+            System.out.println("[PVP] Scene already exists, registering key handler immediately");
             myCanvas.getScene().setOnKeyPressed(handler);
             Platform.runLater(() -> myCanvas.getScene().getRoot().requestFocus());
         }
@@ -378,81 +327,90 @@ public class PVPGameScreenController implements Initializable {
             
             @Override
             public void handle(long now) {
-                if (battleEngine == null) return;
+                try {
+                    if (battleEngine == null) return;
 
-                if (lastUpdateTimeMe == 0) {
-                    lastUpdateTimeMe = now;
-                }
-                if (lastUpdateTimeOpponent == 0) {
-                    lastUpdateTimeOpponent = now;
-                }
+                    if (lastUpdateTimeMe == 0) {
+                        lastUpdateTimeMe = now;
+                    }
+                    if (lastUpdateTimeOpponent == 0) {
+                        lastUpdateTimeOpponent = now;
+                    }
 
-                // 게임 오버 체크
-                if (!battleEngine.isGameRunning()) {
-                    gameLoop.stop();
-                    showGameOver();
-                    return;
-                }
+                    // 게임 오버 체크
+                    if (!battleEngine.isGameRunning()) {
+                        gameLoop.stop();
+                        showGameOver();
+                        return;
+                    }
 
-                // 업데이트
-                battleEngine.update();
+                    // 업데이트
+                    battleEngine.update();
 
-                // 내 블록 낙하
-                if (!isAnimatingClear && now - lastUpdateTimeMe >= fallSpeedMe) {
-                    if (battleEngine.isGameRunning() && !battleEngine.isPaused()) {
-                        getMyEngine().movePieceDown();
+                    // 내 블록 낙하
+                    if (!isAnimatingClear && now - lastUpdateTimeMe >= fallSpeedMe) {
+                        if (battleEngine.isGameRunning() && !battleEngine.isPaused()) {
+                            getMyEngine().movePieceDown();
 
-                        // 블록이 배치되었는지 확인 후 줄 삭제 처리
-                        if (getMyEngine().isPieceJustPlaced()) {
-                            // 줄 삭제 수동 처리
-                            java.util.List<Integer> fullLines = getMyEngine().getFullLines();
-                            if (!fullLines.isEmpty()) {
-                                getMyEngine().clearLinesManually();
+                            // 블록이 배치되었는지 확인 후 줄 삭제 처리
+                            if (getMyEngine().isPieceJustPlaced()) {
+                                // 줄 삭제 수동 처리
+                                java.util.List<Integer> fullLines = getMyEngine().getFullLines();
+                                if (!fullLines.isEmpty()) {
+                                    getMyEngine().clearLinesManually();
+                                }
+                                getMyEngine().resetPieceJustPlaced();
                             }
-                            getMyEngine().resetPieceJustPlaced();
+
+                            // 줄 삭제 체크 및 공격 전송
+                            java.util.List<Integer> currentLinesCleared = getMyEngine().getFullLines();
+                            if (!currentLinesCleared.isEmpty()) {
+                                playerLinesToClear = currentLinesCleared;
+                                isAnimatingClear = true;
+                                clearAnimationStartTime = now;
+                            }
+
+                            lastUpdateTimeMe = now;
+
+                            // 상태 업데이트 전송 (빈도 제한 적용)
+                            sendMyStateThrottled(now);
                         }
+                    }
 
-                        // 줄 삭제 체크 및 공격 전송
-                        java.util.List<Integer> currentLinesCleared = getMyEngine().getFullLines();
-                        if (!currentLinesCleared.isEmpty()) {
-                            playerLinesToClear = currentLinesCleared;
-                            isAnimatingClear = true;
-                            clearAnimationStartTime = now;
+                    // 애니메이션 처리
+                    if (isAnimatingClear) {
+                        long elapsed = now - clearAnimationStartTime;
+                        if (elapsed >= CLEAR_ANIMATION_DURATION) {
+                            int beforeCleared = getMyEngine().getLinesCleared();
+                            getMyEngine().clearLinesManually();
+                            int afterCleared = getMyEngine().getLinesCleared();
+                            int cleared = afterCleared - beforeCleared;
+
+                            if (cleared >= 2) {
+                                int lastBlockCol = getMyEngine().getLastPlacedBlockCol();
+
+                            }
+
+                            isAnimatingClear = false;
+                            playerLinesToClear = null;
+                            lastUpdateTimeMe = now;
                         }
+                    }
 
-                        lastUpdateTimeMe = now;
-
-                        // 상태 업데이트 전송 (빈도 제한 적용)
-                        sendMyStateThrottled(now);
+                    // 렌더링
+                    renderMyBoard();
+                    renderOpponentBoard();
+                    renderNextPieces();
+                    updateUI();
+                    updateFallSpeeds();
+                } catch (Exception e) {
+                    System.err.println("[PVP-GAME] Error in game loop: " + e.getMessage());
+                    e.printStackTrace();
+                    // 게임 루프 중지하여 크래시 방지
+                    if (gameLoop != null) {
+                        gameLoop.stop();
                     }
                 }
-                
-                // 애니메이션 처리
-                if (isAnimatingClear) {
-                    long elapsed = now - clearAnimationStartTime;
-                    if (elapsed >= CLEAR_ANIMATION_DURATION) {
-                        int beforeCleared = getMyEngine().getLinesCleared();
-                        getMyEngine().clearLinesManually();
-                        int afterCleared = getMyEngine().getLinesCleared();
-                        int cleared = afterCleared - beforeCleared;
-
-                        if (cleared >= 2) {
-                            int lastBlockCol = getMyEngine().getLastPlacedBlockCol();
-                            
-                        }
-                        
-                        isAnimatingClear = false;
-                        playerLinesToClear = null;
-                        lastUpdateTimeMe = now;
-                    }
-                }
-
-                // 렌더링
-                renderMyBoard();
-                renderOpponentBoard();
-                renderNextPieces();
-                updateUI();
-                updateFallSpeeds();
             }
         };
         gameLoop.start();
