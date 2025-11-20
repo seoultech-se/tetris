@@ -86,6 +86,10 @@ public class PVPGameScreenController implements Initializable {
     private long fallSpeedMe = 1_000_000_000;
     private long fallSpeedOpponent = 1_000_000_000;
 
+    // 네트워크 트래픽 최적화: 상태 전송 빈도 제한
+    private long lastStateSentTime = 0;
+    private static final long STATE_SEND_INTERVAL = 50_000_000; // 50ms (20 FPS)
+
     // 상대방 상태 데이터
     private GameStateData opponentState;
     
@@ -297,17 +301,13 @@ public class PVPGameScreenController implements Initializable {
     }
 
     private void receiveAttack(int lines, int emptyCol) {
-        // 상대방으로부터 공격을 받아 내 공격 큐에 추가
+        // 상대방으로부터 공격을 받아 내 공격 큐에 직접 추가
         if (isServer) {
-            // 서버는 Player1 - 상대는 Player2의 공격을 받음
-            for (int i = 0; i < lines; i++) {
-                battleEngine.processPlayer2Attack(1, emptyCol);
-            }
+            // 서버는 Player1 - 상대방의 공격을 Player1에게 추가
+            battleEngine.addAttackToPlayer1(lines, emptyCol);
         } else {
-            // 클라이언트는 Player2 - 상대는 Player1의 공격을 받음
-            for (int i = 0; i < lines; i++) {
-                battleEngine.processPlayer1Attack(1, emptyCol);
-            }
+            // 클라이언트는 Player2 - 상대방의 공격을 Player2에게 추가
+            battleEngine.addAttackToPlayer2(lines, emptyCol);
         }
     }
 
@@ -331,9 +331,8 @@ public class PVPGameScreenController implements Initializable {
                                 battleEngine.handlePlayer2KeyPress(code);
                             }
                             event.consume();
-                            
-                            // 내 상태를 상대방에게 전송
-                            sendMyState();
+
+                            // 키 입력 시에는 상태 전송 생략 (게임 루프에서 전송)
                         }
                     });
                 }
@@ -372,24 +371,34 @@ public class PVPGameScreenController implements Initializable {
                 if (now - lastUpdateTimeMe >= fallSpeedMe) {
                     if (battleEngine.isGameRunning() && !battleEngine.isPaused()) {
                         getMyEngine().movePieceDown();
-                        
+
+                        // 블록이 배치되었는지 확인 후 줄 삭제 처리
+                        if (getMyEngine().isPieceJustPlaced()) {
+                            // 줄 삭제 수동 처리
+                            java.util.List<Integer> fullLines = getMyEngine().getFullLines();
+                            if (!fullLines.isEmpty()) {
+                                getMyEngine().clearLinesManually();
+                            }
+                            getMyEngine().resetPieceJustPlaced();
+                        }
+
                         // 줄 삭제 체크 및 공격 전송
                         int currentLinesCleared = getMyEngine().getLinesCleared();
                         if (currentLinesCleared > myPreviousLinesCleared) {
                             int cleared = currentLinesCleared - myPreviousLinesCleared;
                             myPreviousLinesCleared = currentLinesCleared;
-                            
+
                             // 2줄 이상 삭제시 공격
                             if (cleared >= 2) {
                                 int lastBlockCol = getMyEngine().getLastPlacedBlockCol();
                                 sendAttack(cleared, lastBlockCol);
                             }
                         }
-                        
+
                         lastUpdateTimeMe = now;
-                        
-                        // 상태 업데이트 전송
-                        sendMyState();
+
+                        // 상태 업데이트 전송 (빈도 제한 적용)
+                        sendMyStateThrottled(now);
                     }
                 }
 
@@ -425,15 +434,15 @@ public class PVPGameScreenController implements Initializable {
 
     private void sendMyState() {
         if (battleEngine == null) return;
-        
+
         tetris.game.GameEngine myEngine = getMyEngine();
         GameBoard board = myEngine.getGameBoard();
         Piece currentPiece = myEngine.getCurrentPiece();
         Piece nextPiece = myEngine.getNextPiece();
-        
+
         int[][] boardData = new int[GameBoard.BOARD_HEIGHT][GameBoard.BOARD_WIDTH];
         int[][] itemBoardData = new int[GameBoard.BOARD_HEIGHT][GameBoard.BOARD_WIDTH];
-        
+
         for (int row = 0; row < GameBoard.BOARD_HEIGHT; row++) {
             for (int col = 0; col < GameBoard.BOARD_WIDTH; col++) {
                 boardData[row][col] = board.getCell(row, col);
@@ -441,27 +450,28 @@ public class PVPGameScreenController implements Initializable {
                 itemBoardData[row][col] = (itemType != null) ? itemType.ordinal() : 0;
             }
         }
-        
+
         int[][] currentShape = (currentPiece != null) ? currentPiece.getShape() : new int[0][0];
         int currentX = (currentPiece != null) ? currentPiece.getX() : 0;
         int currentY = (currentPiece != null) ? currentPiece.getY() : 0;
         int currentType = (currentPiece != null) ? currentPiece.getType() : 0;
-        
+
         int[][] nextShape = (nextPiece != null) ? nextPiece.getShape() : new int[0][0];
         int nextType = (nextPiece != null) ? nextPiece.getType() : 0;
-        
+
         int incomingLines = getMyPendingAttacks();
-        
+
         GameStateData stateData = new GameStateData(
             boardData, itemBoardData,
+            myEngine.getScore(),
             myEngine.getLevel(), myEngine.getLinesCleared(),
             !myEngine.isGameRunning(),
             currentShape, currentX, currentY, currentType,
             nextShape, nextType, incomingLines
         );
-        
+
         NetworkMessage message = new NetworkMessage(NetworkMessage.MessageType.GAME_STATE_UPDATE, stateData);
-        
+
         try {
             if (isServer && gameServer != null) {
                 gameServer.sendMessage(message);
@@ -470,6 +480,17 @@ public class PVPGameScreenController implements Initializable {
             }
         } catch (IOException e) {
             System.err.println("상태 전송 실패: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 상태 전송 빈도 제한 (네트워크 트래픽 최적화)
+     * @param now 현재 시간 (나노초)
+     */
+    private void sendMyStateThrottled(long now) {
+        if (now - lastStateSentTime >= STATE_SEND_INTERVAL) {
+            sendMyState();
+            lastStateSentTime = now;
         }
     }
 

@@ -283,7 +283,29 @@ public class BattleGameEngine {
         applyPendingAttacks(1);
         applyPendingAttacks(2);
     }
-    
+
+    /**
+     * 플레이어 1에게 직접 공격 추가 (네트워크로 받은 공격용)
+     * @param lines 공격 줄 수
+     * @param emptyCol 빈칸 위치
+     */
+    public void addAttackToPlayer1(int lines, int emptyCol) {
+        for (int i = 0; i < lines; i++) {
+            pendingAttacksToPlayer1.offer(new AttackInfo(1, emptyCol));
+        }
+    }
+
+    /**
+     * 플레이어 2에게 직접 공격 추가 (네트워크로 받은 공격용)
+     * @param lines 공격 줄 수
+     * @param emptyCol 빈칸 위치
+     */
+    public void addAttackToPlayer2(int lines, int emptyCol) {
+        for (int i = 0; i < lines; i++) {
+            pendingAttacksToPlayer2.offer(new AttackInfo(1, emptyCol));
+        }
+    }
+
     /**
      * 플레이어 1에게 대기 중인 공격 줄 수 반환
      */

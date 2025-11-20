@@ -26,15 +26,26 @@ public class GameClient {
 
     public void connect(String serverIP, int port) throws IOException {
         socket = new Socket(serverIP, port);
+
+        // ObjectOutputStream을 먼저 생성하고 flush (헤더 전송)
         out = new ObjectOutputStream(socket.getOutputStream());
         out.flush();
+
+        // 서버가 ObjectOutputStream을 생성할 시간 확보
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+        }
+
+        // ObjectInputStream 생성
         in = new ObjectInputStream(socket.getInputStream());
         isRunning = true;
-        
+
         if (messageHandler != null) {
             messageHandler.onConnected();
         }
-        
+
         startListening();
         startPinging();
     }

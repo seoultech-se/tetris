@@ -35,15 +35,25 @@ public class GameServer {
                 System.out.println("서버 시작, 클라이언트 대기 중...");
                 clientSocket = serverSocket.accept();
                 System.out.println("클라이언트 연결됨: " + clientSocket.getInetAddress());
-                
+
+                // ObjectOutputStream을 먼저 생성하고 flush (헤더 전송)
                 out = new ObjectOutputStream(clientSocket.getOutputStream());
                 out.flush();
+
+                // 클라이언트가 OutputStream을 생성할 시간 확보
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                }
+
+                // ObjectInputStream 생성
                 in = new ObjectInputStream(clientSocket.getInputStream());
-                
+
                 if (messageHandler != null) {
                     messageHandler.onClientConnected();
                 }
-                
+
                 startListening();
             } catch (IOException e) {
                 if (messageHandler != null) {
