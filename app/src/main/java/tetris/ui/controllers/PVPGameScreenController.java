@@ -86,15 +86,21 @@ public class PVPGameScreenController implements Initializable {
     private long fallSpeedMe = 1_000_000_000;
     private long fallSpeedOpponent = 1_000_000_000;
 
-    // 네트워크 트래픽 최적화: 상태 전송 빈도 제한
-    private long lastStateSentTime = 0;
-    private static final long STATE_SEND_INTERVAL = 50_000_000; // 50ms (20 FPS)
+    // 줄 삭제 애니메이션 관련
+    private java.util.List<Integer> playerLinesToClear = null;
+    private long clearAnimationStartTime = 0;
+    private static final long CLEAR_ANIMATION_DURATION = 100_000_000;
+    private boolean isAnimatingClear = false;
 
     // 상대방 상태 데이터
     private GameStateData opponentState;
     
     // 상대방 공격 큐
     private int opponentIncomingLines = 0;
+
+    // 상태 전송 빈도 제한 관련
+    private long lastStateSentTime = 0;
+    private static final long STATE_SEND_INTERVAL = 50_000_000; // 50ms (나노초 단위)
 
     private int BLOCK_SIZE = 25;
 
@@ -148,24 +154,29 @@ public class PVPGameScreenController implements Initializable {
     }
 
     public void setNetworkObjects(Object server, Object client, boolean isServer) {
+        System.out.println("[PVP-GAME] setNetworkObjects called");
         this.gameServer = (GameServer) server;
         this.gameClient = (GameClient) client;
         this.isServer = isServer;
-        
-        System.out.println("네트워크 객체 설정 완료");
-        System.out.println("서버 모드: " + isServer);
-        System.out.println("게임 모드: " + gameMode);
+
+        System.out.println("[PVP-GAME] Network objects configured");
+        System.out.println("[PVP-GAME] Server mode: " + isServer);
+        System.out.println("[PVP-GAME] Game mode: " + gameMode);
 
         // BattleGameEngine 초기화
+        System.out.println("[PVP-GAME] Initializing game engine...");
         initializeGame();
-        
+
         // 네트워크 메시지 핸들러 설정
+        System.out.println("[PVP-GAME] Setting up network handlers...");
         setupNetworkHandlers();
-        
+
         // 키 입력 핸들러 설정
+        System.out.println("[PVP-GAME] Setting up key handler...");
         setupKeyHandler();
-        
+
         // 게임 시작
+        System.out.println("[PVP-GAME] Starting game...");
         startGame();
     }
 
@@ -259,41 +270,45 @@ public class PVPGameScreenController implements Initializable {
 
     private void handleNetworkMessage(NetworkMessage message) {
         Platform.runLater(() -> {
+            System.out.println("[PVP-GAME] Handling network message: " + message.getType());
             switch (message.getType()) {
                 case GAME_STATE_UPDATE:
                     GameStateData stateData = (GameStateData) message.getData();
                     opponentState = stateData;
                     opponentIncomingLines = stateData.getIncomingAttackLines();
                     break;
-                    
+
                 case ATTACK:
                     // 상대방이 공격을 보냄
                     @SuppressWarnings("unchecked")
                     Map<String, Object> attackData = (Map<String, Object>) message.getData();
                     int lines = (Integer) attackData.get("lines");
                     int emptyCol = (Integer) attackData.get("emptyCol");
+                    System.out.println("[PVP-GAME] Received attack: " + lines + " lines, empty col: " + emptyCol);
                     receiveAttack(lines, emptyCol);
                     break;
-                    
+
                 case GAME_OVER:
                     @SuppressWarnings("unchecked")
                     Map<String, Object> gameOverData = (Map<String, Object>) message.getData();
                     boolean opponentLost = (Boolean) gameOverData.get("isGameOver");
                     if (opponentLost) {
-                        statusLabel.setText("승리!");
+                        System.out.println("[PVP-GAME] Opponent lost - Victory!");
+                        statusLabel.setText("Victory!");
                         if (gameLoop != null) {
                             gameLoop.stop();
                         }
                     }
                     break;
-                    
+
                 case DISCONNECT:
-                    statusLabel.setText("상대방이 나갔습니다");
+                    System.out.println("[PVP-GAME] Opponent disconnected");
+                    statusLabel.setText("Opponent Left");
                     if (gameLoop != null) {
                         gameLoop.stop();
                     }
                     break;
-                
+
                 default:
                     break;
             }
@@ -312,31 +327,46 @@ public class PVPGameScreenController implements Initializable {
     }
 
     private void setupKeyHandler() {
-        if (myCanvas != null) {
-            myCanvas.sceneProperty().addListener((obs, oldScene, newScene) -> {
-                if (newScene != null) {
-                    newScene.setOnKeyPressed(event -> {
-                        javafx.scene.input.KeyCode code = event.getCode();
-                        
-                        if (code == javafx.scene.input.KeyCode.ESCAPE) {
-                            onPause();
-                            event.consume();
-                            return;
-                        }
-                        
-                        if (battleEngine != null && battleEngine.isGameRunning() && !battleEngine.isPaused()) {
-                            if (isServer) {
-                                battleEngine.handlePlayer1KeyPress(code);
-                            } else {
-                                battleEngine.handlePlayer2KeyPress(code);
-                            }
-                            event.consume();
+        if (myCanvas == null) return;
+        
+        // 공통으로 쓸 핸들러 함수로 분리
+        javafx.event.EventHandler<javafx.scene.input.KeyEvent> handler = event -> {
+            javafx.scene.input.KeyCode code = event.getCode();
 
-                            // 키 입력 시에는 상태 전송 생략 (게임 루프에서 전송)
-                        }
-                    });
+            if (code == javafx.scene.input.KeyCode.ESCAPE) {
+                onPause();
+                event.consume();
+                return;
+            }
+
+            if (battleEngine != null & battleEngine.isGameRunning() && !battleEngine.isPaused()) {
+                if (isServer) {
+                    battleEngine.handlePlayer1KeyPress(code);
+                } else {
+                    battleEngine.handlePlayer2KeyPress(code);
                 }
-            });
+                event.consume();
+
+                // 내 상태를 상대방에게 전송
+                sendMyState();
+            }
+        };
+
+        // 1) 나중에 Scene 이 붙는 경우 대비
+        myCanvas.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+                System.out.println("[PVP] Scene 변경 감지, 키 핸들러 등록");
+                newScene.setOnKeyPressed(handler);
+                // 포커스 보장
+                Platform.runLater(() -> newScene.getRoot().requestFocus());
+            }
+        });
+
+        // 2) 이미 Scene 이 붙어 있는 상태라면 바로 등록
+        if (myCanvas.getScene() != null) {
+            System.out.println("[PVP] Scene 이미 존재, 키 핸들러 즉시 등록");
+            myCanvas.getScene().setOnKeyPressed(handler);
+            Platform.runLater(() -> myCanvas.getScene().getRoot().requestFocus());
         }
     }
 
@@ -368,7 +398,7 @@ public class PVPGameScreenController implements Initializable {
                 battleEngine.update();
 
                 // 내 블록 낙하
-                if (now - lastUpdateTimeMe >= fallSpeedMe) {
+                if (!isAnimatingClear && now - lastUpdateTimeMe >= fallSpeedMe) {
                     if (battleEngine.isGameRunning() && !battleEngine.isPaused()) {
                         getMyEngine().movePieceDown();
 
@@ -383,22 +413,37 @@ public class PVPGameScreenController implements Initializable {
                         }
 
                         // 줄 삭제 체크 및 공격 전송
-                        int currentLinesCleared = getMyEngine().getLinesCleared();
-                        if (currentLinesCleared > myPreviousLinesCleared) {
-                            int cleared = currentLinesCleared - myPreviousLinesCleared;
-                            myPreviousLinesCleared = currentLinesCleared;
-
-                            // 2줄 이상 삭제시 공격
-                            if (cleared >= 2) {
-                                int lastBlockCol = getMyEngine().getLastPlacedBlockCol();
-                                sendAttack(cleared, lastBlockCol);
-                            }
+                        java.util.List<Integer> currentLinesCleared = getMyEngine().getFullLines();
+                        if (!currentLinesCleared.isEmpty()) {
+                            playerLinesToClear = currentLinesCleared;
+                            isAnimatingClear = true;
+                            clearAnimationStartTime = now;
                         }
 
                         lastUpdateTimeMe = now;
 
                         // 상태 업데이트 전송 (빈도 제한 적용)
                         sendMyStateThrottled(now);
+                    }
+                }
+                
+                // 애니메이션 처리
+                if (isAnimatingClear) {
+                    long elapsed = now - clearAnimationStartTime;
+                    if (elapsed >= CLEAR_ANIMATION_DURATION) {
+                        int beforeCleared = getMyEngine().getLinesCleared();
+                        getMyEngine().clearLinesManually();
+                        int afterCleared = getMyEngine().getLinesCleared();
+                        int cleared = afterCleared - beforeCleared;
+
+                        if (cleared >= 2) {
+                            int lastBlockCol = getMyEngine().getLastPlacedBlockCol();
+                            
+                        }
+                        
+                        isAnimatingClear = false;
+                        playerLinesToClear = null;
+                        lastUpdateTimeMe = now;
                     }
                 }
 
@@ -463,8 +508,7 @@ public class PVPGameScreenController implements Initializable {
 
         GameStateData stateData = new GameStateData(
             boardData, itemBoardData,
-            myEngine.getScore(),
-            myEngine.getLevel(), myEngine.getLinesCleared(),
+            myEngine.getScore(), myEngine.getLevel(), myEngine.getLinesCleared(),
             !myEngine.isGameRunning(),
             currentShape, currentX, currentY, currentType,
             nextShape, nextType, incomingLines

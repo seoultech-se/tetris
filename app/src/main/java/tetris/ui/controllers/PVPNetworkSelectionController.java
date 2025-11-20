@@ -117,6 +117,7 @@ public class PVPNetworkSelectionController implements Initializable {
 
     @FXML
     private void onServerMode() {
+        System.out.println("[UI] Server mode selected");
         isServer = true;
         modeSelectionBox.setVisible(false);
         modeSelectionBox.setManaged(false);
@@ -124,32 +125,38 @@ public class PVPNetworkSelectionController implements Initializable {
         serverBox.setManaged(true);
 
         try {
+            System.out.println("[UI] Creating server on port " + SERVER_PORT);
             gameServer = new GameServer(SERVER_PORT);
             String serverIP = gameServer.getServerIP();
+            System.out.println("[UI] Server IP: " + serverIP);
             serverIpLabel.setText(serverIP);
-            
+
             gameServer.setMessageHandler(new GameServer.MessageHandler() {
                 @Override
                 public void onMessageReceived(Object message) {
+                    System.out.println("[UI-SERVER] Message received, forwarding to handler");
                     Platform.runLater(() -> handleServerMessage(message));
                 }
 
                 @Override
                 public void onClientConnected() {
+                    System.out.println("[UI-SERVER] Client connected callback triggered");
                     Platform.runLater(() -> {
-                        connectionStatusLabel.setText("클라이언트 연결됨!");
+                        connectionStatusLabel.setText("Client Connected!");
                         connectionStatusLabel.setStyle("-fx-text-fill: #00ff00;");
-                        
+
                         // 연결 확인 메시지 전송
                         try {
+                            System.out.println("[UI-SERVER] Sending CONNECTION_ACCEPTED message");
                             gameServer.sendMessage(new NetworkMessage(
-                                NetworkMessage.MessageType.CONNECTION_ACCEPTED, 
+                                NetworkMessage.MessageType.CONNECTION_ACCEPTED,
                                 gameMode
                             ));
-                            
+
                             // 잠시 후 게임 시작
                             new Thread(() -> {
                                 try {
+                                    System.out.println("[UI-SERVER] Waiting 1s before starting game");
                                     Thread.sleep(1000);
                                     Platform.runLater(() -> startGame());
                                 } catch (InterruptedException e) {
@@ -157,6 +164,7 @@ public class PVPNetworkSelectionController implements Initializable {
                                 }
                             }).start();
                         } catch (IOException e) {
+                            System.err.println("[UI-SERVER] Failed to send CONNECTION_ACCEPTED: " + e.getMessage());
                             e.printStackTrace();
                         }
                     });
@@ -164,25 +172,29 @@ public class PVPNetworkSelectionController implements Initializable {
 
                 @Override
                 public void onClientDisconnected() {
+                    System.out.println("[UI-SERVER] Client disconnected");
                     Platform.runLater(() -> {
-                        connectionStatusLabel.setText("클라이언트 연결 끊김");
+                        connectionStatusLabel.setText("Client Disconnected");
                         connectionStatusLabel.setStyle("-fx-text-fill: #ff0000;");
                     });
                 }
 
                 @Override
                 public void onError(Exception e) {
+                    System.err.println("[UI-SERVER] Error: " + e.getMessage());
                     Platform.runLater(() -> {
-                        connectionStatusLabel.setText("오류: " + e.getMessage());
+                        connectionStatusLabel.setText("Error: " + e.getMessage());
                         connectionStatusLabel.setStyle("-fx-text-fill: #ff0000;");
                     });
                 }
             });
-            
+
+            System.out.println("[UI] Starting server...");
             gameServer.start();
-            
+
         } catch (IOException e) {
-            connectionStatusLabel.setText("서버 시작 실패: " + e.getMessage());
+            System.err.println("[UI] Server creation failed: " + e.getMessage());
+            connectionStatusLabel.setText("Server Start Failed: " + e.getMessage());
             connectionStatusLabel.setStyle("-fx-text-fill: #ff0000;");
             e.printStackTrace();
         }
@@ -200,36 +212,43 @@ public class PVPNetworkSelectionController implements Initializable {
     @FXML
     private void onConnect() {
         String serverIP = serverIpField.getText().trim();
+        System.out.println("[UI] Connect button clicked, IP: " + serverIP);
         if (serverIP.isEmpty()) {
-            clientStatusLabel.setText("IP 주소를 입력하세요");
+            System.out.println("[UI] Empty IP address");
+            clientStatusLabel.setText("Please enter IP address");
             clientStatusLabel.setStyle("-fx-text-fill: #ff0000;");
             return;
         }
 
         connectButton.setDisable(true);
-        clientStatusLabel.setText("연결 중...");
+        clientStatusLabel.setText("Connecting...");
         clientStatusLabel.setStyle("-fx-text-fill: #ffff00;");
 
+        System.out.println("[UI] Creating GameClient...");
         gameClient = new GameClient();
         gameClient.setMessageHandler(new GameClient.MessageHandler() {
             @Override
             public void onMessageReceived(Object message) {
+                System.out.println("[UI-CLIENT] Message received, forwarding to handler");
                 Platform.runLater(() -> handleClientMessage(message));
             }
 
             @Override
             public void onConnected() {
+                System.out.println("[UI-CLIENT] Connected callback triggered");
                 Platform.runLater(() -> {
-                    clientStatusLabel.setText("서버에 연결됨!");
+                    clientStatusLabel.setText("Connected to Server!");
                     clientStatusLabel.setStyle("-fx-text-fill: #00ff00;");
-                    
+
                     // 연결 요청 메시지 전송
                     try {
+                        System.out.println("[UI-CLIENT] Sending CONNECTION_REQUEST message");
                         gameClient.sendMessage(new NetworkMessage(
-                            NetworkMessage.MessageType.CONNECTION_REQUEST, 
+                            NetworkMessage.MessageType.CONNECTION_REQUEST,
                             "Player"
                         ));
                     } catch (IOException e) {
+                        System.err.println("[UI-CLIENT] Failed to send CONNECTION_REQUEST: " + e.getMessage());
                         e.printStackTrace();
                     }
                 });
@@ -237,8 +256,9 @@ public class PVPNetworkSelectionController implements Initializable {
 
             @Override
             public void onDisconnected() {
+                System.out.println("[UI-CLIENT] Disconnected from server");
                 Platform.runLater(() -> {
-                    clientStatusLabel.setText("서버 연결 끊김");
+                    clientStatusLabel.setText("Server Disconnected");
                     clientStatusLabel.setStyle("-fx-text-fill: #ff0000;");
                     connectButton.setDisable(false);
                 });
@@ -246,8 +266,9 @@ public class PVPNetworkSelectionController implements Initializable {
 
             @Override
             public void onError(Exception e) {
+                System.err.println("[UI-CLIENT] Connection error: " + e.getMessage());
                 Platform.runLater(() -> {
-                    clientStatusLabel.setText("연결 실패: " + e.getMessage());
+                    clientStatusLabel.setText("Connection Failed: " + e.getMessage());
                     clientStatusLabel.setStyle("-fx-text-fill: #ff0000;");
                     connectButton.setDisable(false);
                 });
@@ -261,10 +282,13 @@ public class PVPNetworkSelectionController implements Initializable {
 
         new Thread(() -> {
             try {
+                System.out.println("[UI] Starting connection thread to " + serverIP + ":" + SERVER_PORT);
                 gameClient.connect(serverIP, SERVER_PORT);
             } catch (IOException e) {
+                System.err.println("[UI] Connection failed: " + e.getMessage());
+                e.printStackTrace();
                 Platform.runLater(() -> {
-                    clientStatusLabel.setText("연결 실패: " + e.getMessage());
+                    clientStatusLabel.setText("Connection Failed: " + e.getMessage());
                     clientStatusLabel.setStyle("-fx-text-fill: #ff0000;");
                     connectButton.setDisable(false);
                 });
@@ -275,9 +299,10 @@ public class PVPNetworkSelectionController implements Initializable {
     private void handleServerMessage(Object message) {
         if (message instanceof NetworkMessage) {
             NetworkMessage netMsg = (NetworkMessage) message;
+            System.out.println("[UI-SERVER] Handling message: " + netMsg.getType());
             switch (netMsg.getType()) {
                 case CONNECTION_REQUEST:
-                    System.out.println("클라이언트 연결 요청 수신");
+                    System.out.println("[UI-SERVER] CONNECTION_REQUEST received from client");
                     break;
                 // 추가 메시지 처리
             }
@@ -287,10 +312,11 @@ public class PVPNetworkSelectionController implements Initializable {
     private void handleClientMessage(Object message) {
         if (message instanceof NetworkMessage) {
             NetworkMessage netMsg = (NetworkMessage) message;
+            System.out.println("[UI-CLIENT] Handling message: " + netMsg.getType());
             switch (netMsg.getType()) {
                 case CONNECTION_ACCEPTED:
-                    System.out.println("서버 연결 승인 수신");
-                    clientStatusLabel.setText("게임 시작 준비 중...");
+                    System.out.println("[UI-CLIENT] CONNECTION_ACCEPTED received, starting game");
+                    clientStatusLabel.setText("Starting Game...");
                     startGame();
                     break;
                 // 추가 메시지 처리
@@ -299,13 +325,18 @@ public class PVPNetworkSelectionController implements Initializable {
     }
 
     private void startGame() {
+        System.out.println("[UI] Starting game - isServer: " + isServer + ", gameMode: " + gameMode);
         if (sceneManager != null) {
             // 네트워크 객체를 게임 화면으로 전달
             if (isServer) {
+                System.out.println("[UI] Transitioning to PVP game screen (SERVER)");
                 sceneManager.showPVPGameScreen(gameMode, gameServer, null, true);
             } else {
+                System.out.println("[UI] Transitioning to PVP game screen (CLIENT)");
                 sceneManager.showPVPGameScreen(gameMode, null, gameClient, false);
             }
+        } else {
+            System.err.println("[UI] ERROR: SceneManager is null!");
         }
     }
 

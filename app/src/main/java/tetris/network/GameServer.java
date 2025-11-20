@@ -21,8 +21,10 @@ public class GameServer {
     }
 
     public GameServer(int port) throws IOException {
+        System.out.println("[SERVER] Creating server on port " + port);
         serverSocket = new ServerSocket(port);
         isRunning = true;
+        System.out.println("[SERVER] Server socket created successfully");
     }
 
     public void setMessageHandler(MessageHandler handler) {
@@ -32,23 +34,28 @@ public class GameServer {
     public void start() {
         new Thread(() -> {
             try {
-                System.out.println("서버 시작, 클라이언트 대기 중...");
+                System.out.println("[SERVER] Server started, waiting for client connection...");
                 clientSocket = serverSocket.accept();
-                System.out.println("클라이언트 연결됨: " + clientSocket.getInetAddress());
+                System.out.println("[SERVER] Client connected from: " + clientSocket.getInetAddress());
 
                 // ObjectOutputStream을 먼저 생성하고 flush (헤더 전송)
+                System.out.println("[SERVER] Creating ObjectOutputStream...");
                 out = new ObjectOutputStream(clientSocket.getOutputStream());
                 out.flush();
+                System.out.println("[SERVER] ObjectOutputStream created and flushed");
 
                 // 클라이언트가 OutputStream을 생성할 시간 확보
                 try {
+                    System.out.println("[SERVER] Waiting 100ms for client to create stream...");
                     Thread.sleep(100);
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                 }
 
                 // ObjectInputStream 생성
+                System.out.println("[SERVER] Creating ObjectInputStream...");
                 in = new ObjectInputStream(clientSocket.getInputStream());
+                System.out.println("[SERVER] ObjectInputStream created successfully");
 
                 if (messageHandler != null) {
                     messageHandler.onClientConnected();
@@ -56,6 +63,8 @@ public class GameServer {
 
                 startListening();
             } catch (IOException e) {
+                System.err.println("[SERVER] Error during connection: " + e.getMessage());
+                e.printStackTrace();
                 if (messageHandler != null) {
                     messageHandler.onError(e);
                 }
@@ -64,6 +73,7 @@ public class GameServer {
     }
 
     private void startListening() {
+        System.out.println("[SERVER] Starting message listener thread...");
         listenerThread = new Thread(() -> {
             while (isRunning && clientSocket != null && !clientSocket.isClosed()) {
                 try {
@@ -73,22 +83,25 @@ public class GameServer {
                         if (netMsg.getType() == NetworkMessage.MessageType.PING) {
                             sendMessage(new NetworkMessage(NetworkMessage.MessageType.PONG, netMsg.getData()));
                         } else {
+                            System.out.println("[SERVER] Received message: " + netMsg.getType());
                             if (messageHandler != null) {
                                 messageHandler.onMessageReceived(msg);
                             }
                         }
                     } else {
+                        System.out.println("[SERVER] Received non-NetworkMessage object");
                         if (messageHandler != null) {
                             messageHandler.onMessageReceived(msg);
                         }
                     }
                 } catch (EOFException | SocketException e) {
-                    System.out.println("클라이언트 연결 종료");
+                    System.out.println("[SERVER] Client connection closed");
                     if (messageHandler != null) {
                         messageHandler.onClientDisconnected();
                     }
                     break;
                 } catch (IOException | ClassNotFoundException e) {
+                    System.err.println("[SERVER] Error reading message: " + e.getMessage());
                     if (isRunning && messageHandler != null) {
                         messageHandler.onError(e);
                     }
@@ -97,10 +110,17 @@ public class GameServer {
             }
         });
         listenerThread.start();
+        System.out.println("[SERVER] Listener thread started");
     }
 
     public void sendMessage(Object message) throws IOException {
         if (out != null) {
+            if (message instanceof NetworkMessage) {
+                NetworkMessage netMsg = (NetworkMessage) message;
+                if (netMsg.getType() != NetworkMessage.MessageType.PONG) {
+                    System.out.println("[SERVER] Sending message: " + netMsg.getType());
+                }
+            }
             out.writeObject(message);
             out.flush();
         }
