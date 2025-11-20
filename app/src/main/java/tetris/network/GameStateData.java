@@ -25,11 +25,12 @@ public class GameStateData implements Serializable {
     // 공격 정보
     private int incomingAttackLines;  // 대기 중인 공격 줄 수
     
-    public GameStateData(int[][] board, int[][] itemBoard, int level, int linesCleared, boolean isGameOver,
+    public GameStateData(int[][] board, int[][] itemBoard, int score, int level, int linesCleared, boolean isGameOver,
                          int[][] currentPieceShape, int currentPieceX, int currentPieceY, int currentPieceType,
                          int[][] nextPieceShape, int nextPieceType, int incomingAttackLines) {
         this.board = board;
         this.itemBoard = itemBoard;
+        this.score = score;
         this.level = level;
         this.linesCleared = linesCleared;
         this.isGameOver = isGameOver;

@@ -454,7 +454,7 @@ public class PVPGameScreenController implements Initializable {
         
         GameStateData stateData = new GameStateData(
             boardData, itemBoardData,
-            myEngine.getLevel(), myEngine.getLinesCleared(),
+            myEngine.getScore(), myEngine.getLevel(), myEngine.getLinesCleared(),
             !myEngine.isGameRunning(),
             currentShape, currentX, currentY, currentType,
             nextShape, nextType, incomingLines
