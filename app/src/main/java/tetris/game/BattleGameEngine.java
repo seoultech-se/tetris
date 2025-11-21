@@ -152,6 +152,9 @@ public class BattleGameEngine {
             return;
         }
         
+        // 게임 오버 체크 (매 프레임마다 확인)
+        checkGameOver();
+        
         // 시간제한 모드 체크
         if (timeLimitMode) {
             long elapsed = (System.nanoTime() - gameStartTime) / 1_000_000_000L;

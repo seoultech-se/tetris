@@ -14,11 +14,14 @@ public class NetworkMessage implements Serializable {
         PLAYER_INPUT,       // 플레이어 입력 동기화
         ATTACK,             // 공격 블록 전송
         LINES_CLEARED,      // 줄 삭제 정보 전송
+        PAUSE,              // 일시정지 동기화
         GAME_OVER,
         PLAYER_ACTION,
         DISCONNECT,
         PING,
-        PONG
+        PONG,
+        REMATCH_REQUEST,    // 재시합 요청
+        REMATCH_RESPONSE    // 재시합 응답 (수락/거부)
     }
     
     private MessageType type;

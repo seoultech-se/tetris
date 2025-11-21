@@ -5,12 +5,17 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.animation.AnimationTimer;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import tetris.ui.SceneManager;
+import tetris.ui.SettingsManager;
 import tetris.game.BattleGameEngine;
 import tetris.game.GameBoard;
 import tetris.game.Piece;
@@ -39,6 +44,12 @@ public class PVPGameScreenController implements Initializable {
 
     @FXML
     private Canvas opponentNextCanvas;
+
+    @FXML
+    private Canvas myIncomingCanvas;
+
+    @FXML
+    private Canvas opponentIncomingCanvas;
 
     @FXML
     private Label myPlayerLabel;
@@ -73,7 +84,17 @@ public class PVPGameScreenController implements Initializable {
     @FXML
     private Label latencyLabel;
 
+    @FXML
+    private VBox gameOverBox;
+
+    @FXML
+    private Button rematchButton;
+
+    @FXML
+    private Button toLobbyButton;
+
     private SceneManager sceneManager;
+    private SettingsManager settingsManager;
     private String gameMode;
     private GameServer gameServer;
     private GameClient gameClient;
@@ -85,6 +106,12 @@ public class PVPGameScreenController implements Initializable {
     private long lastUpdateTimeOpponent = 0;
     private long fallSpeedMe = 1_000_000_000;
     private long fallSpeedOpponent = 1_000_000_000;
+    
+    // 카운트다운 관련
+    private boolean isCountingDown = false;
+    private int countdownNumber = 3;
+    private long lastCountdownTime = 0;
+    private static final long COUNTDOWN_INTERVAL = 1_000_000_000L; // 1초
 
     // 줄 삭제 애니메이션 관련
     private java.util.List<Integer> playerLinesToClear = null;
@@ -104,22 +131,37 @@ public class PVPGameScreenController implements Initializable {
 
     private int BLOCK_SIZE = 25;
 
-    // 블록 색상 설정
+    // 블록 색상 설정 (ColorBlind Safe 팔레트)
     private static final Color[] PIECE_COLORS = {
         Color.BLACK,
-        Color.web("#56B4E9"),  // 1 - I
-        Color.web("#F0E442"),  // 2 - O
-        Color.web("#CC79A7"),  // 3 - T
-        Color.web("#009E73"),  // 4 - S
-        Color.web("#D55E00"),  // 5 - Z
-        Color.web("#0072B2"),  // 6 - J
-        Color.web("#E69F00"),  // 7 - L
-        Color.web("#999999"),  // 8 - 공격 블록 (회색)
-        Color.web("#FF0000")   // 9 - BOMB
+        Color.web("#56B4E9"),          // 1 - I 피스 (하늘색)
+        Color.web("#F0E442"),          // 2 - O 피스 (노랑)
+        Color.web("#CC79A7"),          // 3 - T 피스 (핑크/보라)
+        Color.web("#009E73"),          // 4 - S 피스 (초록)
+        Color.web("#D55E00"),          // 5 - Z 피스 (적갈색)
+        Color.web("#0072B2"),          // 6 - J 피스 (파랑)
+        Color.web("#E69F00"),          // 7 - L 피스 (주황)
+        Color.web("#999999"),          // 8 - WEIGHT 피스 (회색 - 무게추)
+        Color.web("#FF0000")           // 9 - BOMB 피스 (빨강 - 폭탄)
+    };
+
+    // 접근성 심볼 (0은 빈칸)
+    private static final String[] PIECE_SYMBOLS = {
+        " ", // 0
+        "O", // 1 - I (직선 형태를 텍스트로 대체)
+        "●", // 2 - O
+        "★", // 3 - T
+        "▲", // 4 - S
+        "■", // 5 - Z
+        "◆", // 6 - J (다이아몬드)
+        "◇", // 7 - L (빈 다이아몬드)
+        "▼", // 8 - 공격 블록 (아래를 가리키는 화살표)
+        "✸"  // 9 - BOMB (폭발 효과)
     };
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        settingsManager = tetris.ui.SettingsManager.getInstance();
         setupCanvasSize();
     }
 
@@ -141,6 +183,14 @@ public class PVPGameScreenController implements Initializable {
         if (opponentNextCanvas != null) {
             opponentNextCanvas.setWidth(6 * BLOCK_SIZE);
             opponentNextCanvas.setHeight(5 * BLOCK_SIZE);
+        }
+        if (myIncomingCanvas != null) {
+            myIncomingCanvas.setWidth(6 * BLOCK_SIZE);
+            myIncomingCanvas.setHeight(5 * BLOCK_SIZE);
+        }
+        if (opponentIncomingCanvas != null) {
+            opponentIncomingCanvas.setWidth(6 * BLOCK_SIZE);
+            opponentIncomingCanvas.setHeight(5 * BLOCK_SIZE);
         }
     }
 
@@ -187,9 +237,9 @@ public class PVPGameScreenController implements Initializable {
         System.out.println("[PVP-GAME] Setting up key handler...");
         setupKeyHandler();
 
-        // 게임 시작
-        System.out.println("[PVP-GAME] Starting game...");
-        startGame();
+        // 카운트다운 시작
+        System.out.println("[PVP-GAME] Starting countdown...");
+        startCountdown();
     }
 
     private void initializeGame() {
@@ -210,11 +260,80 @@ public class PVPGameScreenController implements Initializable {
     }
 
     private void setupNetworkHandlers() {
-        System.out.println("[PVP-GAME] Network handlers already set in PVPNetworkSelectionController");
-        System.out.println("[PVP-GAME] Skipping MessageHandler setup to avoid conflicts");
-        // MessageHandler는 PVPNetworkSelectionController에서 이미 설정되었으므로
-        // 여기서는 아무것도 하지 않습니다.
-        // 대신 PVPNetworkSelectionController의 핸들러가 이 컨트롤러의 메서드를 호출하도록 수정합니다.
+        System.out.println("[PVP-GAME] Setting up network handlers for game screen");
+        
+        if (isServer && gameServer != null) {
+            System.out.println("[PVP-GAME] Setting up server message handler");
+            gameServer.setMessageHandler(new GameServer.MessageHandler() {
+                @Override
+                public void onMessageReceived(Object message) {
+                    if (message instanceof NetworkMessage) {
+                        handleNetworkMessage((NetworkMessage) message);
+                    }
+                }
+
+                @Override
+                public void onClientConnected() {
+                    System.out.println("[PVP-GAME] Client reconnected during game");
+                }
+
+                @Override
+                public void onClientDisconnected() {
+                    Platform.runLater(() -> {
+                        System.out.println("[PVP-GAME] Client disconnected");
+                        statusLabel.setText("상대방 연결 끊김");
+                        if (gameLoop != null) {
+                            gameLoop.stop();
+                        }
+                    });
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    System.err.println("[PVP-GAME] Server error: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            });
+        } else if (!isServer && gameClient != null) {
+            System.out.println("[PVP-GAME] Setting up client message handler");
+            gameClient.setMessageHandler(new GameClient.MessageHandler() {
+                @Override
+                public void onMessageReceived(Object message) {
+                    if (message instanceof NetworkMessage) {
+                        handleNetworkMessage((NetworkMessage) message);
+                    }
+                }
+
+                @Override
+                public void onConnected() {
+                    System.out.println("[PVP-GAME] Connected to server");
+                }
+
+                @Override
+                public void onDisconnected() {
+                    Platform.runLater(() -> {
+                        System.out.println("[PVP-GAME] Disconnected from server");
+                        statusLabel.setText("서버 연결 끊김");
+                        if (gameLoop != null) {
+                            gameLoop.stop();
+                        }
+                    });
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    System.err.println("[PVP-GAME] Client error: " + e.getMessage());
+                    e.printStackTrace();
+                }
+
+                @Override
+                public void onRttUpdate(long rtt) {
+                    // RTT 업데이트는 필요 시 사용
+                }
+            });
+        }
+        
+        System.out.println("[PVP-GAME] Network handlers setup complete");
     }
 
     private void handleNetworkMessage(NetworkMessage message) {
@@ -243,10 +362,43 @@ public class PVPGameScreenController implements Initializable {
                     boolean opponentLost = (Boolean) gameOverData.get("isGameOver");
                     if (opponentLost) {
                         System.out.println("[PVP-GAME] Opponent lost - Victory!");
-                        statusLabel.setText("Victory!");
+                        statusLabel.setText("승리!");
+                        statusLabel.setStyle("-fx-text-fill: #00ff00;");
                         if (gameLoop != null) {
                             gameLoop.stop();
                         }
+                        // 게임 오버 버튼 표시
+                        if (gameOverBox != null) {
+                            gameOverBox.setVisible(true);
+                            gameOverBox.setManaged(true);
+                        }
+                    }
+                    break;
+                
+                case REMATCH_REQUEST:
+                    // 재시합 요청 받음 - 다이얼로그 표시
+                    System.out.println("[PVP-GAME] Rematch request received");
+                    showRematchDialog();
+                    break;
+                
+                case REMATCH_RESPONSE:
+                    // 재시합 응답 받음
+                    Boolean accepted = (Boolean) message.getData();
+                    if (accepted != null && accepted) {
+                        System.out.println("[PVP-GAME] Rematch accepted");
+                        restartGame();
+                    } else {
+                        System.out.println("[PVP-GAME] Rematch declined");
+                        setStatusMessage("상대방이 재시합을 거부했습니다", "#ff0000");
+                    }
+                    break;
+
+                case GAME_START:
+                    // 이전 버전 호환성 유지
+                    String data = (String) message.getData();
+                    if ("REMATCH".equals(data)) {
+                        System.out.println("[PVP-GAME] Rematch request received (legacy)");
+                        restartGame();
                     }
                     break;
 
@@ -255,6 +407,20 @@ public class PVPGameScreenController implements Initializable {
                     statusLabel.setText("Opponent Left");
                     if (gameLoop != null) {
                         gameLoop.stop();
+                    }
+                    break;
+                
+                case PAUSE:
+                    // 상대방이 일시정지를 누른 경우
+                    Boolean shouldPause = (Boolean) message.getData();
+                    if (shouldPause != null && battleEngine != null) {
+                        if (shouldPause && !battleEngine.isPaused()) {
+                            battleEngine.pauseGame();
+                            statusLabel.setText("일시 정지 (상대방)");
+                        } else if (!shouldPause && battleEngine.isPaused()) {
+                            battleEngine.pauseGame();
+                            statusLabel.setText("");
+                        }
                     }
                     break;
 
@@ -319,11 +485,58 @@ public class PVPGameScreenController implements Initializable {
         }
     }
 
+    private void startCountdown() {
+        isCountingDown = true;
+        countdownNumber = 3;
+        lastCountdownTime = System.nanoTime();
+        
+        // 카운트다운 표시
+        Platform.runLater(() -> {
+            setStatusMessage(String.valueOf(countdownNumber), "#ffff00");
+        });
+        
+        // 카운트다운 루프
+        AnimationTimer countdownTimer = new AnimationTimer() {
+            @Override
+            public void handle(long now) {
+                if (now - lastCountdownTime >= COUNTDOWN_INTERVAL) {
+                    countdownNumber--;
+                    lastCountdownTime = now;
+                    
+                    if (countdownNumber > 0) {
+                        // 숫자 표시
+                        Platform.runLater(() -> {
+                            setStatusMessage(String.valueOf(countdownNumber), "#ffff00");
+                        });
+                    } else if (countdownNumber == 0) {
+                        // START! 표시
+                        Platform.runLater(() -> {
+                            setStatusMessage("START!", "#00ff00");
+                        });
+                    } else {
+                        // 카운트다운 종료, 게임 시작
+                        this.stop();
+                        isCountingDown = false;
+                        Platform.runLater(() -> {
+                            statusLabel.setText("");
+                            statusLabel.setStyle("");
+                            startGame();
+                        });
+                    }
+                }
+            }
+        };
+        countdownTimer.start();
+    }
+    
     private void startGame() {
         battleEngine.startGame();
         
+        // 게임 시작 직후 초기 상태 전송
+        System.out.println("[PVP-GAME] Sending initial game state...");
+        sendMyState();
+        
         gameLoop = new AnimationTimer() {
-            private int myPreviousLinesCleared = 0;
             
             @Override
             public void handle(long now) {
@@ -386,9 +599,17 @@ public class PVPGameScreenController implements Initializable {
                             int afterCleared = getMyEngine().getLinesCleared();
                             int cleared = afterCleared - beforeCleared;
 
+                            // 공격 메커니즘 처리 (줄 삭제 직후 바로 처리)
                             if (cleared >= 2) {
                                 int lastBlockCol = getMyEngine().getLastPlacedBlockCol();
-
+                                // 내가 서버면 Player1, 클라이언트면 Player2
+                                if (isServer) {
+                                    battleEngine.processPlayer1Attack(cleared, lastBlockCol);
+                                } else {
+                                    battleEngine.processPlayer2Attack(cleared, lastBlockCol);
+                                }
+                                // 상대방에게 공격 전송
+                                sendAttack(cleared, lastBlockCol);
                             }
 
                             isAnimatingClear = false;
@@ -401,6 +622,7 @@ public class PVPGameScreenController implements Initializable {
                     renderMyBoard();
                     renderOpponentBoard();
                     renderNextPieces();
+                    renderIncomingLines();
                     updateUI();
                     updateFallSpeeds();
                 } catch (Exception e) {
@@ -463,13 +685,14 @@ public class PVPGameScreenController implements Initializable {
         int nextType = (nextPiece != null) ? nextPiece.getType() : 0;
 
         int incomingLines = getMyPendingAttacks();
+        java.util.List<Integer> incomingEmptyCols = getMyPendingAttackEmptyCols();
 
         GameStateData stateData = new GameStateData(
             boardData, itemBoardData,
             myEngine.getScore(), myEngine.getLevel(), myEngine.getLinesCleared(),
             !myEngine.isGameRunning(),
             currentShape, currentX, currentY, currentType,
-            nextShape, nextType, incomingLines
+            nextShape, nextType, incomingLines, incomingEmptyCols
         );
 
         NetworkMessage message = new NetworkMessage(NetworkMessage.MessageType.GAME_STATE_UPDATE, stateData);
@@ -526,21 +749,38 @@ public class PVPGameScreenController implements Initializable {
             myCanvas.getHeight() / GameBoard.BOARD_HEIGHT
         );
 
+        // 색약모드에서는 회색 격자 표시
+        if (settingsManager != null && settingsManager.isColorBlindModeEnabled()) {
+            drawGrid(gc, myCanvas, blockSize);
+        }
+
         GameBoard board = getMyEngine().getGameBoard();
         for (int row = 0; row < GameBoard.BOARD_HEIGHT; row++) {
             for (int col = 0; col < GameBoard.BOARD_WIDTH; col++) {
                 int cellValue = board.getCell(row, col);
                 if (cellValue > 0) {
                     ItemType itemType = board.getItemAt(row, col);
-                    Color color = board.isAttackBlock(row, col) ? Color.web("#666666") : PIECE_COLORS[cellValue];
+                    Color color;
+                    
+                    // 공격 블록은 회색으로 표시
+                    if (board.isAttackBlock(row, col)) {
+                        color = Color.web("#666666"); // 회색
+                    } else if (isAnimatingClear && playerLinesToClear != null && playerLinesToClear.contains(row)) {
+                        color = Color.WHITE;
+                    } else {
+                        color = PIECE_COLORS[cellValue];
+                    }
+                    
                     renderBlockScaled(gc, col * blockSize, row * blockSize, blockSize, color, cellValue, itemType);
                 }
             }
         }
 
-        Piece currentPiece = getMyEngine().getCurrentPiece();
-        if (currentPiece != null) {
-            renderPieceScaled(gc, currentPiece, blockSize);
+        if (!isAnimatingClear) {
+            Piece currentPiece = getMyEngine().getCurrentPiece();
+            if (currentPiece != null) {
+                renderPieceScaled(gc, currentPiece, blockSize);
+            }
         }
 
         renderBorder(gc, myCanvas);
@@ -558,12 +798,17 @@ public class PVPGameScreenController implements Initializable {
             opponentCanvas.getHeight() / GameBoard.BOARD_HEIGHT
         );
 
-        int[][] board = opponentState.getBoard();
+        // 색약모드에서는 회색 격자 표시
+        if (settingsManager != null && settingsManager.isColorBlindModeEnabled()) {
+            drawGrid(gc, opponentCanvas, blockSize);
+        }
+
+        int[][] boardState = opponentState.getBoard();
         int[][] itemBoard = opponentState.getItemBoard();
         
         for (int row = 0; row < GameBoard.BOARD_HEIGHT; row++) {
             for (int col = 0; col < GameBoard.BOARD_WIDTH; col++) {
-                int cellValue = board[row][col];
+                int cellValue = boardState[row][col];
                 if (cellValue > 0) {
                     ItemType itemType = ItemType.values()[itemBoard[row][col]];
                     Color color = (cellValue == 8) ? Color.web("#666666") : PIECE_COLORS[cellValue];
@@ -643,6 +888,104 @@ public class PVPGameScreenController implements Initializable {
         }
     }
 
+    private void renderIncomingLines() {
+        if (battleEngine == null) return;
+
+        // 내 공격받을 줄 렌더링
+        if (myIncomingCanvas != null) {
+            GraphicsContext gc = myIncomingCanvas.getGraphicsContext2D();
+            gc.setFill(Color.BLACK);
+            gc.fillRect(0, 0, myIncomingCanvas.getWidth(), myIncomingCanvas.getHeight());
+
+            int pendingLines = getMyPendingAttacks();
+            if (pendingLines > 0) {
+                java.util.List<Integer> emptyCols = getMyPendingAttackEmptyCols();
+                renderIncomingLinesBlock(gc, pendingLines, emptyCols);
+            }
+
+            // 테두리
+            gc.setStroke(Color.GRAY);
+            gc.setLineWidth(2);
+            gc.strokeRect(0, 0, myIncomingCanvas.getWidth(), myIncomingCanvas.getHeight());
+        }
+
+        // 상대방 공격받을 줄 렌더링
+        if (opponentIncomingCanvas != null && opponentState != null) {
+            GraphicsContext gc = opponentIncomingCanvas.getGraphicsContext2D();
+            gc.setFill(Color.BLACK);
+            gc.fillRect(0, 0, opponentIncomingCanvas.getWidth(), opponentIncomingCanvas.getHeight());
+
+            if (opponentIncomingLines > 0) {
+                // 상대방의 빈칸 정보를 GameStateData에서 가져오기
+                java.util.List<Integer> emptyCols = opponentState.getIncomingAttackEmptyCols();
+                if (emptyCols == null || emptyCols.isEmpty()) {
+                    // 만약 데이터가 없으면 기본 패턴 사용
+                    emptyCols = new java.util.ArrayList<>();
+                    for (int i = 0; i < opponentIncomingLines; i++) {
+                        emptyCols.add((i * 3) % GameBoard.BOARD_WIDTH);
+                    }
+                }
+                renderIncomingLinesBlock(gc, opponentIncomingLines, emptyCols);
+            }
+
+            // 테두리
+            gc.setStroke(Color.GRAY);
+            gc.setLineWidth(2);
+            gc.strokeRect(0, 0, opponentIncomingCanvas.getWidth(), opponentIncomingCanvas.getHeight());
+        }
+    }
+
+    private void renderIncomingLinesBlock(GraphicsContext gc, int numLines, java.util.List<Integer> emptyCols) {
+        double canvasWidth = gc.getCanvas().getWidth();
+        double canvasHeight = gc.getCanvas().getHeight();
+        
+        double blockSize = Math.min(canvasWidth / GameBoard.BOARD_WIDTH, canvasHeight / 12);
+        
+        int displayLines = Math.min(numLines, 10);
+        Color attackColor = Color.web("#666666");
+        Color gridColor = Color.web("#333333");
+
+        // 격자 그리기
+        gc.setStroke(gridColor);
+        gc.setLineWidth(0.5);
+        for (int row = 0; row <= 10; row++) {
+            double y = row * blockSize;
+            gc.strokeLine(0, y, GameBoard.BOARD_WIDTH * blockSize, y);
+        }
+        for (int col = 0; col <= GameBoard.BOARD_WIDTH; col++) {
+            double x = col * blockSize;
+            gc.strokeLine(x, 0, x, Math.min(10 * blockSize, canvasHeight));
+        }
+
+        // 각 줄을 렌더링
+        double circleRadius = blockSize * 0.35;
+        for (int line = 0; line < displayLines; line++) {
+            double y = line * blockSize + blockSize / 2;
+            int emptyCol = (line < emptyCols.size()) ? emptyCols.get(line) : (line * 3) % GameBoard.BOARD_WIDTH;
+            
+            for (int col = 0; col < GameBoard.BOARD_WIDTH; col++) {
+                double x = col * blockSize + blockSize / 2;
+                if (col != emptyCol) {
+                    gc.setFill(attackColor);
+                    gc.fillOval(x - circleRadius, y - circleRadius, circleRadius * 2, circleRadius * 2);
+                    gc.setStroke(Color.WHITE);
+                    gc.setLineWidth(0.5);
+                    gc.strokeOval(x - circleRadius, y - circleRadius, circleRadius * 2, circleRadius * 2);
+                }
+            }
+        }
+
+        if (numLines > 10) {
+            gc.setFill(Color.WHITE);
+            gc.setFont(Font.font("Arial", javafx.scene.text.FontWeight.BOLD, (int)(blockSize * 0.8)));
+            gc.fillText("+" + (numLines - 10), GameBoard.BOARD_WIDTH * blockSize - 20, 10 * blockSize - 2);
+        }
+    }
+
+    private java.util.List<Integer> getMyPendingAttackEmptyCols() {
+        return isServer ? battleEngine.getPendingAttackEmptyColsToPlayer1() : battleEngine.getPendingAttackEmptyColsToPlayer2();
+    }
+
     private void renderNextPiece(GraphicsContext gc, Piece piece, double canvasWidth, double canvasHeight) {
         int[][] shape = piece.getShape();
         Color color = PIECE_COLORS[piece.getType()];
@@ -682,33 +1025,102 @@ public class PVPGameScreenController implements Initializable {
     }
 
     private void renderBlockScaled(GraphicsContext gc, double x, double y, double size, Color color, int pieceType, ItemType itemType) {
-        gc.setFill(color);
-        gc.fillRect(x, y, size, size);
-
-        gc.setStroke(Color.WHITE);
-        gc.setLineWidth(1);
-        gc.strokeRect(x, y, size, size);
-
-        if (itemType != null && itemType != ItemType.NONE) {
-            String itemChar = itemType.getDisplayChar();
-            if (!itemChar.isEmpty()) {
-                double fontSize = size * 0.6;
-                Font font = Font.font("Arial", javafx.scene.text.FontWeight.BOLD, fontSize);
-                gc.setFont(font);
-                gc.setFill(Color.WHITE);
-                gc.setStroke(Color.BLACK);
-                gc.setLineWidth(1);
-                
-                Text text = new Text(itemChar);
-                text.setFont(font);
-                double textWidth = text.getLayoutBounds().getWidth();
-                double textHeight = text.getLayoutBounds().getHeight();
-                double textX = x + (size - textWidth) / 2;
-                double textY = y + (size + textHeight) / 2 - 2;
-                
-                gc.strokeText(itemChar, textX, textY);
-                gc.fillText(itemChar, textX, textY);
+        // 색약모드가 켜져 있으면 색 대신 심볼로 채운다
+        if (settingsManager != null && settingsManager.isColorBlindModeEnabled()) {
+            String symbol = "?";
+            if (pieceType >= 0 && pieceType < PIECE_SYMBOLS.length) {
+                symbol = PIECE_SYMBOLS[pieceType];
             }
+
+            // 아이콘을 블록 크기에 맞게 최대한 크게 설정
+            double fontSize = size - 2;
+            if (fontSize < 8) fontSize = 8;
+            Font font = Font.font("Monospaced", fontSize);
+            gc.setFont(font);
+            gc.setFill(Color.WHITE);
+
+            Text text = new Text(symbol);
+            text.setFont(font);
+            double textWidth = text.getLayoutBounds().getWidth();
+            double textHeight = text.getLayoutBounds().getHeight();
+
+            // 사각형 배경 (검정색)
+            gc.setFill(Color.BLACK);
+            gc.fillRect(x, y, size, size);
+
+            // 심볼 그리기 (정중앙 정렬)
+            gc.setFill(Color.WHITE);
+            double tx = x + (size - textWidth) / 2.0;
+            double ty = y + (size + textHeight) / 2.0 - 4;
+            gc.fillText(symbol, tx, ty);
+
+            // 아이템 표시는 별도로
+            if (itemType != null && itemType != ItemType.NONE) {
+                String itemChar = itemType.getDisplayChar();
+                if (!itemChar.isEmpty()) {
+                    double itemFontSize = size * 0.4;
+                    Font itemFont = Font.font("Arial", javafx.scene.text.FontWeight.BOLD, itemFontSize);
+                    gc.setFont(itemFont);
+                    gc.setFill(Color.YELLOW);
+
+                    Text itemText = new Text(itemChar);
+                    itemText.setFont(itemFont);
+                    double itemTextWidth = itemText.getLayoutBounds().getWidth();
+
+                    double itemTx = x + size - itemTextWidth - 2;
+                    double itemTy = y + itemFontSize + 2;
+                    gc.fillText(itemChar, itemTx, itemTy);
+                }
+            }
+        } else {
+            // 일반 모드
+            gc.setFill(color);
+            gc.fillRect(x, y, size, size);
+
+            gc.setStroke(Color.WHITE);
+            gc.setLineWidth(1);
+            gc.strokeRect(x, y, size, size);
+
+            if (itemType != null && itemType != ItemType.NONE) {
+                String itemChar = itemType.getDisplayChar();
+                if (!itemChar.isEmpty()) {
+                    double fontSize = size * 0.6;
+                    Font font = Font.font("Arial", javafx.scene.text.FontWeight.BOLD, fontSize);
+                    gc.setFont(font);
+                    gc.setFill(Color.WHITE);
+                    gc.setStroke(Color.BLACK);
+                    gc.setLineWidth(1);
+                    
+                    Text text = new Text(itemChar);
+                    text.setFont(font);
+                    double textWidth = text.getLayoutBounds().getWidth();
+                    double textHeight = text.getLayoutBounds().getHeight();
+                    double textX = x + (size - textWidth) / 2;
+                    double textY = y + (size + textHeight) / 2 - 2;
+                    
+                    gc.strokeText(itemChar, textX, textY);
+                    gc.fillText(itemChar, textX, textY);
+                }
+            }
+        }
+    }
+
+    // 색약모드용 보드 격자선 렌더링
+    private void drawGrid(GraphicsContext gc, Canvas canvas, double blockSize) {
+        gc.setStroke(Color.web("#444444"));
+        gc.setLineWidth(1);
+        double width = canvas.getWidth();
+        double height = canvas.getHeight();
+
+        // 세로선
+        for (int x = 0; x <= GameBoard.BOARD_WIDTH; x++) {
+            double px = x * blockSize;
+            gc.strokeLine(px, 0, px, height);
+        }
+        // 가로선
+        for (int y = 0; y <= GameBoard.BOARD_HEIGHT; y++) {
+            double py = y * blockSize;
+            gc.strokeLine(0, py, width, py);
         }
     }
 
@@ -753,7 +1165,22 @@ public class PVPGameScreenController implements Initializable {
 
     private void showGameOver() {
         Platform.runLater(() -> {
-            statusLabel.setText("패배...");
+            // 승패 결정
+            boolean iWon = !getMyEngine().isGameRunning() ? false : true;
+            
+            if (iWon) {
+                statusLabel.setText("승리!");
+                statusLabel.setStyle("-fx-text-fill: #00ff00;");
+            } else {
+                statusLabel.setText("패배...");
+                statusLabel.setStyle("-fx-text-fill: #ff0000;");
+            }
+            
+            // 게임 오버 버튼 표시
+            if (gameOverBox != null) {
+                gameOverBox.setVisible(true);
+                gameOverBox.setManaged(true);
+            }
             
             // 게임 오버 메시지 전송
             Map<String, Object> gameOverData = new HashMap<>();
@@ -773,13 +1200,146 @@ public class PVPGameScreenController implements Initializable {
     }
 
     @FXML
+    private void onRematch() {
+        System.out.println("[PVP-GAME] Rematch requested");
+        // 재시합 요청 메시지 전송
+        try {
+            NetworkMessage message = new NetworkMessage(NetworkMessage.MessageType.REMATCH_REQUEST, "재시합 요청");
+            if (isServer && gameServer != null) {
+                gameServer.sendMessage(message);
+                setStatusMessage("상대방의 응답을 기다리는 중...", "#ffff00");
+            } else if (!isServer && gameClient != null) {
+                gameClient.sendMessage(message);
+                setStatusMessage("상대방의 응답을 기다리는 중...", "#ffff00");
+            }
+        } catch (IOException e) {
+            System.err.println("재시합 요청 실패: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void onToLobby() {
+        System.out.println("[PVP-GAME] Returning to lobby");
+        if (gameLoop != null) {
+            gameLoop.stop();
+        }
+        if (sceneManager != null) {
+            sceneManager.showPVPLobby(gameServer, gameClient, isServer);
+        }
+    }
+
+    /**
+     * 메시지 길이에 따라 폰트 크기를 자동 조정하여 표시
+     */
+    private void setStatusMessage(String message, String color) {
+        statusLabel.setText(message);
+        
+        // 메시지 길이에 따라 폰트 크기 조정
+        if (message.length() > 10) {
+            // 긴 메시지는 작은 폰트
+            statusLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: " + color + ";");
+        } else {
+            // 짧은 메시지는 큰 폰트
+            statusLabel.setStyle("-fx-font-size: 24px; -fx-text-fill: " + color + ";");
+        }
+    }
+
+    private void showRematchDialog() {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("재시합 요청");
+            alert.setHeaderText("상대방이 재시합을 요청했습니다");
+            alert.setContentText("다시 하시겠습니까?");
+            
+            ButtonType yesButton = new ButtonType("예");
+            ButtonType noButton = new ButtonType("아니오");
+            alert.getButtonTypes().setAll(yesButton, noButton);
+            
+            alert.showAndWait().ifPresent(response -> {
+                boolean accepted = response == yesButton;
+                
+                // 응답 전송
+                try {
+                    NetworkMessage message = new NetworkMessage(
+                        NetworkMessage.MessageType.REMATCH_RESPONSE, 
+                        accepted
+                    );
+                    if (isServer && gameServer != null) {
+                        gameServer.sendMessage(message);
+                    } else if (!isServer && gameClient != null) {
+                        gameClient.sendMessage(message);
+                    }
+                } catch (IOException e) {
+                    System.err.println("재시합 응답 전송 실패: " + e.getMessage());
+                }
+                
+                // 수락한 경우 게임 재시작
+                if (accepted) {
+                    restartGame();
+                } else {
+                    setStatusMessage("재시합을 거부했습니다", "#ff0000");
+                }
+            });
+        });
+    }
+
+    private void restartGame() {
+        Platform.runLater(() -> {
+            // 게임 오버 UI 숨기기
+            if (gameOverBox != null) {
+                gameOverBox.setVisible(false);
+                gameOverBox.setManaged(false);
+            }
+            statusLabel.setText("");
+            statusLabel.setStyle("");
+            
+            // 게임 루프 정지
+            if (gameLoop != null) {
+                gameLoop.stop();
+            }
+            
+            // 게임 엔진 재초기화
+            battleEngine = new BattleGameEngine(gameMode);
+            
+            if (isServer) {
+                myPlayerLabel.setText("서버 (나)");
+                opponentPlayerLabel.setText("클라이언트");
+            } else {
+                myPlayerLabel.setText("클라이언트 (나)");
+                opponentPlayerLabel.setText("서버");
+            }
+            
+            // 내 블록이 배치될 때마다 공격 적용
+            getMyEngine().setOnPiecePlacedCallback(() -> {
+                battleEngine.applyPendingAttacks(isServer ? 1 : 2);
+            });
+            
+            // 카운트다운 시작
+            startCountdown();
+        });
+    }
+
+    @FXML
     private void onPause() {
         if (battleEngine != null) {
             battleEngine.pauseGame();
-            if (battleEngine.isPaused()) {
+            boolean isPaused = battleEngine.isPaused();
+            if (isPaused) {
                 statusLabel.setText("일시 정지");
             } else {
                 statusLabel.setText("");
+            }
+            
+            // 일시정지 상태를 상대방에게 전송
+            NetworkMessage pauseMsg = new NetworkMessage(NetworkMessage.MessageType.PAUSE, isPaused);
+            try {
+                if (isServer && gameServer != null) {
+                    gameServer.sendMessage(pauseMsg);
+                } else if (!isServer && gameClient != null) {
+                    gameClient.sendMessage(pauseMsg);
+                }
+            } catch (Exception e) {
+                System.err.println("일시정지 메시지 전송 실패: " + e.getMessage());
             }
         }
     }
