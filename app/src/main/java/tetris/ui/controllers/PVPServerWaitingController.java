@@ -137,6 +137,11 @@ public class PVPServerWaitingController implements Initializable {
                         }
                     });
                 }
+                
+                @Override
+                public void onRttUpdate(long rtt) {
+                    // RTT 업데이트는 게임 화면에서 처리
+                }
             });
         }
     }

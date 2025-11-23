@@ -84,8 +84,9 @@
 
 /* 게임 정보 라벨 */
 .game-info-label {
-    -fx-text-fill: #cccccc;
-    -fx-font-size: 11px;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
 }
 
 /* 중앙 정보 영역 */
@@ -103,6 +104,25 @@
     -fx-text-fill: #ffff00;
     -fx-font-size: 20px;
     -fx-font-weight: bold;
+}
+
+/* 랙 경고 라벨 */
+.lag-warning {
+    -fx-text-fill: #ff6600;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-padding: 5px 10px;
+    -fx-background-color: rgba(255, 102, 0, 0.2);
+    -fx-border-color: #ff6600;
+    -fx-border-width: 1px;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+}
+
+.lag-warning.critical {
+    -fx-text-fill: #ff0000;
+    -fx-background-color: rgba(255, 0, 0, 0.3);
+    -fx-border-color: #ff0000;
 }
 
 /* 승자 라벨 */

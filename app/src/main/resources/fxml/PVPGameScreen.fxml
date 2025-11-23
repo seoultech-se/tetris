@@ -62,12 +62,26 @@
                   <Font size="20.0" />
                </font>
             </Label>
+            <Label fx:id="timerLabel" text="" styleClass="timer-label" visible="false" managed="false">
+               <font>
+                  <Font size="32.0" />
+               </font>
+            </Label>
             <Label fx:id="statusLabel" text="" styleClass="winner-label">
                <font>
                   <Font size="24.0" />
                </font>
             </Label>
-            <Label fx:id="latencyLabel" text="RTT: - ms" styleClass="game-info-label" />
+            <Label fx:id="lagWarningLabel" text="" styleClass="lag-warning" visible="false" managed="false">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Label>
+            <Label fx:id="latencyLabel" text="RTT: - ms" styleClass="game-info-label">
+               <font>
+                  <Font size="14.0" />
+               </font>
+            </Label>
             <Button mnemonicParsing="false" focusTraversable="false" onAction="#onPause" text="일시 정지" prefWidth="100.0" prefHeight="35.0">
                <font>
                   <Font size="12.0" />

@@ -21,7 +21,9 @@ public class NetworkMessage implements Serializable {
         PING,
         PONG,
         REMATCH_REQUEST,    // 재시합 요청
-        REMATCH_RESPONSE    // 재시합 응답 (수락/거부)
+        REMATCH_RESPONSE,   // 재시합 응답 (수락/거부)
+        TIME_SYNC,          // 시간제한 모드 타이머 동기화
+        TIME_UP             // 시간 종료 알림
     }
     
     private MessageType type;

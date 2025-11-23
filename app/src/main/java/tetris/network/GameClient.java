@@ -73,8 +73,11 @@ public class GameClient {
                         NetworkMessage netMsg = (NetworkMessage) msg;
                         if (netMsg.getType() == NetworkMessage.MessageType.PONG) {
                             long rtt = System.currentTimeMillis() - (long) netMsg.getData();
+                            System.out.println("[CLIENT] PONG received, RTT: " + rtt + "ms");
                             if (messageHandler != null) {
                                 messageHandler.onRttUpdate(rtt);
+                            } else {
+                                System.err.println("[CLIENT] WARNING: messageHandler is null, cannot update RTT");
                             }
                         } else {
                             System.out.println("[CLIENT] Received message: " + netMsg.getType());
@@ -127,7 +130,9 @@ public class GameClient {
         pingThread = new Thread(() -> {
             while (isRunning) {
                 try {
-                    sendMessage(new NetworkMessage(NetworkMessage.MessageType.PING, System.currentTimeMillis()));
+                    long timestamp = System.currentTimeMillis();
+                    System.out.println("[CLIENT] Sending PING at timestamp: " + timestamp);
+                    sendMessage(new NetworkMessage(NetworkMessage.MessageType.PING, timestamp));
                     Thread.sleep(1000); // 1초마다 PING 전송
                 } catch (IOException e) {
                     System.err.println("[CLIENT] Ping failed: " + e.getMessage());
@@ -137,6 +142,7 @@ public class GameClient {
                     break;
                 }
             }
+            System.out.println("[CLIENT] Ping thread stopped");
         });
         pingThread.start();
         System.out.println("[CLIENT] Ping thread started");

@@ -85,6 +85,12 @@ public class PVPGameScreenController implements Initializable {
     private Label latencyLabel;
 
     @FXML
+    private Label lagWarningLabel;
+
+    @FXML
+    private Label timerLabel;
+
+    @FXML
     private VBox gameOverBox;
 
     @FXML
@@ -129,6 +135,24 @@ public class PVPGameScreenController implements Initializable {
     private long lastStateSentTime = 0;
     private static final long STATE_SEND_INTERVAL = 50_000_000; // 50ms (나노초 단위)
 
+    // 시간제한 모드 관련
+    private boolean isTimeLimitMode = false;
+    private long gameDuration = 180; // 3분 (초 단위)
+    private long gameStartTime = 0;
+    private boolean timeUpSent = false;
+
+    // 랙 감지 관련
+    private long currentRTT = 0;
+    private static final long LAG_WARNING_THRESHOLD = 200; // 200ms 이상이면 경고
+    private static final long LAG_CRITICAL_THRESHOLD = 500; // 500ms 이상이면 심각한 랙
+    private long lastRTTUpdateTime = 0;
+    private static final long RTT_TIMEOUT = 5_000_000_000L; // 5초 동안 RTT 업데이트 없으면 연결 불안정
+    
+    // 연결 끊김 감지 관련
+    private long lastNetworkActivityTime = 0;
+    private static final long CONNECTION_TIMEOUT = 10_000_000_000L; // 10초 동안 네트워크 활동 없으면 연결 끊김
+    private boolean connectionLost = false;
+
     private int BLOCK_SIZE = 25;
 
     // 블록 색상 설정 (ColorBlind Safe 팔레트)
@@ -163,6 +187,15 @@ public class PVPGameScreenController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         settingsManager = tetris.ui.SettingsManager.getInstance();
         setupCanvasSize();
+        
+        // RTT 라벨 초기화
+        if (latencyLabel != null) {
+            System.out.println("[PVP-GAME] Initializing latency label in initialize()");
+            latencyLabel.setVisible(true);
+            latencyLabel.setText("RTT: - ms");
+        } else {
+            System.out.println("[PVP-GAME] WARNING: latencyLabel is null in initialize()");
+        }
     }
 
     private void setupCanvasSize() {
@@ -245,6 +278,33 @@ public class PVPGameScreenController implements Initializable {
     private void initializeGame() {
         battleEngine = new BattleGameEngine(gameMode);
         
+        // 시간제한 모드 체크
+        isTimeLimitMode = "TIME_LIMIT".equals(gameMode);
+        if (isTimeLimitMode) {
+            battleEngine.setTimeLimit(gameDuration);
+            if (timerLabel != null) {
+                timerLabel.setVisible(true);
+                timerLabel.setManaged(true);
+            }
+        }
+        
+        // 레이턴시 라벨 초기화
+        if (latencyLabel != null) {
+            latencyLabel.setVisible(true);
+            latencyLabel.setManaged(true);
+            latencyLabel.setText("RTT: - ms");
+            latencyLabel.setStyle("-fx-text-fill: #ffffff; -fx-font-size: 14px; -fx-font-weight: bold;");
+            System.out.println("[PVP-GAME] Latency label initialized successfully");
+        } else {
+            System.err.println("[PVP-GAME] ERROR: latencyLabel is NULL in initializeGame()!");
+        }
+        
+        // 랙 경고 라벨 초기화
+        if (lagWarningLabel != null) {
+            lagWarningLabel.setVisible(false);
+            lagWarningLabel.setManaged(false);
+        }
+        
         if (isServer) {
             myPlayerLabel.setText("서버 (나)");
             opponentPlayerLabel.setText("클라이언트");
@@ -279,19 +339,32 @@ public class PVPGameScreenController implements Initializable {
 
                 @Override
                 public void onClientDisconnected() {
-                    Platform.runLater(() -> {
-                        System.out.println("[PVP-GAME] Client disconnected");
-                        statusLabel.setText("상대방 연결 끊김");
-                        if (gameLoop != null) {
-                            gameLoop.stop();
-                        }
-                    });
+                    System.out.println("[PVP-GAME] Client disconnected");
+                    if (!connectionLost) {
+                        connectionLost = true;
+                        handleConnectionLost();
+                    }
                 }
 
                 @Override
                 public void onError(Exception e) {
                     System.err.println("[PVP-GAME] Server error: " + e.getMessage());
                     e.printStackTrace();
+                }
+                
+                @Override
+                public void onRttUpdate(long rtt) {
+                    // RTT 업데이트 받음
+                    System.out.println("[PVP-GAME] Server RTT updated: " + rtt + "ms");
+                    currentRTT = rtt;
+                    lastRTTUpdateTime = System.nanoTime();
+                    lastNetworkActivityTime = System.nanoTime(); // 네트워크 활동 업데이트
+                    
+                    Platform.runLater(() -> {
+                        System.out.println("[PVP-GAME] Updating latency display on UI thread");
+                        updateLatencyDisplay();
+                        updateLagWarning();
+                    });
                 }
             });
         } else if (!isServer && gameClient != null) {
@@ -311,13 +384,11 @@ public class PVPGameScreenController implements Initializable {
 
                 @Override
                 public void onDisconnected() {
-                    Platform.runLater(() -> {
-                        System.out.println("[PVP-GAME] Disconnected from server");
-                        statusLabel.setText("서버 연결 끊김");
-                        if (gameLoop != null) {
-                            gameLoop.stop();
-                        }
-                    });
+                    System.out.println("[PVP-GAME] Disconnected from server");
+                    if (!connectionLost) {
+                        connectionLost = true;
+                        handleConnectionLost();
+                    }
                 }
 
                 @Override
@@ -328,7 +399,17 @@ public class PVPGameScreenController implements Initializable {
 
                 @Override
                 public void onRttUpdate(long rtt) {
-                    // RTT 업데이트는 필요 시 사용
+                    // RTT 업데이트 받음
+                    System.out.println("[PVP-GAME] Client RTT updated: " + rtt + "ms");
+                    currentRTT = rtt;
+                    lastRTTUpdateTime = System.nanoTime();
+                    lastNetworkActivityTime = System.nanoTime(); // 네트워크 활동 업데이트
+                    
+                    Platform.runLater(() -> {
+                        System.out.println("[PVP-GAME] Updating latency display on UI thread");
+                        updateLatencyDisplay();
+                        updateLagWarning();
+                    });
                 }
             });
         }
@@ -337,6 +418,9 @@ public class PVPGameScreenController implements Initializable {
     }
 
     private void handleNetworkMessage(NetworkMessage message) {
+        // 네트워크 활동 시간 업데이트
+        lastNetworkActivityTime = System.nanoTime();
+        
         Platform.runLater(() -> {
             System.out.println("[PVP-GAME] Handling network message: " + message.getType());
             switch (message.getType()) {
@@ -421,6 +505,39 @@ public class PVPGameScreenController implements Initializable {
                             battleEngine.pauseGame();
                             statusLabel.setText("");
                         }
+                    }
+                    break;
+
+                case TIME_UP:
+                    // 상대방으로부터 시간 종료 메시지 받음
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> timeUpData = (Map<String, Object>) message.getData();
+                    int opponentScore = (Integer) timeUpData.get("myScore");
+                    
+                    // 내 점수와 비교
+                    int myScore = getMyEngine().getScore();
+                    battleEngine.stopGame();
+                    
+                    if (myScore > opponentScore) {
+                        statusLabel.setText("시간 종료! 승리!");
+                        statusLabel.setStyle("-fx-text-fill: #00ff00;");
+                    } else if (myScore < opponentScore) {
+                        statusLabel.setText("시간 종료! 패배...");
+                        statusLabel.setStyle("-fx-text-fill: #ff0000;");
+                    } else {
+                        statusLabel.setText("시간 종료! 무승부");
+                        statusLabel.setStyle("-fx-text-fill: #ffff00;");
+                    }
+                    
+                    // 게임 오버 버튼 표시
+                    if (gameOverBox != null) {
+                        gameOverBox.setVisible(true);
+                        gameOverBox.setManaged(true);
+                    }
+                    
+                    // 게임 루프 중지
+                    if (gameLoop != null) {
+                        gameLoop.stop();
                     }
                     break;
 
@@ -532,6 +649,16 @@ public class PVPGameScreenController implements Initializable {
     private void startGame() {
         battleEngine.startGame();
         
+        // 시간제한 모드의 경우 게임 시작 시간 기록
+        if (isTimeLimitMode) {
+            gameStartTime = System.nanoTime();
+            timeUpSent = false;
+        }
+        
+        // 네트워크 활동 시간 초기화
+        lastNetworkActivityTime = System.nanoTime();
+        connectionLost = false;
+        
         // 게임 시작 직후 초기 상태 전송
         System.out.println("[PVP-GAME] Sending initial game state...");
         sendMyState();
@@ -549,12 +676,33 @@ public class PVPGameScreenController implements Initializable {
                     if (lastUpdateTimeOpponent == 0) {
                         lastUpdateTimeOpponent = now;
                     }
+                    
+                    // 연결 끊김 체크 (10초 동안 네트워크 활동 없으면 연결 끊김)
+                    if (!connectionLost && lastNetworkActivityTime > 0) {
+                        long timeSinceLastActivity = now - lastNetworkActivityTime;
+                        if (timeSinceLastActivity > CONNECTION_TIMEOUT) {
+                            connectionLost = true;
+                            handleConnectionLost();
+                            return;
+                        }
+                    }
 
                     // 게임 오버 체크
                     if (!battleEngine.isGameRunning()) {
                         gameLoop.stop();
                         showGameOver();
                         return;
+                    }
+
+                    // 시간제한 모드 체크
+                    if (isTimeLimitMode && battleEngine.isGameRunning()) {
+                        long elapsed = (now - gameStartTime) / 1_000_000_000L;
+                        if (elapsed >= gameDuration && !timeUpSent) {
+                            // 시간 종료
+                            timeUpSent = true;
+                            handleTimeUp();
+                            return;
+                        }
                     }
 
                     // 업데이트
@@ -1136,12 +1284,109 @@ public class PVPGameScreenController implements Initializable {
             myScoreLabel.setText(String.valueOf(myEngine.getScore()));
             myLevelLabel.setText("Lv: " + myEngine.getLevel());
             myLinesLabel.setText("Lines: " + myEngine.getLinesCleared());
+            
+            // 시간제한 모드의 경우 타이머 업데이트
+            if (isTimeLimitMode && timerLabel != null) {
+                long remaining = battleEngine.getRemainingTime();
+                long minutes = remaining / 60;
+                long seconds = remaining % 60;
+                timerLabel.setText(String.format("%d:%02d", minutes, seconds));
+                
+                // 30초 이하일 때 빨간색으로 표시
+                if (remaining <= 30) {
+                    timerLabel.setStyle("-fx-text-fill: #ff0000;");
+                } else if (remaining <= 60) {
+                    timerLabel.setStyle("-fx-text-fill: #ffff00;");
+                } else {
+                    timerLabel.setStyle("-fx-text-fill: #ffffff;");
+                }
+            }
         }
 
         if (opponentState != null) {
             opponentScoreLabel.setText(String.valueOf(opponentState.getScore()));
             opponentLevelLabel.setText("Lv: " + opponentState.getLevel());
             opponentLinesLabel.setText("Lines: " + opponentState.getLinesCleared());
+        }
+        
+        // RTT 표시 및 랙 경고 업데이트 (PING/PONG으로 업데이트됨)
+        updateLatencyDisplay();
+        updateLagWarning();
+    }
+    
+    /**
+     * 레이턴시 라벨 업데이트
+     */
+    private void updateLatencyDisplay() {
+        if (latencyLabel == null) {
+            System.err.println("[PVP-GAME] ERROR: latencyLabel is null in updateLatencyDisplay()");
+            return;
+        }
+        
+        try {
+            if (currentRTT > 0) {
+                String text = String.format("RTT: %d ms", currentRTT);
+                latencyLabel.setText(text);
+                latencyLabel.setVisible(true);
+                
+                // RTT에 따라 색상 변경
+                String style = "-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: ";
+                if (currentRTT >= LAG_CRITICAL_THRESHOLD) {
+                    latencyLabel.setStyle(style + "#ff0000;"); // 빨간색
+                } else if (currentRTT >= LAG_WARNING_THRESHOLD) {
+                    latencyLabel.setStyle(style + "#ffaa00;"); // 주황색
+                } else {
+                    latencyLabel.setStyle(style + "#00ff00;"); // 초록색
+                }
+            } else {
+                latencyLabel.setText("RTT: - ms");
+                latencyLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #ffffff;");
+                latencyLabel.setVisible(true);
+            }
+        } catch (Exception e) {
+            System.err.println("[PVP-GAME] Exception in updateLatencyDisplay: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * 랙 경고 메시지 업데이트
+     */
+    private void updateLagWarning() {
+        if (lagWarningLabel == null) return;
+        
+        long now = System.nanoTime();
+        boolean showWarning = false;
+        String warningText = "";
+        String warningColor = "";
+        
+        // RTT가 5초 이상 업데이트되지 않았으면 연결 불안정
+        if (lastRTTUpdateTime > 0 && (now - lastRTTUpdateTime) > RTT_TIMEOUT) {
+            showWarning = true;
+            warningText = "⚠ 연결 불안정";
+            warningColor = "#ff0000";
+        }
+        // RTT가 500ms 이상이면 심각한 랙
+        else if (currentRTT >= LAG_CRITICAL_THRESHOLD) {
+            showWarning = true;
+            warningText = "⚠ 심각한 네트워크 지연";
+            warningColor = "#ff0000";
+        }
+        // RTT가 200ms 이상이면 경고
+        else if (currentRTT >= LAG_WARNING_THRESHOLD) {
+            showWarning = true;
+            warningText = "⚠ 네트워크 지연";
+            warningColor = "#ffaa00";
+        }
+        
+        if (showWarning) {
+            lagWarningLabel.setText(warningText);
+            lagWarningLabel.setStyle("-fx-text-fill: " + warningColor + ";");
+            lagWarningLabel.setVisible(true);
+            lagWarningLabel.setManaged(true);
+        } else {
+            lagWarningLabel.setVisible(false);
+            lagWarningLabel.setManaged(false);
         }
     }
 
@@ -1195,6 +1440,101 @@ public class PVPGameScreenController implements Initializable {
                 }
             } catch (IOException e) {
                 System.err.println("게임 오버 메시지 전송 실패: " + e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * 시간제한 모드에서 시간이 종료되었을 때 처리
+     */
+    private void handleTimeUp() {
+        if (battleEngine == null) return;
+        
+        battleEngine.stopGame();
+        
+        Platform.runLater(() -> {
+            // 점수 비교
+            int myScore = getMyEngine().getScore();
+            int opponentScore = opponentState != null ? opponentState.getScore() : 0;
+            
+            // 상대방에게 시간 종료 메시지 전송
+            Map<String, Object> timeUpData = new HashMap<>();
+            timeUpData.put("myScore", myScore);
+            NetworkMessage message = new NetworkMessage(NetworkMessage.MessageType.TIME_UP, timeUpData);
+            
+            try {
+                if (isServer && gameServer != null) {
+                    gameServer.sendMessage(message);
+                } else if (!isServer && gameClient != null) {
+                    gameClient.sendMessage(message);
+                }
+            } catch (IOException e) {
+                System.err.println("시간 종료 메시지 전송 실패: " + e.getMessage());
+            }
+            
+            // 승패 표시
+            if (myScore > opponentScore) {
+                statusLabel.setText("시간 종료! 승리!");
+                statusLabel.setStyle("-fx-text-fill: #00ff00;");
+            } else if (myScore < opponentScore) {
+                statusLabel.setText("시간 종료! 패배...");
+                statusLabel.setStyle("-fx-text-fill: #ff0000;");
+            } else {
+                statusLabel.setText("시간 종료! 무승부");
+                statusLabel.setStyle("-fx-text-fill: #ffff00;");
+            }
+            
+            // 게임 오버 버튼 표시
+            if (gameOverBox != null) {
+                gameOverBox.setVisible(true);
+                gameOverBox.setManaged(true);
+            }
+            
+            // 게임 루프 중지
+            if (gameLoop != null) {
+                gameLoop.stop();
+            }
+        });
+    }
+
+    /**
+     * 네트워크 연결이 끊어졌을 때 처리
+     */
+    private void handleConnectionLost() {
+        Platform.runLater(() -> {
+            // 게임 루프 중지
+            if (gameLoop != null) {
+                gameLoop.stop();
+            }
+            
+            // 배틀 엔진 중지
+            if (battleEngine != null) {
+                battleEngine.stopGame();
+            }
+            
+            // 네트워크 연결 종료
+            try {
+                if (isServer && gameServer != null) {
+                    gameServer.close();
+                    gameServer = null;
+                } else if (!isServer && gameClient != null) {
+                    gameClient.close();
+                    gameClient = null;
+                }
+            } catch (Exception e) {
+                System.err.println("네트워크 연결 종료 중 오류: " + e.getMessage());
+            }
+            
+            // 에러 메시지 표시
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("연결 끊김");
+            alert.setHeaderText("네트워크 연결이 끊어졌습니다");
+            alert.setContentText("상대방과의 연결이 10초 이상 끊어졌습니다.\nP2P 대전 메뉴로 돌아갑니다.");
+            alert.showAndWait();
+            
+            // P2P 모드 선택 화면으로 돌아가기
+            if (sceneManager != null) {
+                sceneManager.showPVPModeSelection();
             }
         });
     }
@@ -1300,6 +1640,12 @@ public class PVPGameScreenController implements Initializable {
             
             // 게임 엔진 재초기화
             battleEngine = new BattleGameEngine(gameMode);
+            
+            // 시간제한 모드 재설정
+            if (isTimeLimitMode) {
+                battleEngine.setTimeLimit(gameDuration);
+                timeUpSent = false;
+            }
             
             if (isServer) {
                 myPlayerLabel.setText("서버 (나)");
