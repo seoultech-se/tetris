@@ -210,6 +210,11 @@ public class PVPNetworkSelectionController implements Initializable {
                         connectionStatusLabel.setStyle("-fx-text-fill: #ff0000;");
                     });
                 }
+                
+                @Override
+                public void onRttUpdate(long rtt) {
+                    // RTT 업데이트는 게임 화면에서 처리
+                }
             });
 
             System.out.println("[UI] Starting server...");
@@ -334,7 +339,9 @@ public class PVPNetworkSelectionController implements Initializable {
                 case CONNECTION_REQUEST:
                     System.out.println("[UI-SERVER] CONNECTION_REQUEST received from client");
                     break;
-                // 추가 메시지 처리
+                default:
+                    // 다른 메시지는 게임 화면에서 처리
+                    break;
             }
         }
     }
@@ -354,7 +361,9 @@ public class PVPNetworkSelectionController implements Initializable {
                     clientStatusLabel.setText("Starting Game...");
                     startGame();
                     break;
-                // 추가 메시지 처리
+                default:
+                    // 다른 메시지는 게임 화면에서 처리
+                    break;
             }
         }
     }

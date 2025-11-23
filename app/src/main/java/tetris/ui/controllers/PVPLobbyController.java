@@ -150,6 +150,11 @@ public class PVPLobbyController implements Initializable {
                     public void onError(Exception e) {
                         e.printStackTrace();
                     }
+                    
+                    @Override
+                    public void onRttUpdate(long rtt) {
+                        // RTT 업데이트는 게임 화면에서 처리
+                    }
                 });
             }
         } else {

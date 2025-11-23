@@ -11,6 +11,7 @@ public class GameServer {
     private ObjectInputStream in;
     private boolean isRunning = false;
     private Thread listenerThread;
+    private Thread pingThread;
     private MessageHandler messageHandler;
 
     public interface MessageHandler {
@@ -18,6 +19,7 @@ public class GameServer {
         void onClientConnected();
         void onClientDisconnected();
         void onError(Exception e);
+        void onRttUpdate(long rtt);
     }
 
     public GameServer(int port) throws IOException {
@@ -62,6 +64,7 @@ public class GameServer {
                 }
 
                 startListening();
+                startPinging();
             } catch (IOException e) {
                 System.err.println("[SERVER] Error during connection: " + e.getMessage());
                 e.printStackTrace();
@@ -86,7 +89,16 @@ public class GameServer {
                     if (msg instanceof NetworkMessage) {
                         NetworkMessage netMsg = (NetworkMessage) msg;
                         if (netMsg.getType() == NetworkMessage.MessageType.PING) {
+                            System.out.println("[SERVER] PING received, sending PONG");
                             sendMessage(new NetworkMessage(NetworkMessage.MessageType.PONG, netMsg.getData()));
+                        } else if (netMsg.getType() == NetworkMessage.MessageType.PONG) {
+                            long rtt = System.currentTimeMillis() - (long) netMsg.getData();
+                            System.out.println("[SERVER] PONG received, RTT: " + rtt + "ms");
+                            if (messageHandler != null) {
+                                messageHandler.onRttUpdate(rtt);
+                            } else {
+                                System.err.println("[SERVER] WARNING: messageHandler is null, cannot update RTT");
+                            }
                         } else {
                             System.out.println("[SERVER] Received message: " + netMsg.getType());
                             if (messageHandler != null) {
@@ -133,11 +145,34 @@ public class GameServer {
         System.out.println("[SERVER] Listener thread started");
     }
 
+    private void startPinging() {
+        System.out.println("[SERVER] Starting ping thread...");
+        pingThread = new Thread(() -> {
+            while (isRunning) {
+                try {
+                    long timestamp = System.currentTimeMillis();
+                    System.out.println("[SERVER] Sending PING at timestamp: " + timestamp);
+                    sendMessage(new NetworkMessage(NetworkMessage.MessageType.PING, timestamp));
+                    Thread.sleep(1000); // 1초마다 PING 전송
+                } catch (IOException e) {
+                    System.err.println("[SERVER] Ping failed: " + e.getMessage());
+                    break;
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+            System.out.println("[SERVER] Ping thread stopped");
+        });
+        pingThread.start();
+        System.out.println("[SERVER] Ping thread started");
+    }
+
     public synchronized void sendMessage(Object message) throws IOException {
         if (out != null) {
             if (message instanceof NetworkMessage) {
                 NetworkMessage netMsg = (NetworkMessage) message;
-                if (netMsg.getType() != NetworkMessage.MessageType.PONG) {
+                if (netMsg.getType() != NetworkMessage.MessageType.PONG && netMsg.getType() != NetworkMessage.MessageType.PING) {
                     System.out.println("[SERVER] Sending message: " + netMsg.getType());
                 }
             }
@@ -175,6 +210,14 @@ public class GameServer {
     public void close() {
         System.out.println("[SERVER] Closing server...");
         isRunning = false;
+        if (pingThread != null && pingThread.isAlive()) {
+            pingThread.interrupt();
+            System.out.println("[SERVER] Ping thread interrupted");
+        }
+        if (listenerThread != null && listenerThread.isAlive()) {
+            listenerThread.interrupt();
+            System.out.println("[SERVER] Listener thread interrupted");
+        }
         try {
             if (in != null) {
                 in.close();
@@ -191,10 +234,6 @@ public class GameServer {
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
                 System.out.println("[SERVER] Server socket closed");
-            }
-            if (listenerThread != null && listenerThread.isAlive()) {
-                listenerThread.interrupt();
-                System.out.println("[SERVER] Listener thread interrupted");
             }
         } catch (IOException e) {
             System.err.println("[SERVER] Error during cleanup: " + e.getMessage());
