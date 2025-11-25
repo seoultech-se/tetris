@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.text.Font?>
+
+<StackPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="tetris.ui.controllers.PVPClientConnectionController">
+   <children>
+      <ImageView fx:id="backgroundImage" pickOnBounds="true" preserveRatio="false">
+         <image>
+            <Image url="@/assets/img/Tetris_Background.png" />
+         </image>
+      </ImageView>
+      <VBox alignment="CENTER" spacing="30.0">
+         <children>
+            <Label text="서버에 접속" styleClass="title-label">
+               <font>
+                  <Font size="32.0" />
+               </font>
+            </Label>
+            <Label text="서버 IP 주소 입력:" styleClass="info-label">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Label>
+            <TextField fx:id="serverIpField" promptText="예: 192.168.0.1" prefWidth="250.0" styleClass="ip-field">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </TextField>
+            <VBox fx:id="recentIPsBox" spacing="5.0" alignment="CENTER">
+               <children>
+                  <Label text="최근 접속 IP:" styleClass="info-label">
+                     <font>
+                        <Font size="14.0" />
+                     </font>
+                  </Label>
+               </children>
+            </VBox>
+            <Button fx:id="connectButton" mnemonicParsing="false" onAction="#onConnect" prefWidth="250.0" text="접속" styleClass="menu-button">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Button>
+            <Label fx:id="statusLabel" text="" styleClass="status-label">
+               <font>
+                  <Font size="14.0" />
+               </font>
+            </Label>
+            <Button fx:id="backButton" mnemonicParsing="false" onAction="#onBack" prefWidth="250.0" text="뒤로가기" styleClass="menu-button">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Button>
+         </children>
+         <padding>
+            <Insets bottom="50.0" left="50.0" right="50.0" top="50.0" />
+         </padding>
+      </VBox>
+   </children>
+</StackPane>
