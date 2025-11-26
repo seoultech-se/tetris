@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.RadioButton?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.text.Font?>
+
+<StackPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="tetris.ui.controllers.PVPLobbyController">
+   <children>
+      <ImageView fx:id="backgroundImage" pickOnBounds="true" preserveRatio="false">
+         <image>
+            <Image url="@/assets/img/PVP_Background.png" />
+         </image>
+      </ImageView>
+      <VBox alignment="CENTER" spacing="30.0">
+         <children>
+            <Label text="PVP 대전 로비" styleClass="title-label">
+               <font>
+                  <Font size="32.0" />
+               </font>
+            </Label>
+            
+            <!-- 게임 모드 선택 (서버만) -->
+            <VBox fx:id="gameModeBox" alignment="CENTER" spacing="15.0">
+               <Label text="게임 모드 선택:" styleClass="info-label">
+                  <font>
+                     <Font size="20.0" />
+                  </font>
+               </Label>
+               <fx:define>
+                  <ToggleGroup fx:id="gameModeGroup"/>
+               </fx:define>
+               <RadioButton fx:id="normalModeRadio" text="일반 모드" toggleGroup="$gameModeGroup" selected="true" styleClass="radio-button">
+                  <font>
+                     <Font size="16.0" />
+                  </font>
+               </RadioButton>
+               <RadioButton fx:id="itemModeRadio" text="아이템 모드" toggleGroup="$gameModeGroup" styleClass="radio-button">
+                  <font>
+                     <Font size="16.0" />
+                  </font>
+               </RadioButton>
+               <RadioButton fx:id="timeLimitModeRadio" text="시간제한 모드" toggleGroup="$gameModeGroup" styleClass="radio-button">
+                  <font>
+                     <Font size="16.0" />
+                  </font>
+               </RadioButton>
+            </VBox>
+            
+            <!-- 선택된 게임 모드 표시 (클라이언트) -->
+            <Label fx:id="selectedModeLabel" text="" styleClass="info-label" visible="false">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Label>
+            
+            <!-- 준비 상태 -->
+            <VBox alignment="CENTER" spacing="10.0">
+               <Label text="준비 상태:" styleClass="info-label">
+                  <font>
+                     <Font size="18.0" />
+                  </font>
+               </Label>
+               <HBox alignment="CENTER" spacing="30.0">
+                  <Label fx:id="serverStatusLabel" text="서버: 대기 중" styleClass="status-label">
+                     <font>
+                        <Font size="16.0" />
+                     </font>
+                  </Label>
+                  <Label fx:id="clientStatusLabel" text="클라이언트: 대기 중" styleClass="status-label">
+                     <font>
+                        <Font size="16.0" />
+                     </font>
+                  </Label>
+               </HBox>
+            </VBox>
+            
+            <Button fx:id="readyButton" mnemonicParsing="false" onAction="#onReady" prefWidth="250.0" text="게임 시작" styleClass="menu-button">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Button>
+            
+            <Button fx:id="backButton" mnemonicParsing="false" onAction="#onBack" prefWidth="250.0" text="나가기" styleClass="menu-button">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Button>
+         </children>
+         <padding>
+            <Insets bottom="50.0" left="50.0" right="50.0" top="50.0" />
+         </padding>
+      </VBox>
+   </children>
+</StackPane>

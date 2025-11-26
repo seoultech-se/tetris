@@ -9,7 +9,7 @@
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.text.Font?>
 
-<StackPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="tetris.ui.controllers.BattleModeSelectionController">
+<StackPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="tetris.ui.controllers.PVPModeSelectionController">
    <children>
       <ImageView fx:id="backgroundImage" pickOnBounds="true" preserveRatio="false">
          <image>
@@ -18,22 +18,22 @@
       </ImageView>
       <VBox alignment="CENTER" spacing="30.0">
          <children>
-            <Label text="대전 모드 선택" styleClass="title-label">
+            <Label text="P2P 대전모드" styleClass="title-label">
                <font>
                   <Font size="32.0" />
                </font>
             </Label>
-            <Button fx:id="normalBattleButton" mnemonicParsing="false" focusTraversable="true" onAction="#onNormalBattle" prefWidth="250.0" text="일반 대전" styleClass="menu-button">
+            <Label text="네트워크 역할 선택" styleClass="info-label">
+               <font>
+                  <Font size="20.0" />
+               </font>
+            </Label>
+            <Button fx:id="serverButton" mnemonicParsing="false" focusTraversable="true" onAction="#onServerMode" prefWidth="250.0" text="서버로 시작" styleClass="menu-button">
                <font>
                   <Font size="18.0" />
                </font>
             </Button>
-            <Button fx:id="itemBattleButton" mnemonicParsing="false" focusTraversable="true" onAction="#onItemBattle" prefWidth="250.0" text="아이템 대전" styleClass="menu-button">
-               <font>
-                  <Font size="18.0" />
-               </font>
-            </Button>
-            <Button fx:id="timeLimitBattleButton" mnemonicParsing="false" focusTraversable="true" onAction="#onTimeLimitBattle" prefWidth="250.0" text="시간제한 대전" styleClass="menu-button">
+            <Button fx:id="clientButton" mnemonicParsing="false" focusTraversable="true" onAction="#onClientMode" prefWidth="250.0" text="클라이언트로 접속" styleClass="menu-button">
                <font>
                   <Font size="18.0" />
                </font>
@@ -50,4 +50,3 @@
       </VBox>
    </children>
 </StackPane>
-

@@ -9,7 +9,7 @@
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.text.Font?>
 
-<StackPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="tetris.ui.controllers.BattleModeSelectionController">
+<StackPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="tetris.ui.controllers.PVPServerWaitingController">
    <children>
       <ImageView fx:id="backgroundImage" pickOnBounds="true" preserveRatio="false">
          <image>
@@ -18,27 +18,32 @@
       </ImageView>
       <VBox alignment="CENTER" spacing="30.0">
          <children>
-            <Label text="대전 모드 선택" styleClass="title-label">
+            <Label text="서버 대기 중" styleClass="title-label">
                <font>
                   <Font size="32.0" />
                </font>
             </Label>
-            <Button fx:id="normalBattleButton" mnemonicParsing="false" focusTraversable="true" onAction="#onNormalBattle" prefWidth="250.0" text="일반 대전" styleClass="menu-button">
+            <Label text="서버 IP 주소:" styleClass="info-label">
                <font>
                   <Font size="18.0" />
                </font>
-            </Button>
-            <Button fx:id="itemBattleButton" mnemonicParsing="false" focusTraversable="true" onAction="#onItemBattle" prefWidth="250.0" text="아이템 대전" styleClass="menu-button">
+            </Label>
+            <Label fx:id="serverIpLabel" text="192.168.0.1" styleClass="ip-label">
                <font>
-                  <Font size="18.0" />
+                  <Font size="24.0" />
                </font>
-            </Button>
-            <Button fx:id="timeLimitBattleButton" mnemonicParsing="false" focusTraversable="true" onAction="#onTimeLimitBattle" prefWidth="250.0" text="시간제한 대전" styleClass="menu-button">
+            </Label>
+            <Label text="클라이언트 접속 대기 중..." styleClass="info-label">
                <font>
-                  <Font size="18.0" />
+                  <Font size="16.0" />
                </font>
-            </Button>
-            <Button fx:id="backButton" mnemonicParsing="false" focusTraversable="true" onAction="#onBack" prefWidth="250.0" text="뒤로가기" styleClass="menu-button">
+            </Label>
+            <Label fx:id="statusLabel" text="" styleClass="status-label">
+               <font>
+                  <Font size="14.0" />
+               </font>
+            </Label>
+            <Button fx:id="backButton" mnemonicParsing="false" onAction="#onBack" prefWidth="250.0" text="취소" styleClass="menu-button">
                <font>
                   <Font size="18.0" />
                </font>
@@ -50,4 +55,3 @@
       </VBox>
    </children>
 </StackPane>
-
