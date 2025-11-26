@@ -824,15 +824,14 @@ public class BattleGameScreenController implements Initializable {
             
             Platform.runLater(() -> {
                 // 승패 판정
-                boolean player1Lost = !battleEngine.getPlayer1Engine().isGameRunning();
-                boolean player2Lost = !battleEngine.getPlayer2Engine().isGameRunning();
+                String winner = battleEngine.getWinner();
                 
-                if (player1Lost && player2Lost) {
-                    winnerLabel.setText("무승부!");
-                } else if (player1Lost) {
-                    winnerLabel.setText("플레이어 2 승리!");
-                } else if (player2Lost) {
+                if ("PLAYER1".equals(winner)) {
                     winnerLabel.setText("플레이어 1 승리!");
+                } else if ("PLAYER2".equals(winner)) {
+                    winnerLabel.setText("플레이어 2 승리!");
+                } else if ("DRAW".equals(winner)){
+                    winnerLabel.setText("무승부!");
                 }
                 
                 // 게임 오버 버튼 표시
