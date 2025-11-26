@@ -132,7 +132,10 @@ public class SceneManager {
                 cssPath = "/css/GameOverScreen.css";
             } else if (fxmlPath.contains("BattleModeSelection")) {
                 cssPath = "/css/MainMenu.css"; // 같은 스타일 사용
-            } else if (fxmlPath.contains("PVPModeSelection")) {
+            } else if (fxmlPath.contains("PVPModeSelection")
+                    || fxmlPath.contains("PVPNetworkSelection")
+                    || fxmlPath.contains("PVPServerWaiting")
+                    || fxmlPath.contains("PVPClientConnection")) {
                 cssPath = "/css/MainMenu.css"; // 같은 스타일 사용
             } else if (fxmlPath.contains("BattleGameScreen")) {
                 cssPath = "/css/GameScreen.css"; // 같은 스타일 사용
