@@ -196,8 +196,28 @@ public class PVPLobbyController implements Initializable {
                 });
             }
         }
-        
+
         updateStatusLabels();
+
+        // ✅ FIX: 로비 진입 시 상태 동기화
+        // 게임이 끝나고 한쪽이 먼저 로비로 나간 후 준비를 누르면
+        // 나중에 로비로 들어온 쪽이 상대방의 준비 상태를 모르는 문제 해결
+        Platform.runLater(() -> {
+            try {
+                Thread.sleep(100);  // 핸들러 설정 완료 대기
+
+                // 1. 내 현재 준비 상태 전송 (로비 진입 시 항상 false)
+                sendReadyStatus();
+                System.out.println("[PVP-LOBBY] Sent initial ready status: " + isReady);
+
+                // 2. 로비 준비 완료 알림 전송 (상대방이 자신의 상태를 다시 보내도록 유도)
+                sendLobbyReadyNotification();
+
+            } catch (InterruptedException e) {
+                System.err.println("[PVP-LOBBY] Error sending initial ready status: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
     }
 
     @FXML
@@ -223,18 +243,38 @@ public class PVPLobbyController implements Initializable {
         try {
             Map<String, Object> data = new HashMap<>();
             data.put("ready", isReady);
-            
+
             NetworkMessage message = new NetworkMessage(
                 NetworkMessage.MessageType.PLAYER_ACTION,
                 data
             );
-            
+
             if (isServer && gameServer != null) {
                 gameServer.sendMessage(message);
             } else if (!isServer && gameClient != null) {
                 gameClient.sendMessage(message);
             }
         } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void sendLobbyReadyNotification() {
+        try {
+            NetworkMessage message = new NetworkMessage(
+                NetworkMessage.MessageType.LOBBY_READY,
+                null
+            );
+
+            if (isServer && gameServer != null) {
+                gameServer.sendMessage(message);
+                System.out.println("[PVP-LOBBY] Server sent LOBBY_READY notification");
+            } else if (!isServer && gameClient != null) {
+                gameClient.sendMessage(message);
+                System.out.println("[PVP-LOBBY] Client sent LOBBY_READY notification");
+            }
+        } catch (IOException e) {
+            System.err.println("[PVP-LOBBY] Failed to send LOBBY_READY notification: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -253,6 +293,7 @@ public class PVPLobbyController implements Initializable {
                 gameServer.sendMessage(message);
             }
         } catch (IOException e) {
+            isReady = !isReady;
             e.printStackTrace();
         }
     }
@@ -260,15 +301,28 @@ public class PVPLobbyController implements Initializable {
     private void handleServerMessage(Object message) {
         if (message instanceof NetworkMessage) {
             NetworkMessage netMsg = (NetworkMessage) message;
-            
+
+            // ✅ LOBBY_READY 수신: 클라이언트가 로비에 진입함 → 내 현재 상태를 다시 전송
+            if (netMsg.getType() == NetworkMessage.MessageType.LOBBY_READY) {
+                System.out.println("[PVP-LOBBY] Server received LOBBY_READY from client, resending my status");
+                sendReadyStatus();  // 내 현재 준비 상태를 다시 전송
+                return;
+            }
+
             if (netMsg.getType() == NetworkMessage.MessageType.PLAYER_ACTION) {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> data = (Map<String, Object>) netMsg.getData();
                 if (data.containsKey("ready")) {
-                    opponentReady = (Boolean) data.get("ready");
+                    boolean newOpponentReady = (Boolean) data.get("ready");
+                    System.out.println("[PVP-LOBBY] Server received PLAYER_ACTION: opponent ready = " + newOpponentReady);
+
+                    opponentReady = newOpponentReady;
                     updateStatusLabels();
-                    
+
+                    System.out.println("[PVP-LOBBY] Server state: isReady=" + isReady + ", opponentReady=" + opponentReady);
+
                     if (isReady && opponentReady) {
+                        System.out.println("[PVP-LOBBY] Both ready on server, starting game!");
                         startGame();
                     }
                 }
@@ -279,15 +333,28 @@ public class PVPLobbyController implements Initializable {
     private void handleClientMessage(Object message) {
         if (message instanceof NetworkMessage) {
             NetworkMessage netMsg = (NetworkMessage) message;
-            
+
+            // ✅ LOBBY_READY 수신: 서버가 로비에 진입함 → 내 현재 상태를 다시 전송
+            if (netMsg.getType() == NetworkMessage.MessageType.LOBBY_READY) {
+                System.out.println("[PVP-LOBBY] Client received LOBBY_READY from server, resending my status");
+                sendReadyStatus();  // 내 현재 준비 상태를 다시 전송
+                return;
+            }
+
             if (netMsg.getType() == NetworkMessage.MessageType.PLAYER_ACTION) {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> data = (Map<String, Object>) netMsg.getData();
                 if (data.containsKey("ready")) {
-                    opponentReady = (Boolean) data.get("ready");
+                    boolean newOpponentReady = (Boolean) data.get("ready");
+                    System.out.println("[PVP-LOBBY] Client received PLAYER_ACTION: opponent ready = " + newOpponentReady);
+
+                    opponentReady = newOpponentReady;
                     updateStatusLabels();
-                    
+
+                    System.out.println("[PVP-LOBBY] Client state: isReady=" + isReady + ", opponentReady=" + opponentReady);
+
                     if (isReady && opponentReady) {
+                        System.out.println("[PVP-LOBBY] Both ready on client, starting game!");
                         startGame();
                     }
                 }
