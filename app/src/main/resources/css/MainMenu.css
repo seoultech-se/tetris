@@ -48,7 +48,7 @@
     -fx-font-weight: bold;
     -fx-background-color: #000000;
     -fx-text-fill: #ffffff;
-    -fx-border-color: #555555;
+    -fx-border-color: #ffffff;
     -fx-border-width: 2px;
     -fx-border-radius: 8px;
     -fx-background-radius: 8px;
@@ -56,7 +56,7 @@
 
 .menu-button:hover {
     -fx-background-color: #111111;
-    -fx-border-color: #777777;
+    -fx-border-color: #ffffff;
 }
 
 .menu-button:pressed {
@@ -72,7 +72,45 @@
     -fx-text-fill: #00ff00;
 }
 
+.menu-container {
+    -fx-spacing: 30px;
+}
+
+.menu-row {
+    -fx-spacing: 16px;
+}
+
+.menu-medium {
+    -fx-spacing: 24px;
+    -fx-padding: 40px 30px 35px 30px;
+}
+
+.menu-medium .menu-button {
+    -fx-pref-width: 170px;
+    -fx-pref-height: 48px;
+    -fx-font-size: 17px;
+}
+
+.menu-compact {
+    -fx-spacing: 18px;
+    -fx-padding: 30px 20px 25px 20px;
+}
+
+.menu-compact .menu-row {
+    -fx-spacing: 10px;
+}
+
+.menu-compact .menu-button {
+    -fx-pref-width: 140px;
+    -fx-pref-height: 44px;
+    -fx-font-size: 16px;
+}
+
 /* 각 버튼별 색상 */
+.double-button-row {
+    -fx-spacing: 15px;
+}
+
 .normal-mode-button {
     -fx-background-color: #3498db;
 }
