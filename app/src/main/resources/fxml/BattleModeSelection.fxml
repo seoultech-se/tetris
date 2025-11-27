@@ -13,7 +13,7 @@
    <children>
       <ImageView fx:id="backgroundImage" pickOnBounds="true" preserveRatio="false">
          <image>
-            <Image url="@/assets/img/Tetris_Background.png" />
+            <Image url="@/assets/img/PVP_Background.png" />
          </image>
       </ImageView>
       <VBox alignment="CENTER" spacing="30.0">
@@ -34,6 +34,11 @@
                </font>
             </Button>
             <Button fx:id="timeLimitBattleButton" mnemonicParsing="false" focusTraversable="true" onAction="#onTimeLimitBattle" prefWidth="250.0" text="시간제한 대전" styleClass="menu-button">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Button>
+            <Button fx:id="computerBattleButton" mnemonicParsing="false" focusTraversable="true" onAction="#onComputerBattle" prefWidth="250.0" text="컴퓨터 대전" styleClass="menu-button">
                <font>
                   <Font size="18.0" />
                </font>

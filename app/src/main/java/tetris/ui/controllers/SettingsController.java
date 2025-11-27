@@ -1,12 +1,15 @@
 package tetris.ui.controllers;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
 import tetris.data.ScoreManager;
 import tetris.ui.SceneManager;
 import tetris.ui.SettingsManager;
@@ -16,6 +19,12 @@ import java.util.Optional;
 import java.util.ResourceBundle;
 
 public class SettingsController implements Initializable {
+
+    @FXML
+    private ScrollPane rootScrollPane;
+
+    @FXML
+    private VBox contentWrapper;
 
     @FXML
     private ComboBox<String> difficultyComboBox;
@@ -58,12 +67,14 @@ public class SettingsController implements Initializable {
 
     private SceneManager sceneManager;
     private SettingsManager settingsManager;
+    private static final double COMPACT_BREAKPOINT = 720.0;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         settingsManager = SettingsManager.getInstance();
         setupDifficultyComboBox();
         setupKeyFields();
+        setupResponsiveLayout();
         loadSettings();
     }
 
@@ -161,6 +172,42 @@ public class SettingsController implements Initializable {
         if (keyHardDropFieldP2 != null) {
             keyHardDropFieldP2.setText(settingsManager.getKeyHardDropP2());
         }
+    }
+
+    private void setupResponsiveLayout() {
+        if (rootScrollPane == null || contentWrapper == null) {
+            return;
+        }
+
+        rootScrollPane.viewportBoundsProperty().addListener((obs, oldBounds, newBounds) -> {
+            if (newBounds != null) {
+                contentWrapper.setPrefWidth(Math.max(400, newBounds.getWidth()));
+            }
+        });
+
+        rootScrollPane.widthProperty().addListener((obs, oldWidth, newWidth) -> {
+            if (newWidth == null) {
+                return;
+            }
+            if (newWidth.doubleValue() < COMPACT_BREAKPOINT) {
+                if (!contentWrapper.getStyleClass().contains("compact")) {
+                    contentWrapper.getStyleClass().add("compact");
+                }
+            } else {
+                contentWrapper.getStyleClass().remove("compact");
+            }
+        });
+
+        Platform.runLater(() -> {
+            double currentWidth = rootScrollPane.getWidth();
+            if (currentWidth > 0) {
+                if (currentWidth < COMPACT_BREAKPOINT && !contentWrapper.getStyleClass().contains("compact")) {
+                    contentWrapper.getStyleClass().add("compact");
+                } else if (currentWidth >= COMPACT_BREAKPOINT) {
+                    contentWrapper.getStyleClass().remove("compact");
+                }
+            }
+        });
     }
 
     @FXML

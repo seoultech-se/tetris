@@ -16,7 +16,7 @@
    <children>
       <ImageView fx:id="backgroundImage" pickOnBounds="true" preserveRatio="false">
          <image>
-            <Image url="@/assets/img/Tetris_Background.png" />
+            <Image url="@/assets/img/PVP_Background.png" />
          </image>
       </ImageView>
       <VBox alignment="CENTER" spacing="30.0">

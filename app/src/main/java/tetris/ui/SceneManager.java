@@ -69,7 +69,11 @@ public class SceneManager {
     }
 
     public void showBattleGameScreen(String battleMode) {
-        loadBattleScene("/fxml/BattleGameScreen.fxml", battleMode);
+        loadBattleScene("/fxml/BattleGameScreen.fxml", battleMode, false);
+    }
+
+    public void showBattleGameScreenAgainstComputer(String battleMode) {
+        loadBattleScene("/fxml/BattleGameScreen.fxml", battleMode, true);
     }
 
     public void showPVPGameScreen(String gameMode, Object gameServer, Object gameClient, boolean isServer) {
@@ -132,7 +136,10 @@ public class SceneManager {
                 cssPath = "/css/GameOverScreen.css";
             } else if (fxmlPath.contains("BattleModeSelection")) {
                 cssPath = "/css/MainMenu.css"; // 같은 스타일 사용
-            } else if (fxmlPath.contains("PVPModeSelection")) {
+            } else if (fxmlPath.contains("PVPModeSelection")
+                    || fxmlPath.contains("PVPNetworkSelection")
+                    || fxmlPath.contains("PVPServerWaiting")
+                    || fxmlPath.contains("PVPClientConnection")) {
                 cssPath = "/css/MainMenu.css"; // 같은 스타일 사용
             } else if (fxmlPath.contains("BattleGameScreen")) {
                 cssPath = "/css/GameScreen.css"; // 같은 스타일 사용
@@ -185,7 +192,7 @@ public class SceneManager {
         }
     }
 
-    private void loadBattleScene(String fxmlPath, String battleMode) {
+    private void loadBattleScene(String fxmlPath, String battleMode, boolean vsComputer) {
         try {
             String screenSize = SettingsManager.getInstance().getScreenSize();
             double width = MEDIUM_WIDTH;
@@ -228,7 +235,7 @@ public class SceneManager {
                 tetris.ui.controllers.BattleGameScreenController battleController =
                     (tetris.ui.controllers.BattleGameScreenController) controller;
                 battleController.setSceneManager(this);
-                battleController.setBattleMode(battleMode);
+                battleController.setBattleMode(battleMode, vsComputer);
             }
 
             primaryStage.setScene(scene);

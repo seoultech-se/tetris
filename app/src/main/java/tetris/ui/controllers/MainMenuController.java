@@ -2,9 +2,14 @@ package tetris.ui.controllers;
 
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import tetris.ui.SceneManager;
 import tetris.ui.SettingsManager;
 
@@ -38,6 +43,12 @@ public class MainMenuController implements Initializable {
     
     @FXML
     private ImageView backgroundImage;
+
+    @FXML
+    private VBox buttonContainer;
+
+    @FXML
+    private StackPane rootContainer;
 
     private SceneManager sceneManager;
     
@@ -79,6 +90,8 @@ public class MainMenuController implements Initializable {
         menuButtons.add(settingsButton);
         menuButtons.add(exitButton);
         
+        applyLayoutForScreenSize();
+
         // 모든 버튼에 마우스 호버 이벤트 핸들러 추가
         for (Button button : menuButtons) {
             button.setOnMouseEntered(e -> {
@@ -170,6 +183,97 @@ public class MainMenuController implements Initializable {
         menuButtons.get(currentIndex).requestFocus();
     }
     
+    private void applyLayoutForScreenSize() {
+        String screenSize = SettingsManager.getInstance().getScreenSize();
+        if ("작게".equals(screenSize)) {
+            applyCompactLayout();
+        } else {
+            resetToVerticalLayout();
+            if ("중간".equals(screenSize)) {
+                applyMediumLayout();
+            } else {
+                applyDefaultLayout();
+            }
+        }
+    }
+
+    private void applyCompactLayout() {
+        if (buttonContainer == null) {
+            return;
+        }
+
+        clearLayoutClasses();
+        buttonContainer.getChildren().clear();
+
+        HBox row1 = createMenuRow(normalModeButton, itemModeButton);
+        HBox row2 = createMenuRow(battleModeButton, pvpModeButton);
+        HBox row3 = createMenuRow(scoreBoardButton, settingsButton, exitButton);
+
+        buttonContainer.getChildren().addAll(row1, row2, row3);
+        buttonContainer.getStyleClass().add("menu-compact");
+    }
+
+    private void applyMediumLayout() {
+        if (buttonContainer == null) {
+            return;
+        }
+        clearLayoutClasses();
+        if (!buttonContainer.getStyleClass().contains("menu-medium")) {
+            buttonContainer.getStyleClass().add("menu-medium");
+        }
+    }
+
+    private void applyDefaultLayout() {
+        clearLayoutClasses();
+    }
+
+    private void clearLayoutClasses() {
+        if (buttonContainer == null) {
+            return;
+        }
+        buttonContainer.getStyleClass().removeAll("menu-compact", "menu-medium");
+    }
+
+    private void resetToVerticalLayout() {
+        if (buttonContainer == null) {
+            return;
+        }
+        detachButton(normalModeButton);
+        detachButton(itemModeButton);
+        detachButton(battleModeButton);
+        detachButton(pvpModeButton);
+        detachButton(scoreBoardButton);
+        detachButton(settingsButton);
+        detachButton(exitButton);
+
+        buttonContainer.getChildren().setAll(
+                normalModeButton,
+                itemModeButton,
+                battleModeButton,
+                pvpModeButton,
+                scoreBoardButton,
+                settingsButton,
+                exitButton
+        );
+    }
+
+    private void detachButton(Button button) {
+        if (button == null) {
+            return;
+        }
+        if (button.getParent() instanceof Pane pane) {
+            pane.getChildren().remove(button);
+        }
+    }
+
+    private HBox createMenuRow(Button... buttons) {
+        HBox row = new HBox(12);
+        row.setAlignment(Pos.CENTER);
+        row.getStyleClass().add("menu-row");
+        row.getChildren().addAll(buttons);
+        return row;
+    }
+
     private void navigateToNextButton() {
         currentIndex = (currentIndex + 1) % menuButtons.size();
         selectButton(currentIndex);
