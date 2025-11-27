@@ -686,14 +686,7 @@ public class PVPGameScreenController implements Initializable {
                             return;
                         }
                     }
-
-                    // 게임 오버 체크
-                    if (!battleEngine.isGameRunning()) {
-                        gameLoop.stop();
-                        showGameOver();
-                        return;
-                    }
-
+                    
                     // 시간제한 모드 체크
                     if (isTimeLimitMode && battleEngine.isGameRunning()) {
                         long elapsed = (now - gameStartTime) / 1_000_000_000L;
@@ -704,10 +697,17 @@ public class PVPGameScreenController implements Initializable {
                             return;
                         }
                     }
-
+                    
                     // 업데이트
                     battleEngine.update();
 
+                    // 게임 오버 체크
+                    if (!battleEngine.isGameRunning()) {
+                        gameLoop.stop();
+                        showGameOver();
+                        return;
+                    }
+                    
                     // 내 블록 낙하
                     if (!isAnimatingClear && now - lastUpdateTimeMe >= fallSpeedMe) {
                         if (battleEngine.isGameRunning() && !battleEngine.isPaused()) {
@@ -1411,8 +1411,14 @@ public class PVPGameScreenController implements Initializable {
     private void showGameOver() {
         Platform.runLater(() -> {
             // 승패 결정
-            boolean iWon = !getMyEngine().isGameRunning() ? false : true;
+            String winner = battleEngine.getWinner();
+            boolean iAmPlayer1 = isServer;
+            boolean iWon = (iAmPlayer1 && "PLAYER1".equals(winner)) || (!iAmPlayer1 && "PLAYER2".equals(winner));
             
+            if ("DRAW".equals(winner)) {
+                statusLabel.setText("무승부!");
+                statusLabel.setStyle("-fx-text-fill: #ffff00");
+            }
             if (iWon) {
                 statusLabel.setText("승리!");
                 statusLabel.setStyle("-fx-text-fill: #00ff00;");
