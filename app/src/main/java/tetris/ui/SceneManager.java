@@ -69,7 +69,11 @@ public class SceneManager {
     }
 
     public void showBattleGameScreen(String battleMode) {
-        loadBattleScene("/fxml/BattleGameScreen.fxml", battleMode);
+        loadBattleScene("/fxml/BattleGameScreen.fxml", battleMode, false);
+    }
+
+    public void showBattleGameScreenAgainstComputer(String battleMode) {
+        loadBattleScene("/fxml/BattleGameScreen.fxml", battleMode, true);
     }
 
     public void showPVPGameScreen(String gameMode, Object gameServer, Object gameClient, boolean isServer) {
@@ -188,7 +192,7 @@ public class SceneManager {
         }
     }
 
-    private void loadBattleScene(String fxmlPath, String battleMode) {
+    private void loadBattleScene(String fxmlPath, String battleMode, boolean vsComputer) {
         try {
             String screenSize = SettingsManager.getInstance().getScreenSize();
             double width = MEDIUM_WIDTH;
@@ -231,7 +235,7 @@ public class SceneManager {
                 tetris.ui.controllers.BattleGameScreenController battleController =
                     (tetris.ui.controllers.BattleGameScreenController) controller;
                 battleController.setSceneManager(this);
-                battleController.setBattleMode(battleMode);
+                battleController.setBattleMode(battleMode, vsComputer);
             }
 
             primaryStage.setScene(scene);
