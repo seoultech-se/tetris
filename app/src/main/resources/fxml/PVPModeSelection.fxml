@@ -18,17 +18,22 @@
       </ImageView>
       <VBox alignment="CENTER" spacing="30.0">
          <children>
-            <Label text="PVP 대전 모드" styleClass="title-label">
+            <Label text="P2P 대전모드" styleClass="title-label">
                <font>
                   <Font size="32.0" />
                </font>
             </Label>
-            <Button fx:id="normalPVPButton" mnemonicParsing="false" focusTraversable="true" onAction="#onNormalPVP" prefWidth="250.0" text="서버로 시작" styleClass="menu-button">
+            <Label text="네트워크 역할 선택" styleClass="info-label">
+               <font>
+                  <Font size="20.0" />
+               </font>
+            </Label>
+            <Button fx:id="serverButton" mnemonicParsing="false" focusTraversable="true" onAction="#onServerMode" prefWidth="250.0" text="서버로 시작" styleClass="menu-button">
                <font>
                   <Font size="18.0" />
                </font>
             </Button>
-            <Button fx:id="itemPVPButton" mnemonicParsing="false" focusTraversable="true" onAction="#onItemPVP" prefWidth="250.0" text="클라이언트로 접속" styleClass="menu-button">
+            <Button fx:id="clientButton" mnemonicParsing="false" focusTraversable="true" onAction="#onClientMode" prefWidth="250.0" text="클라이언트로 접속" styleClass="menu-button">
                <font>
                   <Font size="18.0" />
                </font>

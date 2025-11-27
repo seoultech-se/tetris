@@ -34,6 +34,15 @@
                   <Font size="16.0" />
                </font>
             </TextField>
+            <VBox fx:id="recentIPsBox" spacing="5.0" alignment="CENTER">
+               <children>
+                  <Label text="최근 접속 IP:" styleClass="info-label">
+                     <font>
+                        <Font size="14.0" />
+                     </font>
+                  </Label>
+               </children>
+            </VBox>
             <Button fx:id="connectButton" mnemonicParsing="false" onAction="#onConnect" prefWidth="250.0" text="접속" styleClass="menu-button">
                <font>
                   <Font size="18.0" />

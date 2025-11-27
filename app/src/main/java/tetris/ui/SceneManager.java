@@ -240,6 +240,8 @@ public class SceneManager {
     }
 
     private void loadPVPScene(String fxmlPath, String gameMode, Object gameServer, Object gameClient, boolean isServer) {
+        System.out.println("[SCENE] Loading PVP scene: " + fxmlPath);
+        System.out.println("[SCENE] Game mode: " + gameMode + ", isServer: " + isServer);
         try {
             String screenSize = SettingsManager.getInstance().getScreenSize();
             double width = MEDIUM_WIDTH;
@@ -267,6 +269,7 @@ public class SceneManager {
             // PVP 모드는 화면이 넓어야 하므로 가로로 확장 (2개 보드 표시)
             width = width * 1.6;
 
+            System.out.println("[SCENE] Loading FXML...");
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
             Scene scene = new Scene(loader.load(), width, height);
 
@@ -274,22 +277,32 @@ public class SceneManager {
             URL cssUrl = getClass().getResource("/css/PVPGameScreen.css");
             if (cssUrl != null) {
                 scene.getStylesheets().add(cssUrl.toExternalForm());
+                System.out.println("[SCENE] CSS loaded");
             }
 
             // 컨트롤러에 SceneManager와 게임 모드, 네트워크 객체 설정
+            System.out.println("[SCENE] Getting controller...");
             Object controller = loader.getController();
             if (controller instanceof tetris.ui.controllers.PVPGameScreenController) {
+                System.out.println("[SCENE] PVPGameScreenController found, configuring...");
                 tetris.ui.controllers.PVPGameScreenController pvpController =
                     (tetris.ui.controllers.PVPGameScreenController) controller;
                 pvpController.setSceneManager(this);
                 pvpController.setGameMode(gameMode);
+
+                // PVPNetworkSelectionController에 게임 컨트롤러 참조 전달
+                System.out.println("[SCENE] Registering game controller to network handler");
+                tetris.ui.controllers.PVPNetworkSelectionController.setGameScreenController(pvpController);
+
                 pvpController.setNetworkObjects(gameServer, gameClient, isServer);
             }
 
+            System.out.println("[SCENE] Displaying scene...");
             primaryStage.setScene(scene);
             primaryStage.show();
+            System.out.println("[SCENE] PVP scene loaded successfully");
         } catch (IOException e) {
-            System.err.println("Error loading PVP scene: " + fxmlPath);
+            System.err.println("[SCENE] Error loading PVP scene: " + fxmlPath);
             e.printStackTrace();
         }
     }

@@ -112,20 +112,23 @@ public class PVPLobbyController implements Initializable {
     }
 
     public void setNetworkObjects(GameServer server, GameClient client, boolean isServer) {
+        System.out.println("[PVP-LOBBY] setNetworkObjects called, isServer: " + isServer);
         this.gameServer = server;
         this.gameClient = client;
         this.isServer = isServer;
 
         // UI 설정
         if (isServer) {
+            System.out.println("[PVP-LOBBY] Configuring as SERVER");
             // 서버: 게임 모드 선택 가능
             gameModeBox.setVisible(true);
             gameModeBox.setManaged(true);
             selectedModeLabel.setVisible(false);
             selectedModeLabel.setManaged(false);
-            
+
             // 서버 메시지 핸들러 설정
             if (gameServer != null) {
+                System.out.println("[PVP-LOBBY] Setting up server message handler");
                 gameServer.setMessageHandler(new GameServer.MessageHandler() {
                     @Override
                     public void onMessageReceived(Object message) {
@@ -146,6 +149,11 @@ public class PVPLobbyController implements Initializable {
                     @Override
                     public void onError(Exception e) {
                         e.printStackTrace();
+                    }
+                    
+                    @Override
+                    public void onRttUpdate(long rtt) {
+                        // RTT 업데이트는 게임 화면에서 처리
                     }
                 });
             }

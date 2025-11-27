@@ -24,12 +24,17 @@ public class GameStateData implements Serializable {
     
     // 공격 정보
     private int incomingAttackLines;  // 대기 중인 공격 줄 수
+    private java.util.List<Integer> incomingAttackEmptyCols;  // 각 공격 줄의 빈칸 위치
     
-    public GameStateData(int[][] board, int[][] itemBoard, int level, int linesCleared, boolean isGameOver,
+    // 타임스탬프 (RTT 추정용)
+    private long timestamp;
+    
+    public GameStateData(int[][] board, int[][] itemBoard, int score, int level, int linesCleared, boolean isGameOver,
                          int[][] currentPieceShape, int currentPieceX, int currentPieceY, int currentPieceType,
-                         int[][] nextPieceShape, int nextPieceType, int incomingAttackLines) {
+                         int[][] nextPieceShape, int nextPieceType, int incomingAttackLines, java.util.List<Integer> incomingAttackEmptyCols) {
         this.board = board;
         this.itemBoard = itemBoard;
+        this.score = score;
         this.level = level;
         this.linesCleared = linesCleared;
         this.isGameOver = isGameOver;
@@ -40,6 +45,8 @@ public class GameStateData implements Serializable {
         this.nextPieceShape = nextPieceShape;
         this.nextPieceType = nextPieceType;
         this.incomingAttackLines = incomingAttackLines;
+        this.incomingAttackEmptyCols = incomingAttackEmptyCols;
+        this.timestamp = System.currentTimeMillis();
     }
     
     public int[][] getBoard() {
@@ -92,5 +99,13 @@ public class GameStateData implements Serializable {
     
     public int getIncomingAttackLines() {
         return incomingAttackLines;
+    }
+    
+    public java.util.List<Integer> getIncomingAttackEmptyCols() {
+        return incomingAttackEmptyCols;
+    }
+    
+    public long getTimestamp() {
+        return timestamp;
     }
 }

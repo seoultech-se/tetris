@@ -20,7 +20,7 @@ public class BattleGameEngine {
     private boolean timeLimitMode;
     
     // 승자 정보
-    private String winner; // "PLAYER1", "PLAYER2", null
+    private String winner; // "PLAYER1", "PLAYER2", "DRAW", null
     
     // 대기 중인 공격 줄 큐 (각 플레이어에게 넘어갈 줄 수와 빈칸 위치)
     private Queue<AttackInfo> pendingAttacksToPlayer1;
@@ -149,6 +149,17 @@ public class BattleGameEngine {
      */
     public void update() {
         if (!isGameRunning || isPaused) {
+            return;
+        }
+
+        if (winner != null) {
+            return;
+        }
+        
+        // 게임 오버 체크 (매 프레임마다 확인)
+        checkGameOver();
+
+        if (winner != null) {
             return;
         }
         
@@ -283,7 +294,29 @@ public class BattleGameEngine {
         applyPendingAttacks(1);
         applyPendingAttacks(2);
     }
-    
+
+    /**
+     * 플레이어 1에게 직접 공격 추가 (네트워크로 받은 공격용)
+     * @param lines 공격 줄 수
+     * @param emptyCol 빈칸 위치
+     */
+    public void addAttackToPlayer1(int lines, int emptyCol) {
+        for (int i = 0; i < lines; i++) {
+            pendingAttacksToPlayer1.offer(new AttackInfo(1, emptyCol));
+        }
+    }
+
+    /**
+     * 플레이어 2에게 직접 공격 추가 (네트워크로 받은 공격용)
+     * @param lines 공격 줄 수
+     * @param emptyCol 빈칸 위치
+     */
+    public void addAttackToPlayer2(int lines, int emptyCol) {
+        for (int i = 0; i < lines; i++) {
+            pendingAttacksToPlayer2.offer(new AttackInfo(1, emptyCol));
+        }
+    }
+
     /**
      * 플레이어 1에게 대기 중인 공격 줄 수 반환
      */

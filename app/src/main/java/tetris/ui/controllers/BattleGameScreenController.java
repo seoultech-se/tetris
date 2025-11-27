@@ -1,10 +1,13 @@
 package tetris.ui.controllers;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.animation.AnimationTimer;
 import tetris.ui.SceneManager;
@@ -62,9 +65,19 @@ public class BattleGameScreenController implements Initializable {
     @FXML
     private Label winnerLabel;
 
+    @FXML
+    private VBox gameOverBox;
+
+    @FXML
+    private Button rematchButton;
+
+    @FXML
+    private Button toMenuButton;
+
     private SceneManager sceneManager;
     private SettingsManager settingsManager;
     private BattleGameEngine battleEngine;
+    private String battleMode;
     private AnimationTimer gameLoop;
     private long lastUpdateTime1 = 0;
     private long lastUpdateTime2 = 0;
@@ -142,6 +155,7 @@ public class BattleGameScreenController implements Initializable {
     }
 
     public void setBattleMode(String battleMode) {
+        this.battleMode = battleMode;
         this.battleEngine = new BattleGameEngine(battleMode);
         
         if ("TIME_LIMIT".equals(battleMode)) {
@@ -566,6 +580,10 @@ public class BattleGameScreenController implements Initializable {
             double y = line * blockSize + blockSize / 2; // 줄의 중앙
             // 큐에서 빈칸 위치 가져오기 (없으면 기본값)
             int emptyCol = (line < emptyCols.size()) ? emptyCols.get(line) : (line * 3) % GameBoard.BOARD_WIDTH;
+            // emptyCol 값이 유효한 범위인지 확인
+            if (emptyCol < 0 || emptyCol >= GameBoard.BOARD_WIDTH) {
+                emptyCol = (line * 3) % GameBoard.BOARD_WIDTH;
+            }
             
             for (int col = 0; col < GameBoard.BOARD_WIDTH; col++) {
                 double x = col * blockSize + blockSize / 2; // 열의 중앙
@@ -803,10 +821,67 @@ public class BattleGameScreenController implements Initializable {
     private void showGameOver() {
         if (sceneManager != null) {
             updateUI();
-
-            // 대전 모드는 스코어보드에 기록하지 않음
-            //sceneManager.showMainMenu();
+            
+            Platform.runLater(() -> {
+                // 승패 판정
+                String winner = battleEngine.getWinner();
+                
+                if ("PLAYER1".equals(winner)) {
+                    winnerLabel.setText("플레이어 1 승리!");
+                } else if ("PLAYER2".equals(winner)) {
+                    winnerLabel.setText("플레이어 2 승리!");
+                } else if ("DRAW".equals(winner)){
+                    winnerLabel.setText("무승부!");
+                }
+                
+                // 게임 오버 버튼 표시
+                if (gameOverBox != null) {
+                    gameOverBox.setVisible(true);
+                    gameOverBox.setManaged(true);
+                }
+            });
         }
+    }
+
+    @FXML
+    private void onRematch() {
+        System.out.println("[BATTLE] Rematch");
+        restartGame();
+    }
+
+    private void restartGame() {
+        Platform.runLater(() -> {
+            // 게임 오버 UI 숨기기
+            if (gameOverBox != null) {
+                gameOverBox.setVisible(false);
+                gameOverBox.setManaged(false);
+            }
+            winnerLabel.setText("");
+            
+            // 게임 루프 정지
+            if (gameLoop != null) {
+                gameLoop.stop();
+            }
+            
+            // 게임 엔진 재초기화
+            battleEngine = new BattleGameEngine(battleMode);
+            
+            if ("TIME_LIMIT".equals(battleMode)) {
+                battleEngine.setTimeLimit(180);
+            }
+            
+            // 블록이 떨어질 때마다 공격 적용하도록 콜백 설정
+            battleEngine.getPlayer1Engine().setOnPiecePlacedCallback(() -> {
+                battleEngine.applyPendingAttacks(1);
+            });
+            battleEngine.getPlayer2Engine().setOnPiecePlacedCallback(() -> {
+                battleEngine.applyPendingAttacks(2);
+            });
+            
+            // 게임 시작
+            startGameLoop();
+            battleEngine.startGame();
+        });
     }
 }
 

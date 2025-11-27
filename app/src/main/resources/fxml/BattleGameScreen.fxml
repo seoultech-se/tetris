@@ -77,6 +77,20 @@
                   <Font size="12.0" />
                </font>
             </Button>
+            <VBox fx:id="gameOverBox" alignment="CENTER" spacing="10.0" visible="false" managed="false" styleClass="game-over-box">
+               <children>
+                  <Button fx:id="rematchButton" mnemonicParsing="false" focusTraversable="false" onAction="#onRematch" text="다시 하기" prefWidth="120.0" prefHeight="40.0">
+                     <font>
+                        <Font size="14.0" />
+                     </font>
+                  </Button>
+                  <Button fx:id="toMenuButton" mnemonicParsing="false" focusTraversable="false" onAction="#onBackToMenu" text="메인 메뉴" prefWidth="120.0" prefHeight="40.0">
+                     <font>
+                        <Font size="14.0" />
+                     </font>
+                  </Button>
+               </children>
+            </VBox>
          </children>
       </VBox>
 

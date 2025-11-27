@@ -3,5 +3,6 @@
     "java.jdt.ls.vmargs": "-javaagent:/path/to/lombok.jar",
     "files.watcherExclude": {
         "**/target": true
-    }
+    },
+    "java.compile.nullAnalysis.mode": "automatic"
 }
