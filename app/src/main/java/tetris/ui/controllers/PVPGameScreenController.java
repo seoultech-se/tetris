@@ -198,7 +198,7 @@ public class PVPGameScreenController implements Initializable {
         }
     }
 
-    private void setupCanvasSize() {
+    protected void setupCanvasSize() {
         if (myCanvas != null) {
             myCanvas.setWidth(GameBoard.BOARD_WIDTH * BLOCK_SIZE);
             myCanvas.setHeight(GameBoard.BOARD_HEIGHT * BLOCK_SIZE);
@@ -786,7 +786,7 @@ public class PVPGameScreenController implements Initializable {
         gameLoop.start();
     }
 
-    private void updateFallSpeeds() {
+    protected void updateFallSpeeds() {
         if (battleEngine != null) {
             fallSpeedMe = (long) (1_000_000_000 * Math.pow(0.9, getMyEngine().getLevel() - 1));
             getMyEngine().setFallSpeed(fallSpeedMe);
@@ -805,7 +805,7 @@ public class PVPGameScreenController implements Initializable {
         return isServer ? battleEngine.getPendingAttacksToPlayer1() : battleEngine.getPendingAttacksToPlayer2();
     }
 
-    private void sendMyState() {
+    protected void sendMyState() {
         if (battleEngine == null) return;
 
         tetris.game.GameEngine myEngine = getMyEngine();
@@ -867,7 +867,7 @@ public class PVPGameScreenController implements Initializable {
         }
     }
 
-    private void sendAttack(int lines, int emptyCol) {
+    protected void sendAttack(int lines, int emptyCol) {
         Map<String, Object> attackData = new HashMap<>();
         attackData.put("lines", lines);
         attackData.put("emptyCol", emptyCol);
@@ -885,7 +885,7 @@ public class PVPGameScreenController implements Initializable {
         }
     }
 
-    private void renderMyBoard() {
+    protected void renderMyBoard() {
         if (myCanvas == null || battleEngine == null) return;
 
         GraphicsContext gc = myCanvas.getGraphicsContext2D();
@@ -934,7 +934,7 @@ public class PVPGameScreenController implements Initializable {
         renderBorder(gc, myCanvas);
     }
 
-    private void renderOpponentBoard() {
+    protected void renderOpponentBoard() {
         if (opponentCanvas == null || opponentState == null) return;
 
         GraphicsContext gc = opponentCanvas.getGraphicsContext2D();
@@ -987,7 +987,7 @@ public class PVPGameScreenController implements Initializable {
         renderBorder(gc, opponentCanvas);
     }
 
-    private void renderNextPieces() {
+    protected void renderNextPieces() {
         // 내 다음 블록
         if (myNextCanvas != null && battleEngine != null) {
             GraphicsContext gc = myNextCanvas.getGraphicsContext2D();
@@ -1036,7 +1036,7 @@ public class PVPGameScreenController implements Initializable {
         }
     }
 
-    private void renderIncomingLines() {
+    protected void renderIncomingLines() {
         if (battleEngine == null) return;
 
         // 내 공격받을 줄 렌더링
@@ -1278,7 +1278,7 @@ public class PVPGameScreenController implements Initializable {
         gc.strokeRect(0, 0, canvas.getWidth(), canvas.getHeight());
     }
 
-    private void updateUI() {
+    protected void updateUI() {
         if (battleEngine != null) {
             tetris.game.GameEngine myEngine = getMyEngine();
             myScoreLabel.setText(String.valueOf(myEngine.getScore()));
@@ -1317,7 +1317,7 @@ public class PVPGameScreenController implements Initializable {
     /**
      * 레이턴시 라벨 업데이트
      */
-    private void updateLatencyDisplay() {
+    protected void updateLatencyDisplay() {
         if (latencyLabel == null) {
             System.err.println("[PVP-GAME] ERROR: latencyLabel is null in updateLatencyDisplay()");
             return;

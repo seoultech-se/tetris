@@ -174,7 +174,7 @@ public class BattleGameScreenController implements Initializable {
         battleEngine.startGame();
     }
 
-    private void setupCanvases() {
+    protected void setupCanvases() {
         if (player1Canvas != null) {
             player1Canvas.setWidth(GameBoard.BOARD_WIDTH * BLOCK_SIZE);
             player1Canvas.setHeight(GameBoard.BOARD_HEIGHT * BLOCK_SIZE);
@@ -203,7 +203,7 @@ public class BattleGameScreenController implements Initializable {
         }
     }
 
-    private void setupKeyHandler() {
+    protected void setupKeyHandler() {
         if (player1Canvas != null) {
             player1Canvas.sceneProperty().addListener((obs, oldScene, newScene) -> {
                 if (newScene != null) {
@@ -251,7 +251,7 @@ public class BattleGameScreenController implements Initializable {
         }
     }
 
-    private void startGameLoop() {
+    protected void startGameLoop() {
         gameLoop = new AnimationTimer() {
             @Override
             public void handle(long now) {
@@ -358,7 +358,7 @@ public class BattleGameScreenController implements Initializable {
         gameLoop.start();
     }
 
-    private void updateFallSpeeds() {
+    protected void updateFallSpeeds() {
         if (battleEngine != null) {
             fallSpeed1 = (long) (1_000_000_000 * Math.pow(0.9, battleEngine.getPlayer1Engine().getLevel() - 1));
             fallSpeed2 = (long) (1_000_000_000 * Math.pow(0.9, battleEngine.getPlayer2Engine().getLevel() - 1));
@@ -367,7 +367,7 @@ public class BattleGameScreenController implements Initializable {
         }
     }
 
-    private void renderPlayer1() {
+    protected void renderPlayer1() {
         if (player1Canvas == null || battleEngine == null) return;
 
         GraphicsContext gc = player1Canvas.getGraphicsContext2D();
@@ -417,7 +417,7 @@ public class BattleGameScreenController implements Initializable {
         renderBorder(gc, player1Canvas);
     }
 
-    private void renderPlayer2() {
+    protected void renderPlayer2() {
         if (player2Canvas == null || battleEngine == null) return;
 
         GraphicsContext gc = player2Canvas.getGraphicsContext2D();
@@ -739,7 +739,7 @@ public class BattleGameScreenController implements Initializable {
         gc.strokeRect(0, 0, canvas.getWidth(), canvas.getHeight());
     }
 
-    private void updateUI() {
+    protected void updateUI() {
         if (battleEngine == null) return;
 
         // 플레이어 1 정보
@@ -818,7 +818,7 @@ public class BattleGameScreenController implements Initializable {
         }
     }
 
-    private void showGameOver() {
+    protected void showGameOver() {
         if (sceneManager != null) {
             updateUI();
             
@@ -849,7 +849,7 @@ public class BattleGameScreenController implements Initializable {
         restartGame();
     }
 
-    private void restartGame() {
+    protected void restartGame() {
         Platform.runLater(() -> {
             // 게임 오버 UI 숨기기
             if (gameOverBox != null) {
