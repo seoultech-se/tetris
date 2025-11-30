@@ -24,7 +24,8 @@ public class NetworkMessage implements Serializable {
         REMATCH_RESPONSE,   // 재시합 응답 (수락/거부)
         TIME_SYNC,          // 시간제한 모드 타이머 동기화
         TIME_UP,            // 시간 종료 알림
-        LOBBY_READY         // 로비 진입 완료 알림 (상태 동기화용)
+        LOBBY_READY,        // 로비 진입 완료 알림 (상태 동기화용)
+        CHAT
     }
     
     private MessageType type;
