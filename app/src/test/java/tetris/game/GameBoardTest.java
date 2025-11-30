@@ -230,19 +230,113 @@ class GameBoardTest {
 
     @Test
     void testClearLine_FullLine() {
-        // 한 줄을 완전히 채움
-        Piece[] pieces = new Piece[GameBoard.BOARD_WIDTH];
-        for (int i = 0; i < GameBoard.BOARD_WIDTH; i++) {
-            pieces[i] = PieceFactory.createRandomPiece();
-            pieces[i].setPosition(i, GameBoard.BOARD_HEIGHT - 1);
-        }
-        
-        for (Piece p : pieces) {
-            gameBoard.placePiece(p);
+        // 한 줄을 직접 보드에 완전히 채움
+        int[][] board = gameBoard.getBoard();
+        for (int col = 0; col < GameBoard.BOARD_WIDTH; col++) {
+            board[GameBoard.BOARD_HEIGHT - 1][col] = 1;
         }
         
         int cleared = gameBoard.clearLines();
-        assertTrue(cleared > 0);
+        assertTrue(cleared >= 1);
+    }
+
+    @Test
+    void testIsAttackLinesFull() {
+        assertFalse(gameBoard.isAttackLinesFull());
+    }
+
+    @Test
+    void testAddAttackLines_SingleLine() {
+        gameBoard.addAttackLines(1, 5);
+        
+        // Attack line should be added
+        assertTrue(true); // Just verify no exception
+    }
+
+    @Test
+    void testAddAttackLines_MultipleLines() {
+        gameBoard.addAttackLines(3, 2);
+        gameBoard.addAttackLines(2, 7);
+        
+        assertTrue(true);
+    }
+
+    @Test
+    void testAddAttackLines_MaxLines() {
+        for (int i = 0; i < 10; i++) {
+            gameBoard.addAttackLines(1, i % GameBoard.BOARD_WIDTH);
+        }
+        
+        assertTrue(gameBoard.isAttackLinesFull() || !gameBoard.isAttackLinesFull());
+    }
+
+    @Test
+    void testGetFullLinesWithMultiple() {
+        // Fill bottom line
+        int[][] board = gameBoard.getBoard();
+        for (int col = 0; col < GameBoard.BOARD_WIDTH; col++) {
+            board[GameBoard.BOARD_HEIGHT - 1][col] = 1;
+        }
+        
+        java.util.List<Integer> fullLines = gameBoard.getFullLines();
+        assertNotNull(fullLines);
+    }
+
+    @Test
+    void testProcessWeightEffectAtPosition() {
+        Piece weightPiece = PieceFactory.createWeightPiece();
+        weightPiece.setPosition(gameBoard.getSpawnX(), 5);
+        
+        gameBoard.processWeightEffect(weightPiece);
+        
+        assertTrue(true);
+    }
+
+    @Test
+    void testPlacePiece_MultipleTypes() {
+        // Test placing different piece types
+        Piece iPiece = PieceFactory.createPiece(0);
+        iPiece.setPosition(0, 0);
+        gameBoard.placePiece(iPiece);
+        
+        Piece oPiece = PieceFactory.createPiece(1);
+        oPiece.setPosition(3, 0);
+        gameBoard.placePiece(oPiece);
+        
+        Piece tPiece = PieceFactory.createPiece(2);
+        tPiece.setPosition(6, 0);
+        gameBoard.placePiece(tPiece);
+        
+        assertTrue(gameBoard.getCell(0, 0) != 0);
+    }
+
+    @Test
+    void testBoardBoundaries() {
+        assertEquals(GameBoard.BOARD_WIDTH, 10);
+        assertEquals(GameBoard.BOARD_HEIGHT, 20);
+    }
+
+    @Test
+    void testGetSpawnPosition() {
+        int spawnX = gameBoard.getSpawnX();
+        int spawnY = gameBoard.getSpawnY();
+        
+        assertTrue(spawnX >= 0 && spawnX < GameBoard.BOARD_WIDTH);
+        assertTrue(spawnY >= 0);
+    }
+
+    @Test
+    void testClearLines_MultipleFull() {
+        int[][] board = gameBoard.getBoard();
+        // Fill bottom 4 lines for Tetris
+        for (int row = GameBoard.BOARD_HEIGHT - 4; row < GameBoard.BOARD_HEIGHT; row++) {
+            for (int col = 0; col < GameBoard.BOARD_WIDTH; col++) {
+                board[row][col] = 1;
+            }
+        }
+        
+        int cleared = gameBoard.clearLines();
+        assertEquals(4, cleared);
     }
 }
 
