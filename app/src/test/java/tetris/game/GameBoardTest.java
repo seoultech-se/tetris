@@ -230,19 +230,14 @@ class GameBoardTest {
 
     @Test
     void testClearLine_FullLine() {
-        // 한 줄을 완전히 채움
-        Piece[] pieces = new Piece[GameBoard.BOARD_WIDTH];
-        for (int i = 0; i < GameBoard.BOARD_WIDTH; i++) {
-            pieces[i] = PieceFactory.createRandomPiece();
-            pieces[i].setPosition(i, GameBoard.BOARD_HEIGHT - 1);
-        }
-        
-        for (Piece p : pieces) {
-            gameBoard.placePiece(p);
+        // 보드 하단 한 줄을 직접 채움
+        int[][] board = gameBoard.getBoard();
+        for (int col = 0; col < GameBoard.BOARD_WIDTH; col++) {
+            board[GameBoard.BOARD_HEIGHT - 1][col] = 1; // 블록으로 채움
         }
         
         int cleared = gameBoard.clearLines();
-        assertTrue(cleared > 0);
+        assertEquals(1, cleared);
     }
 }
 
