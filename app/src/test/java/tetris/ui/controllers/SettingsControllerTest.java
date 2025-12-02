@@ -4,8 +4,10 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
+import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 import tetris.ui.SettingsManager;
+import tetris.ui.SceneManager;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -271,6 +273,27 @@ class SettingsControllerTest extends JavaFXTestBase {
     }
 
     @Test
+    void testSpecialKeyNamesRemainIntact() throws Exception {
+        runOnFxThreadAndWait(() -> {
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/SettingsScreen.fxml"));
+                loader.load();
+
+                TextField hardDropField = getNode(loader, "keyHardDropField");
+                TextField leftFieldP2 = getNode(loader, "keyLeftFieldP2");
+
+                hardDropField.setText("space");
+                leftFieldP2.setText("left");
+
+                assertEquals("space", hardDropField.getText());
+                assertEquals("left", leftFieldP2.getText());
+            } catch (Exception e) {
+                fail("Special key handling test failed: " + e.getMessage());
+            }
+        });
+    }
+
+    @Test
     void testValidateKeySettingsDetectsConflicts() throws Exception {
         runOnFxThreadAndWait(() -> {
             try {
@@ -401,11 +424,162 @@ class SettingsControllerTest extends JavaFXTestBase {
         });
     }
 
+    @Test
+    void testValidateKeySettingsChecksAllPlayerTwoFields() throws Exception {
+        runOnFxThreadAndWait(() -> {
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/SettingsScreen.fxml"));
+                loader.load();
+                SettingsController controller = loader.getController();
+
+                TextField keyLeftField = getNode(loader, "keyLeftField");
+                TextField keyRightField = getNode(loader, "keyRightField");
+                TextField keyDownField = getNode(loader, "keyDownField");
+                TextField keyRotateField = getNode(loader, "keyRotateField");
+                TextField keyHardDropField = getNode(loader, "keyHardDropField");
+
+                TextField keyLeftFieldP2 = getNode(loader, "keyLeftFieldP2");
+                TextField keyRightFieldP2 = getNode(loader, "keyRightFieldP2");
+                TextField keyDownFieldP2 = getNode(loader, "keyDownFieldP2");
+                TextField keyRotateFieldP2 = getNode(loader, "keyRotateFieldP2");
+                TextField keyHardDropFieldP2 = getNode(loader, "keyHardDropFieldP2");
+
+                Method validateMethod = SettingsController.class.getDeclaredMethod("validateKeySettings");
+                validateMethod.setAccessible(true);
+
+                keyLeftField.setText("A");
+                keyRightField.setText("D");
+                keyDownField.setText("S");
+                keyRotateField.setText("W");
+                keyHardDropField.setText("SPACE");
+
+                keyLeftFieldP2.setText("A");
+                assertFalse((boolean) validateMethod.invoke(controller));
+
+                keyLeftFieldP2.setText("J");
+                keyRightFieldP2.setText("D");
+                assertFalse((boolean) validateMethod.invoke(controller));
+
+                keyRightFieldP2.setText("K");
+                keyDownFieldP2.setText("S");
+                assertFalse((boolean) validateMethod.invoke(controller));
+
+                keyDownFieldP2.setText("L");
+                keyRotateFieldP2.setText("W");
+                assertFalse((boolean) validateMethod.invoke(controller));
+
+                keyRotateFieldP2.setText("V");
+                keyHardDropFieldP2.setText("SPACE");
+                assertFalse((boolean) validateMethod.invoke(controller));
+
+                keyHardDropFieldP2.setText("B");
+                assertTrue((boolean) validateMethod.invoke(controller));
+            } catch (Exception e) {
+                fail("Player two key validation test failed: " + e.getMessage());
+            }
+        });
+    }
+
+    @Test
+    void testSetupSingleKeyFieldAcceptsNamedKeys() throws Exception {
+        runOnFxThreadAndWait(() -> {
+            try {
+                SettingsController controller = new SettingsController();
+                Method setupMethod = SettingsController.class.getDeclaredMethod("setupSingleKeyField", TextField.class);
+                setupMethod.setAccessible(true);
+
+                TextField namedKeyField = new TextField();
+                setupMethod.invoke(controller, namedKeyField);
+                namedKeyField.setText("space");
+                assertEquals("space", namedKeyField.getText(), "Named keys should not be truncated");
+
+                TextField normalField = new TextField();
+                setupMethod.invoke(controller, normalField);
+                normalField.setText("abcd");
+                assertEquals("A", normalField.getText(), "Non-special keys should be limited to one character");
+            } catch (Exception e) {
+                fail("Single key setup test failed: " + e.getMessage());
+            }
+        });
+    }
+
+    @Test
+    void testOnSaveSettingsPersistsChangesAndNavigates() throws Exception {
+        runOnFxThreadAndWait(() -> {
+            SettingsManager settings = SettingsManager.getInstance();
+            settings.resetToDefaults();
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/SettingsScreen.fxml"));
+                loader.load();
+                SettingsController controller = loader.getController();
+
+                TestSceneManager sceneManager = new TestSceneManager(new Stage());
+                controller.setSceneManager(sceneManager);
+
+                ComboBox<String> difficultyCombo = getNode(loader, "difficultyComboBox");
+                ComboBox<String> screenSizeCombo = getNode(loader, "screenSizeComboBox");
+                CheckBox colorBlindCheck = getNode(loader, "colorBlindModeCheckBox");
+                TextField keyLeftField = getNode(loader, "keyLeftField");
+                TextField keyRightField = getNode(loader, "keyRightField");
+                TextField keyDownField = getNode(loader, "keyDownField");
+                TextField keyRotateField = getNode(loader, "keyRotateField");
+                TextField keyHardDropField = getNode(loader, "keyHardDropField");
+                TextField keyLeftFieldP2 = getNode(loader, "keyLeftFieldP2");
+                TextField keyRightFieldP2 = getNode(loader, "keyRightFieldP2");
+                TextField keyDownFieldP2 = getNode(loader, "keyDownFieldP2");
+                TextField keyRotateFieldP2 = getNode(loader, "keyRotateFieldP2");
+                TextField keyHardDropFieldP2 = getNode(loader, "keyHardDropFieldP2");
+
+                difficultyCombo.getSelectionModel().select("Hard");
+                screenSizeCombo.getSelectionModel().select("크게");
+                colorBlindCheck.setSelected(true);
+
+                keyLeftField.setText("J");
+                keyRightField.setText("K");
+                keyDownField.setText("L");
+                keyRotateField.setText("U");
+                keyHardDropField.setText("I");
+
+                keyLeftFieldP2.setText("F");
+                keyRightFieldP2.setText("G");
+                keyDownFieldP2.setText("H");
+                keyRotateFieldP2.setText("V");
+                keyHardDropFieldP2.setText("B");
+
+                Method onSaveMethod = SettingsController.class.getDeclaredMethod("onSaveSettings");
+                onSaveMethod.setAccessible(true);
+                onSaveMethod.invoke(controller);
+
+                assertEquals("Hard", settings.getDifficulty());
+                assertEquals("크게", settings.getScreenSize());
+                assertTrue(settings.isColorBlindModeEnabled());
+                assertTrue(sceneManager.mainMenuShown);
+            } catch (Exception e) {
+                fail("onSaveSettings flow failed: " + e.getMessage());
+            } finally {
+                settings.resetToDefaults();
+            }
+        });
+    }
+
     private <T> T getNode(FXMLLoader loader, String fxId) {
         Object node = loader.getNamespace().get(fxId);
         assertNotNull(node, fxId + " should exist");
         @SuppressWarnings("unchecked")
         T casted = (T) node;
         return casted;
+    }
+
+    private static class TestSceneManager extends SceneManager {
+        private boolean mainMenuShown;
+
+        TestSceneManager(Stage stage) {
+            super(stage);
+        }
+
+        @Override
+        public void showMainMenu() {
+            mainMenuShown = true;
+        }
     }
 }

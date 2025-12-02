@@ -184,8 +184,7 @@ public class SceneManager {
                 }
             }
 
-            primaryStage.setScene(scene);
-            primaryStage.show();
+            applyScene(scene);
         } catch (IOException e) {
             System.err.println("Error loading scene: " + fxmlPath);
             e.printStackTrace();
@@ -238,8 +237,7 @@ public class SceneManager {
                 battleController.setBattleMode(battleMode, vsComputer);
             }
 
-            primaryStage.setScene(scene);
-            primaryStage.show();
+            applyScene(scene);
         } catch (IOException e) {
             System.err.println("Error loading battle scene: " + fxmlPath);
             e.printStackTrace();
@@ -305,8 +303,7 @@ public class SceneManager {
             }
 
             System.out.println("[SCENE] Displaying scene...");
-            primaryStage.setScene(scene);
-            primaryStage.show();
+            applyScene(scene);
             System.out.println("[SCENE] PVP scene loaded successfully");
         } catch (IOException e) {
             System.err.println("[SCENE] Error loading PVP scene: " + fxmlPath);
@@ -357,8 +354,7 @@ public class SceneManager {
                 networkController.setGameMode(gameMode);
             }
 
-            primaryStage.setScene(scene);
-            primaryStage.show();
+            applyScene(scene);
         } catch (IOException e) {
             System.err.println("Error loading PVP network selection scene: " + fxmlPath);
             e.printStackTrace();
@@ -409,8 +405,7 @@ public class SceneManager {
                 );
             }
 
-            primaryStage.setScene(scene);
-            primaryStage.show();
+            applyScene(scene);
         } catch (IOException e) {
             System.err.println("Error loading PVP server waiting scene: " + fxmlPath);
             e.printStackTrace();
@@ -462,8 +457,7 @@ public class SceneManager {
                 );
             }
 
-            primaryStage.setScene(scene);
-            primaryStage.show();
+            applyScene(scene);
         } catch (IOException e) {
             System.err.println("Error loading PVP lobby scene: " + fxmlPath);
             e.printStackTrace();
@@ -472,5 +466,17 @@ public class SceneManager {
 
     public Stage getPrimaryStage() {
         return primaryStage;
+    }
+
+    private void applyScene(Scene scene) {
+        primaryStage.setScene(scene);
+        if (!isHeadlessEnvironment()) {
+            primaryStage.show();
+        }
+    }
+
+    private boolean isHeadlessEnvironment() {
+        return Boolean.parseBoolean(System.getProperty("testfx.headless", "false"))
+            || Boolean.parseBoolean(System.getProperty("java.awt.headless", "false"));
     }
 }

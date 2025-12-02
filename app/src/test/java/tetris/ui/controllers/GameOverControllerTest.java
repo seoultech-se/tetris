@@ -394,6 +394,140 @@ class GameOverControllerTest extends JavaFXTestBase {
         });
     }
 
+    @Test
+    void testSetFinalScoreResetsStateAndUpdatesNormalModeLabels() {
+        runOnFxThreadAndWait(() -> {
+            SettingsManager settings = SettingsManager.getInstance();
+            ScoreManager scoreManager = ScoreManager.getInstance();
+            String originalMode = settings.getGameMode();
+            String originalDifficulty = settings.getDifficulty();
+            try {
+                settings.setGameMode("NORMAL");
+                settings.setDifficulty("Hard");
+                scoreManager.clearScores("NORMAL");
+
+                GameOverController controller = new GameOverController();
+                Label finalScoreLabel = new Label();
+                Label scoreboardLabel = new Label();
+                TextField playerNameField = new TextField("TEMP");
+                Button saveButton = new Button();
+                saveButton.setDisable(true);
+                ListView<String> listView = new ListView<>();
+
+                setPrivateField(controller, "finalScoreLabel", finalScoreLabel);
+                setPrivateField(controller, "scoreboardTitleLabel", scoreboardLabel);
+                setPrivateField(controller, "playerNameField", playerNameField);
+                setPrivateField(controller, "saveScoreButton", saveButton);
+                setPrivateField(controller, "scoreListView", listView);
+                setPrivateField(controller, "highlightedIndex", 5);
+                setPrivateField(controller, "scoreSaved", true);
+
+                controller.setFinalScore(777);
+
+                assertEquals("최종 점수: 777점", finalScoreLabel.getText());
+                assertEquals("일반 모드 - Hard 스코어보드", scoreboardLabel.getText());
+                assertNull(getPrivateFieldValue(controller, "highlightedIndex", Integer.class));
+                assertFalse(getPrivateFieldValue(controller, "scoreSaved", Boolean.class));
+                assertTrue(playerNameField.isVisible());
+                assertFalse(playerNameField.isDisable());
+                assertTrue(playerNameField.getText().isEmpty());
+                assertTrue(saveButton.isVisible());
+                assertFalse(saveButton.isDisable());
+                assertEquals("점수 저장", saveButton.getText());
+                assertEquals(1, listView.getItems().size());
+                assertEquals("아직 등록된 점수가 없습니다.", listView.getItems().get(0));
+            } catch (Exception e) {
+                fail("Normal mode state reset test failed: " + e.getMessage());
+            } finally {
+                settings.setGameMode(originalMode);
+                settings.setDifficulty(originalDifficulty);
+                scoreManager.clearScores("NORMAL");
+            }
+        });
+    }
+
+    @Test
+    void testSetFinalScoreUsesItemModeTitleAndClearsInput() {
+        runOnFxThreadAndWait(() -> {
+            SettingsManager settings = SettingsManager.getInstance();
+            ScoreManager scoreManager = ScoreManager.getInstance();
+            String originalMode = settings.getGameMode();
+            String originalDifficulty = settings.getDifficulty();
+            try {
+                settings.setGameMode("ITEM");
+                settings.setDifficulty("Normal");
+                scoreManager.clearScores("ITEM");
+
+                GameOverController controller = new GameOverController();
+                Label finalScoreLabel = new Label();
+                Label scoreboardLabel = new Label();
+                TextField playerNameField = new TextField("Player");
+                Button saveButton = new Button("Before");
+                saveButton.setDisable(true);
+                ListView<String> listView = new ListView<>();
+
+                setPrivateField(controller, "finalScoreLabel", finalScoreLabel);
+                setPrivateField(controller, "scoreboardTitleLabel", scoreboardLabel);
+                setPrivateField(controller, "playerNameField", playerNameField);
+                setPrivateField(controller, "saveScoreButton", saveButton);
+                setPrivateField(controller, "scoreListView", listView);
+
+                controller.setFinalScore(321);
+
+                assertEquals("최종 점수: 321점", finalScoreLabel.getText());
+                assertEquals("아이템 모드 스코어보드", scoreboardLabel.getText());
+                assertTrue(playerNameField.isVisible());
+                assertTrue(playerNameField.isManaged());
+                assertFalse(playerNameField.isDisable());
+                assertTrue(playerNameField.getText().isEmpty());
+                assertTrue(saveButton.isVisible());
+                assertTrue(saveButton.isManaged());
+                assertFalse(saveButton.isDisable());
+                assertEquals("점수 저장", saveButton.getText());
+                assertEquals(1, listView.getItems().size());
+                assertEquals("아직 등록된 점수가 없습니다.", listView.getItems().get(0));
+            } catch (Exception e) {
+                fail("Item mode title test failed: " + e.getMessage());
+            } finally {
+                settings.setGameMode(originalMode);
+                settings.setDifficulty(originalDifficulty);
+                scoreManager.clearScores("ITEM");
+            }
+        });
+    }
+
+    @Test
+    void testCheckIfCanSaveScoreHandlesItemModeThreshold() {
+        SettingsManager settings = SettingsManager.getInstance();
+        ScoreManager scoreManager = ScoreManager.getInstance();
+        String originalMode = settings.getGameMode();
+        String originalDifficulty = settings.getDifficulty();
+        try {
+            settings.setGameMode("ITEM");
+            settings.setDifficulty("Normal");
+            scoreManager.clearScores("ITEM");
+            for (int i = 0; i < 10; i++) {
+                scoreManager.addScore("I" + i, 1000 - i * 10, "Normal", "ITEM");
+            }
+
+            GameOverController controller = new GameOverController();
+            var checkMethod = GameOverController.class.getDeclaredMethod("checkIfCanSaveScore", int.class, String.class, String.class);
+            checkMethod.setAccessible(true);
+
+            boolean canSaveLow = (boolean) checkMethod.invoke(controller, 100, "ITEM", "Normal");
+            boolean canSaveHigh = (boolean) checkMethod.invoke(controller, 995, "ITEM", "Normal");
+
+            assertFalse(canSaveLow, "Low score should not qualify in full item mode list");
+            assertTrue(canSaveHigh, "High score should qualify in item mode list");
+        } catch (Exception e) {
+            fail("Item mode threshold test failed: " + e.getMessage());
+        } finally {
+            settings.setGameMode(originalMode);
+            settings.setDifficulty(originalDifficulty);
+            scoreManager.clearScores("ITEM");
+        }
+    }
+
     private <T> T getNode(FXMLLoader loader, String fxId) {
         Object node = loader.getNamespace().get(fxId);
         assertNotNull(node, fxId + " should exist");
@@ -421,6 +555,18 @@ class GameOverControllerTest extends JavaFXTestBase {
             return listView;
         } catch (ReflectiveOperationException e) {
             fail("Failed to access scoreListView: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private <T> T getPrivateFieldValue(GameOverController controller, String fieldName, Class<T> type) {
+        try {
+            var field = GameOverController.class.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            Object value = field.get(controller);
+            return type.cast(value);
+        } catch (ReflectiveOperationException e) {
+            fail("Failed to access field " + fieldName + ": " + e.getMessage());
             return null;
         }
     }
