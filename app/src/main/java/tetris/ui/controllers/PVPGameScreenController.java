@@ -1571,12 +1571,16 @@ public class PVPGameScreenController implements Initializable {
                 System.err.println("네트워크 연결 종료 중 오류: " + e.getMessage());
             }
             
-            // 에러 메시지 표시
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("연결 끊김");
-            alert.setHeaderText("네트워크 연결이 끊어졌습니다");
-            alert.setContentText("상대방과의 연결이 10초 이상 끊어졌습니다.\nP2P 대전 메뉴로 돌아갑니다.");
-            alert.showAndWait();
+            // 에러 메시지 표시 (헤드리스 환경에서는 생략)
+            if (isHeadlessEnvironment()) {
+                System.out.println("[PVP-GAME] Headless mode detected - skipping connection lost dialog");
+            } else {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("연결 끊김");
+                alert.setHeaderText("네트워크 연결이 끊어졌습니다");
+                alert.setContentText("상대방과의 연결이 10초 이상 끊어졌습니다.\nP2P 대전 메뉴로 돌아갑니다.");
+                alert.showAndWait();
+            }
             
             // P2P 모드 선택 화면으로 돌아가기
             if (sceneManager != null) {
@@ -1632,41 +1636,50 @@ public class PVPGameScreenController implements Initializable {
 
     private void showRematchDialog() {
         Platform.runLater(() -> {
+            ButtonType yesButton = new ButtonType("예");
+            ButtonType noButton = new ButtonType("아니오");
+
+            if (isHeadlessEnvironment()) {
+                System.out.println("[PVP-GAME] Headless mode detected - auto-declining rematch dialog");
+                handleRematchDecision(false);
+                return;
+            }
+
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
             alert.setTitle("재시합 요청");
             alert.setHeaderText("상대방이 재시합을 요청했습니다");
             alert.setContentText("다시 하시겠습니까?");
-            
-            ButtonType yesButton = new ButtonType("예");
-            ButtonType noButton = new ButtonType("아니오");
             alert.getButtonTypes().setAll(yesButton, noButton);
             
             alert.showAndWait().ifPresent(response -> {
                 boolean accepted = response == yesButton;
-                
-                // 응답 전송
-                try {
-                    NetworkMessage message = new NetworkMessage(
-                        NetworkMessage.MessageType.REMATCH_RESPONSE, 
-                        accepted
-                    );
-                    if (isServer && gameServer != null) {
-                        gameServer.sendMessage(message);
-                    } else if (!isServer && gameClient != null) {
-                        gameClient.sendMessage(message);
-                    }
-                } catch (IOException e) {
-                    System.err.println("재시합 응답 전송 실패: " + e.getMessage());
-                }
-                
-                // 수락한 경우 게임 재시작
-                if (accepted) {
-                    restartGame();
-                } else {
-                    setStatusMessage("재시합을 거부했습니다", "#ff0000");
-                }
+                handleRematchDecision(accepted);
             });
         });
+    }
+
+    private void handleRematchDecision(boolean accepted) {
+        // 응답 전송
+        try {
+            NetworkMessage message = new NetworkMessage(
+                NetworkMessage.MessageType.REMATCH_RESPONSE,
+                accepted
+            );
+            if (isServer && gameServer != null) {
+                gameServer.sendMessage(message);
+            } else if (!isServer && gameClient != null) {
+                gameClient.sendMessage(message);
+            }
+        } catch (IOException e) {
+            System.err.println("재시합 응답 전송 실패: " + e.getMessage());
+        }
+
+        // 수락한 경우 게임 재시작
+        if (accepted) {
+            restartGame();
+        } else {
+            setStatusMessage("재시합을 거부했습니다", "#ff0000");
+        }
     }
 
     private void restartGame() {
@@ -1759,5 +1772,10 @@ public class PVPGameScreenController implements Initializable {
         if (sceneManager != null) {
             sceneManager.showMainMenu();
         }
+    }
+
+    private boolean isHeadlessEnvironment() {
+        return Boolean.parseBoolean(System.getProperty("testfx.headless", "false"))
+            || Boolean.parseBoolean(System.getProperty("java.awt.headless", "false"));
     }
 }
