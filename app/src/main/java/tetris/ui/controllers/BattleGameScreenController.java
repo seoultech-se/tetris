@@ -16,7 +16,6 @@ import tetris.game.BattleGameEngine;
 import tetris.game.GameBoard;
 import tetris.game.Piece;
 import tetris.game.ItemType;
-import tetris.game.ai.ComputerOpponent;
 import java.net.URL;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
@@ -84,8 +83,6 @@ public class BattleGameScreenController implements Initializable {
     private long lastUpdateTime2 = 0;
     private long fallSpeed1 = 1_000_000_000;
     private long fallSpeed2 = 1_000_000_000;
-    private boolean computerOpponentEnabled = false;
-    private ComputerOpponent computerOpponent;
 
     // 줄 삭제 애니메이션 관련
     private java.util.List<Integer> player1LinesToClear = null;
@@ -157,39 +154,19 @@ public class BattleGameScreenController implements Initializable {
         this.sceneManager = sceneManager;
     }
 
-    public void setBattleMode(String battleMode, boolean vsComputer) {
+    public void setBattleMode(String battleMode) {
         this.battleMode = battleMode;
-        this.computerOpponentEnabled = vsComputer;
         this.battleEngine = new BattleGameEngine(battleMode);
-        configureBattleEngine();
-        startGameLoop();
-        battleEngine.startGame();
-        startComputerOpponentIfNeeded();
-    }
-
-    private void configureBattleEngine() {
+        
         if ("TIME_LIMIT".equals(battleMode)) {
             battleEngine.setTimeLimit(180); // 3분
         }
 
         battleEngine.getPlayer1Engine().setOnPiecePlacedCallback(() -> battleEngine.applyPendingAttacks(1));
         battleEngine.getPlayer2Engine().setOnPiecePlacedCallback(() -> battleEngine.applyPendingAttacks(2));
-    }
 
-    private void startComputerOpponentIfNeeded() {
-        if (!computerOpponentEnabled || battleEngine == null) {
-            return;
-        }
-        stopComputerOpponent();
-        computerOpponent = new ComputerOpponent(battleEngine);
-        computerOpponent.start();
-    }
-
-    private void stopComputerOpponent() {
-        if (computerOpponent != null) {
-            computerOpponent.stop();
-            computerOpponent = null;
-        }
+        startGameLoop();
+        battleEngine.startGame();
     }
 
     private void setupCanvases() {
@@ -257,8 +234,8 @@ public class BattleGameScreenController implements Initializable {
                                 event.consume();
                             }
                             // 플레이어 2 키 처리
-                            else if (!computerOpponentEnabled && (code == p2Left || code == p2Right || code == p2Down ||
-                                     code == p2Rotate || code == p2HardDrop)) {
+                            else if (code == p2Left || code == p2Right || code == p2Down ||
+                                     code == p2Rotate || code == p2HardDrop) {
                                 battleEngine.handlePlayer2KeyPress(code);
                                 event.consume();
                             }
@@ -626,6 +603,11 @@ public class BattleGameScreenController implements Initializable {
         }
     }
 
+    private void renderPiece(GraphicsContext gc, Piece piece) {
+        // 기본 BLOCK_SIZE 사용 (레거시 호환)
+        renderPieceScaled(gc, piece, BLOCK_SIZE);
+    }
+
     private void renderPieceScaled(GraphicsContext gc, Piece piece, double blockSize) {
         int[][] shape = piece.getShape();
         Color color = PIECE_COLORS[piece.getType()];
@@ -823,7 +805,6 @@ public class BattleGameScreenController implements Initializable {
         if (gameLoop != null) {
             gameLoop.stop();
         }
-        stopComputerOpponent();
         if (battleEngine != null) {
             battleEngine.stopGame();
         }
@@ -833,7 +814,6 @@ public class BattleGameScreenController implements Initializable {
     }
 
     private void showGameOver() {
-        stopComputerOpponent();
         if (sceneManager != null) {
             updateUI();
             
@@ -878,14 +858,22 @@ public class BattleGameScreenController implements Initializable {
             }
             
             // 게임 엔진 재초기화
-            stopComputerOpponent();
             battleEngine = new BattleGameEngine(battleMode);
-            configureBattleEngine();
+            if ("TIME_LIMIT".equals(battleMode)) {
+                battleEngine.setTimeLimit(180);
+            }
+            
+            // 블록이 떨어질 때마다 공격 적용하도록 콜백 설정
+            battleEngine.getPlayer1Engine().setOnPiecePlacedCallback(() -> {
+                battleEngine.applyPendingAttacks(1);
+            });
+            battleEngine.getPlayer2Engine().setOnPiecePlacedCallback(() -> {
+                battleEngine.applyPendingAttacks(2);
+            });
             
             // 게임 시작
             startGameLoop();
             battleEngine.startGame();
-            startComputerOpponentIfNeeded();
         });
     }
 }

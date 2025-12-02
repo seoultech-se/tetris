@@ -38,11 +38,6 @@
                   <Font size="18.0" />
                </font>
             </Button>
-            <Button fx:id="computerBattleButton" mnemonicParsing="false" focusTraversable="true" onAction="#onComputerBattle" prefWidth="250.0" text="컴퓨터 대전" styleClass="menu-button">
-               <font>
-                  <Font size="18.0" />
-               </font>
-            </Button>
             <Button fx:id="backButton" mnemonicParsing="false" focusTraversable="true" onAction="#onBack" prefWidth="250.0" text="뒤로가기" styleClass="menu-button">
                <font>
                   <Font size="18.0" />

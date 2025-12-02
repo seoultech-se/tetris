@@ -25,9 +25,6 @@ public class BattleModeSelectionController implements Initializable {
     private Button timeLimitBattleButton;
 
     @FXML
-    private Button computerBattleButton;
-
-    @FXML
     private Button backButton;
 
     @FXML
@@ -68,7 +65,6 @@ public class BattleModeSelectionController implements Initializable {
         menuButtons.add(normalBattleButton);
         menuButtons.add(itemBattleButton);
         menuButtons.add(timeLimitBattleButton);
-        menuButtons.add(computerBattleButton);
         menuButtons.add(backButton);
 
         // 모든 버튼에 마우스 호버 이벤트 핸들러 추가
@@ -176,8 +172,6 @@ public class BattleModeSelectionController implements Initializable {
             onItemBattle();
         } else if (currentButton == timeLimitBattleButton) {
             onTimeLimitBattle();
-        } else if (currentButton == computerBattleButton) {
-            onComputerBattle();
         } else if (currentButton == backButton) {
             onBack();
         }
@@ -201,13 +195,6 @@ public class BattleModeSelectionController implements Initializable {
     private void onTimeLimitBattle() {
         if (sceneManager != null) {
             sceneManager.showBattleGameScreen("TIME_LIMIT");
-        }
-    }
-
-    @FXML
-    private void onComputerBattle() {
-        if (sceneManager != null) {
-            sceneManager.showBattleGameScreenAgainstComputer("NORMAL");
         }
     }
 
