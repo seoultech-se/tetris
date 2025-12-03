@@ -690,10 +690,10 @@ public class PVPGameScreenController implements Initializable {
                         }
                     }
                     
-                    // 시간제한 모드 체크
-                    if (isTimeLimitMode && battleEngine.isGameRunning()) {
-                        long elapsed = (now - gameStartTime) / 1_000_000_000L;
-                        if (elapsed >= gameDuration && !timeUpSent) {
+                    // 시간제한 모드 체크 (일시정지 중이 아닐 때만)
+                    if (isTimeLimitMode && battleEngine.isGameRunning() && !battleEngine.isPaused()) {
+                        long remaining = battleEngine.getRemainingTime();
+                        if (remaining <= 0 && !timeUpSent) {
                             // 시간 종료
                             timeUpSent = true;
                             handleTimeUp();
@@ -1337,15 +1337,8 @@ public class PVPGameScreenController implements Initializable {
                 long minutes = remaining / 60;
                 long seconds = remaining % 60;
                 timerLabel.setText(String.format("%d:%02d", minutes, seconds));
-                
-                // 30초 이하일 때 빨간색으로 표시
-                if (remaining <= 30) {
-                    timerLabel.setStyle("-fx-text-fill: #ff0000;");
-                } else if (remaining <= 60) {
-                    timerLabel.setStyle("-fx-text-fill: #ffff00;");
-                } else {
-                    timerLabel.setStyle("-fx-text-fill: #ffffff;");
-                }
+                // 시간 표시 색상 설정 (#e74c3c)
+                timerLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
             }
         }
 

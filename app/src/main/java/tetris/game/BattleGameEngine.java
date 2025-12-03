@@ -17,6 +17,8 @@ public class BattleGameEngine {
     // 시간제한 모드 관련
     private long timeLimitSeconds; // 초 단위
     private long gameStartTime; // 나노초 단위
+    private long pauseStartTime; // 일시정지 시작 시간 (나노초 단위)
+    private long totalPausedTime; // 총 일시정지된 시간 (나노초 단위)
     private boolean timeLimitMode;
     
     // 승자 정보
@@ -60,6 +62,8 @@ public class BattleGameEngine {
         isGameRunning = true;
         isPaused = false;
         gameStartTime = System.nanoTime();
+        totalPausedTime = 0;
+        pauseStartTime = 0;
         player1Engine.startGame();
         player2Engine.startGame();
     }
@@ -67,9 +71,16 @@ public class BattleGameEngine {
     public void pauseGame() {
         isPaused = !isPaused;
         if (isPaused) {
+            // 일시정지 시작 시간 기록
+            pauseStartTime = System.nanoTime();
             player1Engine.pauseGame();
             player2Engine.pauseGame();
         } else {
+            // 일시정지 해제 시 일시정지된 시간 누적
+            if (pauseStartTime > 0) {
+                totalPausedTime += System.nanoTime() - pauseStartTime;
+                pauseStartTime = 0;
+            }
             player1Engine.pauseGame();
             player2Engine.pauseGame();
         }
@@ -165,7 +176,13 @@ public class BattleGameEngine {
         
         // 시간제한 모드 체크
         if (timeLimitMode) {
-            long elapsed = (System.nanoTime() - gameStartTime) / 1_000_000_000L;
+            long currentTime = System.nanoTime();
+            long pausedTime = totalPausedTime;
+            // 현재 일시정지 중이면 일시정지 시작 시간부터의 경과 시간도 빼기
+            if (isPaused && pauseStartTime > 0) {
+                pausedTime += currentTime - pauseStartTime;
+            }
+            long elapsed = (currentTime - gameStartTime - pausedTime) / 1_000_000_000L;
             if (elapsed >= timeLimitSeconds) {
                 // 시간 종료 - 점수 높은 사람 승리
                 if (player1Engine.getScore() > player2Engine.getScore()) {
@@ -410,7 +427,13 @@ public class BattleGameEngine {
         if (!timeLimitMode || !isGameRunning) {
             return 0;
         }
-        long elapsed = (System.nanoTime() - gameStartTime) / 1_000_000_000L;
+        long currentTime = System.nanoTime();
+        long pausedTime = totalPausedTime;
+        // 현재 일시정지 중이면 일시정지 시작 시간부터의 경과 시간도 빼기
+        if (isPaused && pauseStartTime > 0) {
+            pausedTime += currentTime - pauseStartTime;
+        }
+        long elapsed = (currentTime - gameStartTime - pausedTime) / 1_000_000_000L;
         return Math.max(0, timeLimitSeconds - elapsed);
     }
     
