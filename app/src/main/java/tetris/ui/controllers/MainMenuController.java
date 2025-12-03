@@ -12,6 +12,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import tetris.ui.SceneManager;
 import tetris.ui.SettingsManager;
+import tetris.ui.MusicManager;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -79,6 +80,9 @@ public class MainMenuController implements Initializable {
                     break;
             }
         }
+        
+        // 배경 음악 재생
+        MusicManager.getInstance().playBackgroundMusic();
         
         // 메뉴 버튼 리스트 초기화 (왼쪽에서 오른쪽, 위에서 아래 순서)
         menuButtons = new ArrayList<>();

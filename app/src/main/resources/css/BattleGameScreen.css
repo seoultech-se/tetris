@@ -110,6 +110,9 @@
     -fx-text-fill: #00ff00;
     -fx-font-size: 24px;
     -fx-font-weight: bold;
+    -fx-min-width: 200px;
+    -fx-pref-width: 200px;
+    -fx-alignment: center;
 }
 
 /* 버튼 스타일 */

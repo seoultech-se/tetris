@@ -9,6 +9,7 @@ import javafx.scene.paint.Color;
 import javafx.animation.AnimationTimer;
 import tetris.ui.SceneManager;
 import tetris.ui.SettingsManager;
+import tetris.ui.MusicManager;
 import tetris.game.GameEngine;
 import tetris.game.GameBoard;
 import tetris.game.Piece;
@@ -124,6 +125,9 @@ public class GameScreenController implements Initializable {
             });
         }
         
+        // 게임 브금 재생
+        MusicManager.getInstance().playGameMusic();
+        
         startGameLoop();
         gameEngine.startGame();
     }
@@ -219,6 +223,8 @@ public class GameScreenController implements Initializable {
                         if (!fullLines.isEmpty()) {
                             // 즉시 줄 삭제
                             gameEngine.clearLinesManually();
+                            // 블록 삭제 효과음 재생
+                            MusicManager.getInstance().playRemoveBlockSound();
                             // 애니메이션 시작 (시각적 효과만)
                             linesToClear = fullLines;
                             isAnimatingClear = true;
