@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import tetris.game.BattleGameEngine;
 import tetris.game.GameBoard;
 import tetris.network.GameServer;
+import tetris.network.GameClient;
 import tetris.network.GameStateData;
 import tetris.network.NetworkMessage;
 import tetris.ui.SceneManager;
@@ -2656,6 +2657,324 @@ class PVPGameScreenControllerTest extends JavaFXTestBase {
         boolean wasPvpModeShown() {
             return pvpModeShown;
         }
+    }
+
+    @Test
+    void testSendMyStateSendsToServer() throws Exception {
+        runOnFxThreadAndWait(() -> {
+            try {
+                PVPGameScreenController controller = new PVPGameScreenController();
+                // Prepare environment
+                setPrivateField(controller, "gameMode", "NORMAL");
+                GameServer mockServer = mock(GameServer.class);
+                setPrivateField(controller, "gameServer", mockServer);
+                setPrivateField(controller, "isServer", true);
+
+                // create real BattleGameEngine and set it directly (avoid FXML loading)
+                BattleGameEngine realEngine = new BattleGameEngine("NORMAL");
+                setPrivateField(controller, "battleEngine", realEngine);
+
+                // Call sendMyState and verify server.sendMessage called
+                Method sendMyState = PVPGameScreenController.class.getDeclaredMethod("sendMyState");
+                sendMyState.setAccessible(true);
+                sendMyState.invoke(controller);
+
+                verify(mockServer).sendMessage(any(NetworkMessage.class));
+            } catch (Exception e) {
+                fail("sendMyState to server test failed: " + e.getMessage());
+            }
+        });
+    }
+
+    @Test
+    void testSendAttackSendsToServerAndClient() throws Exception {
+        try {
+            PVPGameScreenController controller = new PVPGameScreenController();
+
+            // Server case
+            GameServer mockServer = mock(GameServer.class);
+            setPrivateField(controller, "gameServer", mockServer);
+            setPrivateField(controller, "isServer", true);
+
+            Method sendAttack = PVPGameScreenController.class.getDeclaredMethod("sendAttack", int.class, int.class);
+            sendAttack.setAccessible(true);
+            sendAttack.invoke(controller, 2, 4);
+            verify(mockServer).sendMessage(any(NetworkMessage.class));
+
+            // Client case
+            GameClient mockClient = mock(GameClient.class);
+            setPrivateField(controller, "gameServer", null);
+            setPrivateField(controller, "gameClient", mockClient);
+            setPrivateField(controller, "isServer", false);
+
+            sendAttack.invoke(controller, 1, 3);
+            verify(mockClient).sendMessage(any(NetworkMessage.class));
+        } catch (Exception e) {
+            fail("sendAttack send test failed: " + e.getMessage());
+        }
+    }
+
+    @Test
+    void testOnRematchSendsRequest() throws Exception {
+        runOnFxThreadAndWait(() -> {
+            try {
+                PVPGameScreenController controller = new PVPGameScreenController();
+                Label statusLabel = new Label();
+                setPrivateField(controller, "statusLabel", statusLabel);
+
+                GameServer mockServer = mock(GameServer.class);
+                setPrivateField(controller, "gameServer", mockServer);
+                setPrivateField(controller, "isServer", true);
+
+                Method onRematch = PVPGameScreenController.class.getDeclaredMethod("onRematch");
+                onRematch.setAccessible(true);
+                onRematch.invoke(controller);
+
+                verify(mockServer).sendMessage(any(NetworkMessage.class));
+                assertTrue(statusLabel.getText().contains("응답을 기다리는") || statusLabel.getText().isEmpty());
+            } catch (Exception e) {
+                fail("onRematch send request test failed: " + e.getMessage());
+            }
+        });
+    }
+
+    @Test
+    void testOnPauseSendsPauseMessage() throws Exception {
+        runOnFxThreadAndWait(() -> {
+            try {
+                PVPGameScreenController controller = new PVPGameScreenController();
+                Label statusLabel = new Label();
+                setPrivateField(controller, "statusLabel", statusLabel);
+
+                // mock battle engine
+                BattleGameEngine mockEngine = mock(BattleGameEngine.class);
+                when(mockEngine.isPaused()).thenReturn(true);
+                setPrivateField(controller, "battleEngine", mockEngine);
+
+                GameServer mockServer = mock(GameServer.class);
+                setPrivateField(controller, "gameServer", mockServer);
+                setPrivateField(controller, "isServer", true);
+
+                Method onPause = PVPGameScreenController.class.getDeclaredMethod("onPause");
+                onPause.setAccessible(true);
+                onPause.invoke(controller);
+
+                verify(mockEngine).pauseGame();
+                verify(mockServer).sendMessage(any(NetworkMessage.class));
+            } catch (Exception e) {
+                fail("onPause send pause test failed: " + e.getMessage());
+            }
+        });
+    }
+
+    @Test
+    void testRenderOpponentBoardWithStateAndCanvas() throws Exception {
+        runOnFxThreadAndWait(() -> {
+            try {
+                PVPGameScreenController controller = new PVPGameScreenController();
+
+                Canvas opponentCanvas = new Canvas(GameBoard.BOARD_WIDTH * 25, GameBoard.BOARD_HEIGHT * 25);
+                setPrivateField(controller, "opponentCanvas", opponentCanvas);
+
+                int[][] board = new int[GameBoard.BOARD_HEIGHT][GameBoard.BOARD_WIDTH];
+                int[][] itemBoard = new int[GameBoard.BOARD_HEIGHT][GameBoard.BOARD_WIDTH];
+                // Put some sample blocks including an attack block (8)
+                board[0][0] = 1;
+                board[1][1] = 8;
+                itemBoard[0][0] = 1;
+
+                int[][] currentShape = new int[][]{{1,1},{0,1}};
+                int[][] nextShape = new int[][]{{1}};
+
+                GameStateData state = new GameStateData(
+                    board, itemBoard,
+                    123, 2, 4, false,
+                    currentShape, 0, 0, 1,
+                    nextShape, 1, 2, List.of(0,1)
+                );
+
+                setPrivateField(controller, "opponentState", state);
+                // ensure settings manager exists
+                setPrivateField(controller, "settingsManager", SettingsManager.getInstance());
+
+                Method render = PVPGameScreenController.class.getDeclaredMethod("renderOpponentBoard");
+                render.setAccessible(true);
+                render.invoke(controller);
+                // If we reach here without exception, rendering branch covered
+            } catch (Exception e) {
+                fail("renderOpponentBoard with state test failed: " + e.getMessage());
+            }
+        });
+    }
+
+    @Test
+    void testRenderOpponentBoardWithColorBlindMode() throws Exception {
+        runOnFxThreadAndWait(() -> {
+            SettingsManager settings = SettingsManager.getInstance();
+            boolean original = settings.isColorBlindModeEnabled();
+            try {
+                settings.setColorBlindModeEnabled(true);
+
+                PVPGameScreenController controller = new PVPGameScreenController();
+                Canvas opponentCanvas = new Canvas(GameBoard.BOARD_WIDTH * 25, GameBoard.BOARD_HEIGHT * 25);
+                setPrivateField(controller, "opponentCanvas", opponentCanvas);
+
+                int[][] board = new int[GameBoard.BOARD_HEIGHT][GameBoard.BOARD_WIDTH];
+                int[][] itemBoard = new int[GameBoard.BOARD_HEIGHT][GameBoard.BOARD_WIDTH];
+                board[2][2] = 3;
+                itemBoard[2][2] = 0;
+
+                int[][] currentShape = new int[][]{{1}};
+                int[][] nextShape = new int[][]{{1}};
+
+                GameStateData state = new GameStateData(
+                    board, itemBoard,
+                    50, 1, 1, false,
+                    currentShape, 2, 2, 3,
+                    nextShape, 1, 1, List.of(2)
+                );
+
+                setPrivateField(controller, "opponentState", state);
+                setPrivateField(controller, "settingsManager", settings);
+
+                Method render = PVPGameScreenController.class.getDeclaredMethod("renderOpponentBoard");
+                render.setAccessible(true);
+                render.invoke(controller);
+            } catch (Exception e) {
+                fail("renderOpponentBoard color blind mode test failed: " + e.getMessage());
+            } finally {
+                settings.setColorBlindModeEnabled(original);
+            }
+        });
+    }
+
+    @Test
+    void testRenderNextPiecesOpponent() throws Exception {
+        runOnFxThreadAndWait(() -> {
+            try {
+                PVPGameScreenController controller = new PVPGameScreenController();
+                Canvas opponentNextCanvas = new Canvas(6 * 25, 5 * 25);
+                setPrivateField(controller, "opponentNextCanvas", opponentNextCanvas);
+
+                int[][] board = new int[GameBoard.BOARD_HEIGHT][GameBoard.BOARD_WIDTH];
+                int[][] itemBoard = new int[GameBoard.BOARD_HEIGHT][GameBoard.BOARD_WIDTH];
+                int[][] nextShape = new int[][]{{1,1,1},{0,1,0}};
+
+                GameStateData state = new GameStateData(
+                    board, itemBoard,
+                    0, 1, 0, false,
+                    new int[0][0], 0, 0, 0,
+                    nextShape, 2, 1, List.of()
+                );
+
+                setPrivateField(controller, "opponentState", state);
+                setPrivateField(controller, "settingsManager", SettingsManager.getInstance());
+
+                Method renderNext = PVPGameScreenController.class.getDeclaredMethod("renderNextPieces");
+                renderNext.setAccessible(true);
+                renderNext.invoke(controller);
+            } catch (Exception e) {
+                fail("renderNextPieces opponent test failed: " + e.getMessage());
+            }
+        });
+    }
+
+    @Test
+    void testRenderIncomingLinesOpponentFallbackEmptyCols() throws Exception {
+        runOnFxThreadAndWait(() -> {
+            try {
+                PVPGameScreenController controller = new PVPGameScreenController();
+                Canvas opponentIncoming = new Canvas(6 * 25, 5 * 25);
+                setPrivateField(controller, "opponentIncomingCanvas", opponentIncoming);
+
+                int[][] board = new int[GameBoard.BOARD_HEIGHT][GameBoard.BOARD_WIDTH];
+                int[][] itemBoard = new int[GameBoard.BOARD_HEIGHT][GameBoard.BOARD_WIDTH];
+
+                // create state without incoming empty cols (null)
+                GameStateData state = new GameStateData(
+                    board, itemBoard,
+                    0, 1, 0, false,
+                    new int[0][0], 0, 0, 0,
+                    new int[0][0], 0, 1, null
+                );
+
+                setPrivateField(controller, "opponentState", state);
+                setPrivateField(controller, "opponentIncomingLines", 5);
+
+                Method renderIncoming = PVPGameScreenController.class.getDeclaredMethod("renderIncomingLines");
+                renderIncoming.setAccessible(true);
+                renderIncoming.invoke(controller);
+            } catch (Exception e) {
+                fail("renderIncomingLines opponent fallback test failed: " + e.getMessage());
+            }
+        });
+    }
+
+    @Test
+    void testOnToLobbyStopsLoopAndShowsLobby() throws Exception {
+        runOnFxThreadAndWait(() -> {
+            try {
+                PVPGameScreenController controller = new PVPGameScreenController();
+                javafx.animation.AnimationTimer mockLoop = mock(javafx.animation.AnimationTimer.class);
+                setPrivateField(controller, "gameLoop", mockLoop);
+
+                // stub SceneManager to capture call
+                class LocalStub extends SceneManager {
+                    boolean called = false;
+                    LocalStub(Stage stage) { super(stage); }
+                    @Override
+                    public void showPVPLobby(Object server, Object client, boolean isServer) {
+                        called = true;
+                    }
+                }
+
+                Stage stage = new Stage();
+                LocalStub mgr = new LocalStub(stage);
+                setPrivateField(controller, "sceneManager", mgr);
+
+                Method onToLobby = PVPGameScreenController.class.getDeclaredMethod("onToLobby");
+                onToLobby.setAccessible(true);
+                onToLobby.invoke(controller);
+
+                verify(mockLoop).stop();
+                assertTrue(mgr.called, "PVPLobby should be shown");
+            } catch (Exception e) {
+                fail("onToLobby test failed: " + e.getMessage());
+            }
+        });
+    }
+
+    @Test
+    void testOnBackToMenuSendsDisconnectAndShowsMainMenu() throws Exception {
+        runOnFxThreadAndWait(() -> {
+            try {
+                PVPGameScreenController controller = new PVPGameScreenController();
+                GameServer mockServer = mock(GameServer.class);
+                setPrivateField(controller, "gameServer", mockServer);
+                setPrivateField(controller, "isServer", true);
+
+                class LocalStub extends SceneManager {
+                    boolean called = false;
+                    LocalStub(Stage stage) { super(stage); }
+                    @Override
+                    public void showMainMenu() { called = true; }
+                }
+
+                Stage stage = new Stage();
+                LocalStub mgr = new LocalStub(stage);
+                setPrivateField(controller, "sceneManager", mgr);
+
+                Method onBackToMenu = PVPGameScreenController.class.getDeclaredMethod("onBackToMenu");
+                onBackToMenu.setAccessible(true);
+                onBackToMenu.invoke(controller);
+
+                verify(mockServer).sendMessage(any(NetworkMessage.class));
+                verify(mockServer).close();
+                assertTrue(mgr.called, "Main menu should be shown");
+            } catch (Exception e) {
+                fail("onBackToMenu test failed: " + e.getMessage());
+            }
+        });
     }
 
     private void waitForFxEvents() {

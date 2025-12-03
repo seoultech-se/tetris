@@ -58,9 +58,16 @@ public class MainMenuController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        System.out.println("[DEBUG] initialize 시작");
+
         // 배경 이미지 크기 설정
         if (backgroundImage != null) {
+            System.out.println("[DEBUG] SettingsManager 호출 전 (1)");
+
             String screenSize = SettingsManager.getInstance().getScreenSize();
+
+            System.out.println("[DEBUG] SettingsManager 호출 후 (1): " + screenSize);
+
             switch (screenSize) {
                 case "작게":
                     backgroundImage.setFitWidth(480);
@@ -79,7 +86,11 @@ public class MainMenuController implements Initializable {
                     backgroundImage.setFitHeight(900);
                     break;
             }
+        } else {
+            System.out.println("[DEBUG] backgroundImage is NULL");
         }
+
+        System.out.println("[DEBUG] 버튼 리스트 초기화");
         
         // 배경 음악 재생
         MusicManager.getInstance().playBackgroundMusic();
@@ -94,29 +105,40 @@ public class MainMenuController implements Initializable {
         menuButtons.add(settingsButton);
         menuButtons.add(exitButton);
         
+        System.out.println("[DEBUG] applyLayoutForScreenSize 호출 전");
         applyLayoutForScreenSize();
+        System.out.println("[DEBUG] applyLayoutForScreenSize 호출 후");
 
         // 모든 버튼에 마우스 호버 이벤트 핸들러 추가
         for (Button button : menuButtons) {
-            button.setOnMouseEntered(e -> {
-                int index = menuButtons.indexOf(button);
-                if (index != currentIndex) {
-                    selectButton(index);
-                }
-            });
+            if (button != null) {
+                button.setOnMouseEntered(e -> {
+                    int index = menuButtons.indexOf(button);
+                    if (index != currentIndex) {
+                        selectButton(index);
+                    }
+                });
+            } else {
+                System.err.println("[ERROR] 버튼 중 하나가 NULL. FXML fx:id 확인");
+            }
         }
         
+        System.out.println("[DEBUG] 초기 버튼 선택");
         // 첫 번째 버튼 선택
         selectButton(0);
         normalModeButton.requestFocus();
         
+        System.out.println("[DEBUG] Key Handler 설정");
         // Scene 레벨에서 키 이벤트 처리 설정
         setupSceneKeyHandler();
         
         // 추가: 잠시 후 키 핸들러 다시 설정 (Scene이 완전히 로드된 후)
         javafx.application.Platform.runLater(() -> {
+            System.out.println("[DEBUG] RunLater 실행됨");
             setupSceneKeyHandler();
         });
+
+        System.out.println("[DEBUG] initialize 종료 (성공)");
     }
 
     public void setSceneManager(SceneManager sceneManager) {
