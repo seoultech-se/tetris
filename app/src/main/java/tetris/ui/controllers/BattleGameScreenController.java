@@ -838,30 +838,15 @@ public class BattleGameScreenController implements Initializable {
             updateUI();
             
             Platform.runLater(() -> {
+                // 승패 판정
                 String winner = battleEngine.getWinner();
-                if (winner != null) {
-                    switch (winner) {
-                        case "PLAYER1":
-                            winnerLabel.setText("플레이어 1 승리!");
-                            break;
-                        case "PLAYER2":
-                            winnerLabel.setText("플레이어 2 승리!");
-                            break;
-                        case "DRAW":
-                            winnerLabel.setText("무승부!");
-                            break;
-                    }
-                } else {
-                    boolean player1Lost = !battleEngine.getPlayer1Engine().isGameRunning();
-                    boolean player2Lost = !battleEngine.getPlayer2Engine().isGameRunning();
-                    
-                    if (player1Lost && player2Lost) {
-                        winnerLabel.setText("무승부!");
-                    } else if (player1Lost) {
-                        winnerLabel.setText("플레이어 2 승리!");
-                    } else if (player2Lost) {
-                        winnerLabel.setText("플레이어 1 승리!");
-                    }
+                
+                if ("PLAYER1".equals(winner)) {
+                    winnerLabel.setText("플레이어 1 승리!");
+                } else if ("PLAYER2".equals(winner)) {
+                    winnerLabel.setText("플레이어 2 승리!");
+                } else if ("DRAW".equals(winner)){
+                    winnerLabel.setText("무승부!");
                 }
                 
                 if (gameOverBox != null) {

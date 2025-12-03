@@ -20,7 +20,7 @@ public class BattleGameEngine {
     private boolean timeLimitMode;
     
     // 승자 정보
-    private String winner; // "PLAYER1", "PLAYER2", null
+    private String winner; // "PLAYER1", "PLAYER2", "DRAW", null
     
     // 대기 중인 공격 줄 큐 (각 플레이어에게 넘어갈 줄 수와 빈칸 위치)
     private Queue<AttackInfo> pendingAttacksToPlayer1;
@@ -151,9 +151,17 @@ public class BattleGameEngine {
         if (!isGameRunning || isPaused) {
             return;
         }
+
+        if (winner != null) {
+            return;
+        }
         
         // 게임 오버 체크 (매 프레임마다 확인)
         checkGameOver();
+
+        if (winner != null) {
+            return;
+        }
         
         // 시간제한 모드 체크
         if (timeLimitMode) {
