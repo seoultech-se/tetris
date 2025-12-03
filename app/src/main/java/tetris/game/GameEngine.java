@@ -550,4 +550,104 @@ public class GameEngine {
     public int getLastPlacedBlockCol() {
         return lastPlacedBlockCol;
     }
+    
+    /**
+     * 현재 블록이 착지할 위치의 블록을 반환
+     * @return 착지할 위치의 블록, 블록이 없으면 null
+     */
+    public Piece getLandingPiece() {
+        if (currentPiece == null) {
+            return null;
+        }
+        
+        // 블록의 복사본을 만들어서 시뮬레이션
+        Piece testPiece = currentPiece.copy();
+        
+        // 블록을 아래로 내려가면서 착지 위치 찾기
+        while (gameBoard.isValidPosition(testPiece)) {
+            testPiece.moveDown();
+        }
+        // 유효하지 않은 위치가 되었으므로 한 칸 위로 올려서 착지 위치로 설정
+        testPiece.moveUp();
+        
+        return testPiece;
+    }
+    
+    /**
+     * 현재 블록이 착지할 위치를 계산하여 반환
+     * 블록의 양 끝 열에서 착지할 행을 계산
+     * @return int 배열 [왼쪽 끝 열의 착지 행, 오른쪽 끝 열의 착지 행], 블록이 없으면 null
+     */
+    public int[] getLandingPositions() {
+        Piece landingPiece = getLandingPiece();
+        if (landingPiece == null) {
+            return null;
+        }
+        
+        int[][] shape = landingPiece.getShape();
+        int pieceX = landingPiece.getX();
+        
+        // 블록의 양 끝 열 찾기
+        int minCol = Integer.MAX_VALUE;
+        int maxCol = Integer.MIN_VALUE;
+        
+        for (int row = 0; row < shape.length; row++) {
+            for (int col = 0; col < shape[row].length; col++) {
+                if (shape[row][col] != 0) {
+                    int boardCol = pieceX + col;
+                    minCol = Math.min(minCol, boardCol);
+                    maxCol = Math.max(maxCol, boardCol);
+                }
+            }
+        }
+        
+        if (minCol == Integer.MAX_VALUE || maxCol == Integer.MIN_VALUE) {
+            return null;
+        }
+        
+        // 착지 위치에서 각 열의 행 계산
+        int leftLandingRow = calculateRowInCol(minCol, landingPiece);
+        int rightLandingRow = calculateRowInCol(maxCol, landingPiece);
+        
+        return new int[]{leftLandingRow, rightLandingRow};
+    }
+    
+    /**
+     * 착지 위치에서 특정 열의 행을 계산
+     * @param col 계산할 열
+     * @param piece 착지한 블록
+     * @return 해당 열에서 가장 아래 블록의 행
+     */
+    private int calculateRowInCol(int col, Piece piece) {
+        int[][] shape = piece.getShape();
+        int pieceX = piece.getX();
+        int pieceY = piece.getY();
+        
+        // 해당 열에 있는 블록 중 가장 아래쪽 행 찾기
+        int maxRow = -1;
+        for (int row = 0; row < shape.length; row++) {
+            for (int c = 0; c < shape[row].length; c++) {
+                if (shape[row][c] != 0 && (pieceX + c) == col) {
+                    maxRow = Math.max(maxRow, row);
+                }
+            }
+        }
+        
+        if (maxRow == -1) {
+            return -1;
+        }
+        
+        // 착지 위치에서의 행 계산
+        int landingRow = pieceY + maxRow;
+        
+        // 보드 범위 체크
+        if (landingRow < 0) {
+            return 0;
+        }
+        if (landingRow >= GameBoard.BOARD_HEIGHT) {
+            return GameBoard.BOARD_HEIGHT - 1;
+        }
+        
+        return landingRow;
+    }
 }

@@ -12,6 +12,7 @@ import javafx.scene.paint.Color;
 import javafx.animation.AnimationTimer;
 import tetris.ui.SceneManager;
 import tetris.ui.SettingsManager;
+import tetris.ui.MusicManager;
 import tetris.game.BattleGameEngine;
 import tetris.game.GameBoard;
 import tetris.game.Piece;
@@ -71,9 +72,6 @@ public class BattleGameScreenController implements Initializable {
 
     @FXML
     private Button rematchButton;
-
-    @FXML
-    private Button toMenuButton;
 
     private SceneManager sceneManager;
     private SettingsManager settingsManager;
@@ -165,6 +163,9 @@ public class BattleGameScreenController implements Initializable {
         startGameLoop();
         battleEngine.startGame();
         startComputerOpponentIfNeeded();
+        
+        // 게임 브금 재생
+        MusicManager.getInstance().playGameMusic();
     }
 
     private void configureBattleEngine() {
@@ -293,74 +294,82 @@ public class BattleGameScreenController implements Initializable {
                 battleEngine.update();
 
                 // 플레이어 1 블록 낙하
-                if (!isAnimatingClear1 && now - lastUpdateTime1 >= fallSpeed1) {
+                if (now - lastUpdateTime1 >= fallSpeed1) {
                     if (battleEngine.isGameRunning() && !battleEngine.isPaused()) {
                         battleEngine.getPlayer1Engine().movePieceDown();
                         // 공격은 placePiece() 내부의 콜백에서 자동으로 적용됨
                         java.util.List<Integer> fullLines = battleEngine.getPlayer1Engine().getFullLines();
                         if (!fullLines.isEmpty()) {
+                            // 즉시 줄 삭제
+                            int beforeCleared = battleEngine.getPlayer1Engine().getLinesCleared();
+                            battleEngine.getPlayer1Engine().clearLinesManually();
+                            int afterCleared = battleEngine.getPlayer1Engine().getLinesCleared();
+                            int cleared = afterCleared - beforeCleared;
+                            
+                            // 공격 메커니즘 처리 (줄 삭제 직후 바로 처리)
+                            if (cleared >= 2) {
+                                int lastBlockCol = battleEngine.getPlayer1Engine().getLastPlacedBlockCol();
+                                battleEngine.processPlayer1Attack(cleared, lastBlockCol);
+                            }
+                            
+                            // 애니메이션 시작 (시각적 효과만)
                             player1LinesToClear = fullLines;
                             isAnimatingClear1 = true;
                             clearAnimationStartTime1 = now;
+                            // 블록 삭제 효과음 재생
+                            MusicManager.getInstance().playRemoveBlockSound();
+                            lastUpdateTime1 = now; // 타이머 리셋
                         }
                     }
                     lastUpdateTime1 = now;
                 }
 
                 // 플레이어 2 블록 낙하
-                if (!isAnimatingClear2 && now - lastUpdateTime2 >= fallSpeed2) {
+                if (now - lastUpdateTime2 >= fallSpeed2) {
                     if (battleEngine.isGameRunning() && !battleEngine.isPaused()) {
                         battleEngine.getPlayer2Engine().movePieceDown();
                         // 공격은 placePiece() 내부의 콜백에서 자동으로 적용됨
                         java.util.List<Integer> fullLines = battleEngine.getPlayer2Engine().getFullLines();
                         if (!fullLines.isEmpty()) {
+                            // 즉시 줄 삭제
+                            int beforeCleared = battleEngine.getPlayer2Engine().getLinesCleared();
+                            battleEngine.getPlayer2Engine().clearLinesManually();
+                            int afterCleared = battleEngine.getPlayer2Engine().getLinesCleared();
+                            int cleared = afterCleared - beforeCleared;
+                            
+                            // 공격 메커니즘 처리 (줄 삭제 직후 바로 처리)
+                            if (cleared >= 2) {
+                                int lastBlockCol = battleEngine.getPlayer2Engine().getLastPlacedBlockCol();
+                                battleEngine.processPlayer2Attack(cleared, lastBlockCol);
+                            }
+                            
+                            // 애니메이션 시작 (시각적 효과만)
                             player2LinesToClear = fullLines;
                             isAnimatingClear2 = true;
                             clearAnimationStartTime2 = now;
+                            // 블록 삭제 효과음 재생
+                            MusicManager.getInstance().playRemoveBlockSound();
+                            lastUpdateTime2 = now; // 타이머 리셋
                         }
                     }
                     lastUpdateTime2 = now;
                 }
                 
 
-                // 애니메이션 처리
+                // 애니메이션 처리 (시각적 효과만)
                 if (isAnimatingClear1) {
                     long elapsed = now - clearAnimationStartTime1;
                     if (elapsed >= CLEAR_ANIMATION_DURATION) {
-                        int beforeCleared = battleEngine.getPlayer1Engine().getLinesCleared();
-                        battleEngine.getPlayer1Engine().clearLinesManually();
-                        int afterCleared = battleEngine.getPlayer1Engine().getLinesCleared();
-                        int cleared = afterCleared - beforeCleared;
-                        
-                        // 공격 메커니즘 처리 (줄 삭제 직후 바로 처리)
-                        if (cleared >= 2) {
-                            int lastBlockCol = battleEngine.getPlayer1Engine().getLastPlacedBlockCol();
-                            battleEngine.processPlayer1Attack(cleared, lastBlockCol);
-                        }
-                        
                         isAnimatingClear1 = false;
                         player1LinesToClear = null;
-                        lastUpdateTime1 = now;
                     }
                 }
 
                 if (isAnimatingClear2) {
                     long elapsed = now - clearAnimationStartTime2;
                     if (elapsed >= CLEAR_ANIMATION_DURATION) {
-                        int beforeCleared = battleEngine.getPlayer2Engine().getLinesCleared();
-                        battleEngine.getPlayer2Engine().clearLinesManually();
-                        int afterCleared = battleEngine.getPlayer2Engine().getLinesCleared();
-                        int cleared = afterCleared - beforeCleared;
-                        
-                        // 공격 메커니즘 처리 (줄 삭제 직후 바로 처리)
-                        if (cleared >= 2) {
-                            int lastBlockCol = battleEngine.getPlayer2Engine().getLastPlacedBlockCol();
-                            battleEngine.processPlayer2Attack(cleared, lastBlockCol);
-                        }
-                        
                         isAnimatingClear2 = false;
                         player2LinesToClear = null;
-                        lastUpdateTime2 = now;
                     }
                 }
 
@@ -398,10 +407,8 @@ public class BattleGameScreenController implements Initializable {
             player1Canvas.getHeight() / GameBoard.BOARD_HEIGHT
         );
 
-        // 색약모드에서는 회색 격자 표시
-        if (settingsManager != null && settingsManager.isColorBlindModeEnabled()) {
-            drawGrid(gc, player1Canvas, blockSize);
-        }
+        // 회색 격자 표시
+        drawGrid(gc, player1Canvas, blockSize);
 
         GameBoard board = battleEngine.getPlayer1Engine().getGameBoard();
         for (int row = 0; row < GameBoard.BOARD_HEIGHT; row++) {
@@ -429,6 +436,8 @@ public class BattleGameScreenController implements Initializable {
             Piece currentPiece = battleEngine.getPlayer1Engine().getCurrentPiece();
             if (currentPiece != null) {
                 renderPieceScaled(gc, currentPiece, blockSize);
+                // 착지 위치에 형광 초록색 표시
+                renderLandingIndicatorScaled(gc, currentPiece, battleEngine.getPlayer1Engine(), player1Canvas, blockSize);
             }
         }
 
@@ -448,10 +457,8 @@ public class BattleGameScreenController implements Initializable {
             player2Canvas.getHeight() / GameBoard.BOARD_HEIGHT
         );
 
-        // 색약모드에서는 회색 격자 표시
-        if (settingsManager != null && settingsManager.isColorBlindModeEnabled()) {
-            drawGrid(gc, player2Canvas, blockSize);
-        }
+        // 회색 격자 표시
+        drawGrid(gc, player2Canvas, blockSize);
 
         GameBoard board = battleEngine.getPlayer2Engine().getGameBoard();
         for (int row = 0; row < GameBoard.BOARD_HEIGHT; row++) {
@@ -479,6 +486,8 @@ public class BattleGameScreenController implements Initializable {
             Piece currentPiece = battleEngine.getPlayer2Engine().getCurrentPiece();
             if (currentPiece != null) {
                 renderPieceScaled(gc, currentPiece, blockSize);
+                // 착지 위치에 형광 초록색 표시
+                renderLandingIndicatorScaled(gc, currentPiece, battleEngine.getPlayer2Engine(), player2Canvas, blockSize);
             }
         }
 
@@ -648,6 +657,49 @@ public class BattleGameScreenController implements Initializable {
         renderBlockScaled(gc, x, y, BLOCK_SIZE, color, pieceType, itemType);
     }
     
+    /**
+     * 블록의 착지 위치에 형광 초록색으로 블록 전체 표시 (스케일된 버전)
+     */
+    private void renderLandingIndicatorScaled(GraphicsContext gc, Piece piece, tetris.game.GameEngine gameEngine, Canvas canvas, double blockSize) {
+        if (piece == null || gameEngine == null) {
+            return;
+        }
+        
+        // 착지할 위치의 블록 가져오기
+        tetris.game.Piece landingPiece = gameEngine.getLandingPiece();
+        if (landingPiece == null) {
+            return;
+        }
+        
+        // 형광 초록색 설정 (반투명)
+        Color indicatorColor = Color.web("#00FF00", 0.5); // 형광 초록색, 50% 투명도
+        gc.setFill(indicatorColor);
+        gc.setStroke(Color.web("#00FF00")); // 테두리는 불투명
+        gc.setLineWidth(2);
+        
+        // 착지할 블록의 shape를 형광 초록색으로 표시
+        int[][] shape = landingPiece.getShape();
+        int pieceX = landingPiece.getX();
+        int pieceY = landingPiece.getY();
+        
+        for (int row = 0; row < shape.length; row++) {
+            for (int col = 0; col < shape[row].length; col++) {
+                if (shape[row][col] != 0) {
+                    double x = (pieceX + col) * blockSize;
+                    double y = (pieceY + row) * blockSize;
+                    
+                    // 캔버스 범위 체크
+                    if (x >= 0 && x < canvas.getWidth() && 
+                        y >= 0 && y < canvas.getHeight()) {
+                        // 반투명한 초록색 사각형 그리기
+                        gc.fillRect(x, y, blockSize, blockSize);
+                        gc.strokeRect(x, y, blockSize, blockSize);
+                    }
+                }
+            }
+        }
+    }
+    
     private void renderBlockScaled(GraphicsContext gc, double x, double y, double size, Color color, int pieceType, ItemType itemType) {
         // 색약모드가 켜져 있으면 색 대신 심볼로 채운다
         if (settingsManager != null && settingsManager.isColorBlindModeEnabled()) {
@@ -815,6 +867,12 @@ public class BattleGameScreenController implements Initializable {
     private void onPause() {
         if (battleEngine != null) {
             battleEngine.pauseGame();
+            // 일시정지 시 음악 일시정지/재개
+            if (battleEngine.isPaused()) {
+                MusicManager.getInstance().pauseGameMusic();
+            } else {
+                MusicManager.getInstance().resumeGameMusic();
+            }
         }
     }
 
@@ -827,6 +885,8 @@ public class BattleGameScreenController implements Initializable {
         if (battleEngine != null) {
             battleEngine.stopGame();
         }
+        // 배경 음악으로 전환
+        MusicManager.getInstance().playBackgroundMusic();
         if (sceneManager != null) {
             sceneManager.showMainMenu();
         }
@@ -886,6 +946,9 @@ public class BattleGameScreenController implements Initializable {
             startGameLoop();
             battleEngine.startGame();
             startComputerOpponentIfNeeded();
+            
+            // 게임 브금 재생
+            MusicManager.getInstance().playGameMusic();
         });
     }
 }

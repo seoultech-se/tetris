@@ -12,6 +12,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import tetris.ui.SceneManager;
 import tetris.ui.SettingsManager;
+import tetris.ui.MusicManager;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -113,6 +114,9 @@ public class MainMenuController implements Initializable {
         javafx.application.Platform.runLater(() -> {
             setupSceneKeyHandler();
         });
+        
+        // 배경 음악 재생
+        MusicManager.getInstance().playBackgroundMusic();
     }
 
     public void setSceneManager(SceneManager sceneManager) {
