@@ -10,7 +10,7 @@ class ItemTypeTest {
         assertEquals("L", ItemType.LINE_CLEAR.getDisplayChar());
         assertEquals("W", ItemType.WEIGHT.getDisplayChar());
         assertEquals("D", ItemType.DOUBLE_SCORE.getDisplayChar());
-        assertEquals("+", ItemType.BOMB.getDisplayChar());
+        assertEquals("B", ItemType.BOMB.getDisplayChar());
         assertEquals("S", ItemType.SKIP.getDisplayChar());
         assertEquals("", ItemType.NONE.getDisplayChar());
     }

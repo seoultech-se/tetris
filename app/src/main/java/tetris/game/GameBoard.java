@@ -306,26 +306,20 @@ public class GameBoard {
     }
 
     /**
-     * 폭탄 효과 처리: 1x1 폭탄이 위치한 행과 열을 십자가(+) 모양으로 제거
+     * 폭탄 효과 처리: 1x1 폭탄을 중심으로 3x3 범위의 블록을 모두 제거
      * 제거 후 중력을 적용하여 떠있는 블록들을 아래로 이동
      * @param bombRows 폭탄이 위치한 행
      * @param bombCols 폭탄이 위치한 열
      */
     private void processBombEffect(List<Integer> bombRows, List<Integer> bombCols) {
-        // 폭탄이 위치한 열 전체 제거 (세로선)
-        for (int col : bombCols) {
-            if (col >= 0 && col < BOARD_WIDTH) {
-                for (int row = 0; row < BOARD_HEIGHT; row++) {
-                    clearCell(row, col);
-                }
-            }
-        }
-
-        // 폭탄이 위치한 행 전체 제거 (가로선)
-        for (int row : bombRows) {
-            if (row >= 0 && row < BOARD_HEIGHT) {
-                for (int col = 0; col < BOARD_WIDTH; col++) {
-                    clearCell(row, col);
+        // 각 폭탄 위치에 대해 3x3 범위 제거
+        for (int bombRow : bombRows) {
+            for (int bombCol : bombCols) {
+                // 폭탄을 중심으로 3x3 범위 제거 (bombRow-1 ~ bombRow+1, bombCol-1 ~ bombCol+1)
+                for (int row = bombRow - 1; row <= bombRow + 1; row++) {
+                    for (int col = bombCol - 1; col <= bombCol + 1; col++) {
+                        clearCell(row, col);
+                    }
                 }
             }
         }
