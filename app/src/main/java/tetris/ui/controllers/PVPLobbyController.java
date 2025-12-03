@@ -283,12 +283,12 @@ public class PVPLobbyController implements Initializable {
         try {
             Map<String, Object> data = new HashMap<>();
             data.put("gameMode", selectedGameMode);
-
+            
             NetworkMessage message = new NetworkMessage(
                 NetworkMessage.MessageType.GAME_START,
                 data
             );
-
+            
             if (gameServer != null) {
                 gameServer.sendMessage(message);
             }

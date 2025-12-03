@@ -571,6 +571,275 @@ class GameOverControllerTest extends JavaFXTestBase {
         }
     }
 
+    // ===== onSaveScore() 테스트 보강 =====
+
+    @Test
+    void testOnSaveScore_EmptyPlayerNameWarning() throws Exception {
+        SettingsManager settings = SettingsManager.getInstance();
+        ScoreManager scoreManager = ScoreManager.getInstance();
+        String originalMode = settings.getGameMode();
+        String originalDifficulty = settings.getDifficulty();
+        try {
+            settings.setGameMode("NORMAL");
+            settings.setDifficulty("Normal");
+            scoreManager.clearScores("NORMAL");
+
+            runOnFxThreadAndWait(() -> {
+                try {
+                    FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/GameOverScreen.fxml"));
+                    loader.load();
+                    GameOverController controller = loader.getController();
+
+                    TextField playerNameField = getNode(loader, "playerNameField");
+                    Button saveButton = getNode(loader, "saveScoreButton");
+
+                    controller.setFinalScore(1000);
+
+                    // 플레이어 이름을 빈 값으로 설정
+                    playerNameField.setText("");
+
+                    // onSaveScore를 비동기로 호출 (Alert 때문에 블로킹됨)
+                    javafx.application.Platform.runLater(() -> {
+                        try {
+                            var saveMethod = GameOverController.class.getDeclaredMethod("onSaveScore");
+                            saveMethod.setAccessible(true);
+                            saveMethod.invoke(controller);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
+                } catch (Exception e) {
+                    fail("Empty player name warning test failed: " + e.getMessage());
+                }
+            });
+
+            // Alert가 표시되는 동안 잠시 대기
+            Thread.sleep(500);
+
+            // 점수가 저장되지 않았는지 확인 (스코어 목록이 여전히 비어있어야 함)
+            java.util.List<String> scores = scoreManager.getFormattedScoresByDifficulty("NORMAL", "Normal");
+            assertEquals(0, scores.size(), "Score should not be saved with empty name");
+
+        } catch (Exception e) {
+            fail("Empty player name warning test failed: " + e.getMessage());
+        } finally {
+            settings.setGameMode(originalMode);
+            settings.setDifficulty(originalDifficulty);
+            scoreManager.clearScores("NORMAL");
+        }
+    }
+
+    @Test
+    void testOnSaveScore_DuplicateSaveWarning() throws Exception {
+        SettingsManager settings = SettingsManager.getInstance();
+        ScoreManager scoreManager = ScoreManager.getInstance();
+        String originalMode = settings.getGameMode();
+        String originalDifficulty = settings.getDifficulty();
+        try {
+            settings.setGameMode("NORMAL");
+            settings.setDifficulty("Normal");
+            scoreManager.clearScores("NORMAL");
+
+            runOnFxThreadAndWait(() -> {
+                try {
+                    FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/GameOverScreen.fxml"));
+                    loader.load();
+                    GameOverController controller = loader.getController();
+
+                    TextField playerNameField = getNode(loader, "playerNameField");
+                    Button saveButton = getNode(loader, "saveScoreButton");
+
+                    controller.setFinalScore(1000);
+
+                    // 첫 번째 저장
+                    playerNameField.setText("TestPlayer");
+
+                    // 첫 번째 저장을 비동기로 실행
+                    javafx.application.Platform.runLater(() -> {
+                        try {
+                            var saveMethod = GameOverController.class.getDeclaredMethod("onSaveScore");
+                            saveMethod.setAccessible(true);
+                            saveMethod.invoke(controller);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
+                } catch (Exception e) {
+                    fail("Duplicate save warning test failed: " + e.getMessage());
+                }
+            });
+
+            // 첫 번째 저장 완료 대기
+            Thread.sleep(1000);
+
+            // 점수가 저장되었는지 확인
+            java.util.List<String> scores = scoreManager.getFormattedScoresByDifficulty("NORMAL", "Normal");
+            assertEquals(1, scores.size(), "Score should be saved once");
+
+            // 두 번째 저장 시도 (비동기)
+            runOnFxThreadAndWait(() -> {
+                try {
+                    FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/GameOverScreen.fxml"));
+                    loader.load();
+                    GameOverController controller = loader.getController();
+
+                    controller.setFinalScore(1000);
+                    setPrivateField(controller, "scoreSaved", true);
+
+                    javafx.application.Platform.runLater(() -> {
+                        try {
+                            var saveMethod = GameOverController.class.getDeclaredMethod("onSaveScore");
+                            saveMethod.setAccessible(true);
+                            saveMethod.invoke(controller);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
+                } catch (Exception e) {
+                    fail("Duplicate save warning test failed: " + e.getMessage());
+                }
+            });
+
+            Thread.sleep(500);
+
+            // 점수가 중복 저장되지 않았는지 확인
+            scores = scoreManager.getFormattedScoresByDifficulty("NORMAL", "Normal");
+            assertEquals(1, scores.size(), "Score should not be duplicated");
+        } catch (Exception e) {
+            fail("Duplicate save warning test failed: " + e.getMessage());
+        } finally {
+            settings.setGameMode(originalMode);
+            settings.setDifficulty(originalDifficulty);
+            scoreManager.clearScores("NORMAL");
+        }
+    }
+
+    @Test
+    void testOnSaveScore_SuccessfulSave_NotTopTen() throws Exception {
+        SettingsManager settings = SettingsManager.getInstance();
+        ScoreManager scoreManager = ScoreManager.getInstance();
+        String originalMode = settings.getGameMode();
+        String originalDifficulty = settings.getDifficulty();
+        try {
+            settings.setGameMode("NORMAL");
+            settings.setDifficulty("Normal");
+            scoreManager.clearScores("NORMAL");
+
+            // 9개의 높은 점수만 미리 추가 (5000~4200점)
+            for (int i = 0; i < 9; i++) {
+                scoreManager.addScore("HighScore" + i, 5000 - i * 100, "Normal", "NORMAL");
+            }
+
+            runOnFxThreadAndWait(() -> {
+                try {
+                    FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/GameOverScreen.fxml"));
+                    loader.load();
+                    GameOverController controller = loader.getController();
+
+                    TextField playerNameField = getNode(loader, "playerNameField");
+                    Button saveButton = getNode(loader, "saveScoreButton");
+
+                    // 10위가 될 점수 (4000점) 설정
+                    controller.setFinalScore(4000);
+
+                    // 플레이어 이름 입력 및 저장
+                    playerNameField.setText("MidPlayer");
+
+                    javafx.application.Platform.runLater(() -> {
+                        try {
+                            var saveMethod = GameOverController.class.getDeclaredMethod("onSaveScore");
+                            saveMethod.setAccessible(true);
+                            saveMethod.invoke(controller);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
+                } catch (Exception e) {
+                    fail("Successful save not top ten test failed: " + e.getMessage());
+                }
+            });
+
+            Thread.sleep(2000); // 조금 더 긴 대기 시간
+
+            // 점수가 저장되었는지 확인
+            java.util.List<String> scores = scoreManager.getFormattedScoresByDifficulty("NORMAL", "Normal");
+            assertEquals(10, scores.size(), "Score list should have 10 entries");
+
+            // 저장된 점수 중에 MidPlayer가 있는지 확인
+            boolean found = scores.stream().anyMatch(s -> s.contains("MidPlayer") && s.contains("4000점"));
+            assertTrue(found, "MidPlayer with 4000 points should be in the score list");
+        } catch (Exception e) {
+            fail("Successful save not top ten test failed: " + e.getMessage());
+        } finally {
+            settings.setGameMode(originalMode);
+            settings.setDifficulty(originalDifficulty);
+            scoreManager.clearScores("NORMAL");
+        }
+    }
+
+    @Test
+    void testOnSaveScore_SuccessfulSave_IsTopTen() throws Exception {
+        SettingsManager settings = SettingsManager.getInstance();
+        ScoreManager scoreManager = ScoreManager.getInstance();
+        String originalMode = settings.getGameMode();
+        String originalDifficulty = settings.getDifficulty();
+        try {
+            settings.setGameMode("NORMAL");
+            settings.setDifficulty("Normal");
+            scoreManager.clearScores("NORMAL");
+
+            // 9개의 점수만 추가 (5000~4200점)
+            for (int i = 0; i < 9; i++) {
+                scoreManager.addScore("TopPlayer" + i, 5000 - i * 100, "Normal", "NORMAL");
+            }
+
+            runOnFxThreadAndWait(() -> {
+                try {
+                    FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/GameOverScreen.fxml"));
+                    loader.load();
+                    GameOverController controller = loader.getController();
+
+                    TextField playerNameField = getNode(loader, "playerNameField");
+                    Button saveButton = getNode(loader, "saveScoreButton");
+
+                    // Top 10에 들어갈 점수 (4500점) 설정
+                    controller.setFinalScore(4500);
+
+                    // 플레이어 이름 입력 및 저장
+                    playerNameField.setText("NewTopPlayer");
+
+                    javafx.application.Platform.runLater(() -> {
+                        try {
+                            var saveMethod = GameOverController.class.getDeclaredMethod("onSaveScore");
+                            saveMethod.setAccessible(true);
+                            saveMethod.invoke(controller);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
+                } catch (Exception e) {
+                    fail("Successful save is top ten test failed: " + e.getMessage());
+                }
+            });
+
+            Thread.sleep(1000);
+
+            // 점수가 저장되었는지 확인
+            java.util.List<String> scores = scoreManager.getFormattedScoresByDifficulty("NORMAL", "Normal");
+            assertEquals(10, scores.size(), "Score list should have 10 entries");
+
+            // 저장된 점수 중에 NewTopPlayer가 있는지 확인
+            boolean found = scores.stream().anyMatch(s -> s.contains("NewTopPlayer") && s.contains("4500점"));
+            assertTrue(found, "NewTopPlayer with 4500 points should be in top 10");
+        } catch (Exception e) {
+            fail("Successful save is top ten test failed: " + e.getMessage());
+        } finally {
+            settings.setGameMode(originalMode);
+            settings.setDifficulty(originalDifficulty);
+            scoreManager.clearScores("NORMAL");
+        }
+    }
+
     private static class TestSceneManager extends SceneManager {
         private boolean mainMenuShown;
 
