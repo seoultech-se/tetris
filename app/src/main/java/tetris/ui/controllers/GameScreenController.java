@@ -43,6 +43,9 @@ public class GameScreenController implements Initializable {
     private Label skipNotificationLabel;
 
     @FXML
+    private Label pauseStatusLabel;
+
+    @FXML
     private Canvas nextPieceCanvas;
 
     private SceneManager sceneManager;
@@ -497,6 +500,15 @@ public class GameScreenController implements Initializable {
     private void onPause() {
         if (gameEngine != null) {
             gameEngine.pauseGame();
+            boolean isPaused = gameEngine.isPaused();
+            if (pauseStatusLabel != null) {
+                if (isPaused) {
+                    pauseStatusLabel.setText("일시 정지");
+                    pauseStatusLabel.setStyle("-fx-text-fill: #ffff00; -fx-font-weight: bold;");
+                } else {
+                    pauseStatusLabel.setText("");
+                }
+            }
         }
     }
 

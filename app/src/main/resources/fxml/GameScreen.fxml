@@ -40,6 +40,17 @@
                </children>
             </VBox>
 
+            <!-- 일시정지 상태 표시 -->
+            <VBox alignment="CENTER" styleClass="pause-status-container">
+               <children>
+                  <Label fx:id="pauseStatusLabel" text="" styleClass="pause-status-label">
+                     <font>
+                        <Font size="24.0" />
+                     </font>
+                  </Label>
+               </children>
+            </VBox>
+
             <!-- 게임 정보 -->
             <VBox styleClass="game-info-container">
                <children>
