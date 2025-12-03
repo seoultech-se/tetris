@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<HBox spacing="15.0" styleClass="main-container" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="tetris.ui.controllers.PVPGameScreenController">
+   <children>
+      <!-- 내 화면 (로컬 플레이어) -->
+      <VBox alignment="CENTER" spacing="8.0" styleClass="player-container">
+         <children>
+            <Label fx:id="myPlayerLabel" text="나" styleClass="player-title">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Label>
+            <Canvas fx:id="myCanvas" height="400.0" width="200.0" styleClass="game-canvas" />
+            <HBox alignment="CENTER" spacing="8.0">
+               <children>
+                  <VBox alignment="CENTER" spacing="3.0">
+                     <children>
+                        <Label text="다음" styleClass="preview-label">
+                           <font>
+                              <Font size="10.0" />
+                           </font>
+                        </Label>
+                        <Canvas fx:id="myNextCanvas" height="80.0" width="80.0" styleClass="next-piece-canvas" />
+                     </children>
+                  </VBox>
+                  <VBox alignment="CENTER" spacing="3.0">
+                     <children>
+                        <Label text="공격" styleClass="preview-label">
+                           <font>
+                              <Font size="10.0" />
+                           </font>
+                        </Label>
+                        <Canvas fx:id="myIncomingCanvas" height="80.0" width="80.0" styleClass="incoming-canvas" />
+                     </children>
+                  </VBox>
+               </children>
+            </HBox>
+            <VBox alignment="CENTER" spacing="3.0" styleClass="info-box">
+               <children>
+                  <Label text="SCORE" styleClass="score-title" />
+                  <Label fx:id="myScoreLabel" text="0" styleClass="score-value" />
+                  <Label fx:id="myLevelLabel" text="Lv: 1" styleClass="game-info-label" />
+                  <Label fx:id="myLinesLabel" text="Lines: 0" styleClass="game-info-label" />
+               </children>
+            </VBox>
+         </children>
+      </VBox>
+
+      <!-- 중앙 정보 영역 -->
+      <VBox alignment="CENTER" spacing="15.0" styleClass="center-info">
+         <children>
+            <Label fx:id="gameModeLabel" text="" styleClass="timer-label">
+               <font>
+                  <Font size="20.0" />
+               </font>
+            </Label>
+            <Label fx:id="timerLabel" text="" styleClass="timer-label" visible="false" managed="false">
+               <font>
+                  <Font size="32.0" />
+               </font>
+            </Label>
+            <Label fx:id="statusLabel" text="" styleClass="winner-label">
+               <font>
+                  <Font size="24.0" />
+               </font>
+            </Label>
+            <Label fx:id="lagWarningLabel" text="" styleClass="lag-warning" visible="false" managed="false">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Label>
+            <Label fx:id="latencyLabel" text="RTT: - ms" styleClass="game-info-label">
+               <font>
+                  <Font size="14.0" />
+               </font>
+            </Label>
+            <Button mnemonicParsing="false" focusTraversable="false" onAction="#onPause" text="일시 정지" prefWidth="100.0" prefHeight="35.0">
+               <font>
+                  <Font size="12.0" />
+               </font>
+            </Button>
+            <Button mnemonicParsing="false" focusTraversable="false" onAction="#onBackToMenu" text="메인 메뉴" prefWidth="100.0" prefHeight="35.0">
+               <font>
+                  <Font size="12.0" />
+               </font>
+            </Button>
+            <VBox fx:id="gameOverBox" alignment="CENTER" spacing="10.0" visible="false" managed="false" styleClass="game-over-box">
+               <children>
+                  <Button fx:id="rematchButton" mnemonicParsing="false" focusTraversable="false" onAction="#onRematch" text="다시 하기" prefWidth="120.0" prefHeight="40.0">
+                     <font>
+                        <Font size="14.0" />
+                     </font>
+                  </Button>
+                  <Button fx:id="toLobbyButton" mnemonicParsing="false" focusTraversable="false" onAction="#onToLobby" text="로비로" prefWidth="120.0" prefHeight="40.0">
+                     <font>
+                        <Font size="14.0" />
+                     </font>
+                  </Button>
+               </children>
+            </VBox>
+         </children>
+      </VBox>
+
+      <!-- 상대방 화면 (원격 플레이어) -->
+      <VBox alignment="CENTER" spacing="8.0" styleClass="player-container">
+         <children>
+            <Label fx:id="opponentPlayerLabel" text="상대방" styleClass="player-title">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Label>
+            <Canvas fx:id="opponentCanvas" height="400.0" width="200.0" styleClass="game-canvas" />
+            <HBox alignment="CENTER" spacing="8.0">
+               <children>
+                  <VBox alignment="CENTER" spacing="3.0">
+                     <children>
+                        <Label text="다음" styleClass="preview-label">
+                           <font>
+                              <Font size="10.0" />
+                           </font>
+                        </Label>
+                        <Canvas fx:id="opponentNextCanvas" height="80.0" width="80.0" styleClass="next-piece-canvas" />
+                     </children>
+                  </VBox>
+                  <VBox alignment="CENTER" spacing="3.0">
+                     <children>
+                        <Label text="공격" styleClass="preview-label">
+                           <font>
+                              <Font size="10.0" />
+                           </font>
+                        </Label>
+                        <Canvas fx:id="opponentIncomingCanvas" height="80.0" width="80.0" styleClass="incoming-canvas" />
+                     </children>
+                  </VBox>
+               </children>
+            </HBox>
+            <VBox alignment="CENTER" spacing="3.0" styleClass="info-box">
+               <children>
+                  <Label text="SCORE" styleClass="score-title" />
+                  <Label fx:id="opponentScoreLabel" text="0" styleClass="score-value" />
+                  <Label fx:id="opponentLevelLabel" text="Lv: 1" styleClass="game-info-label" />
+                  <Label fx:id="opponentLinesLabel" text="Lines: 0" styleClass="game-info-label" />
+               </children>
+            </VBox>
+         </children>
+      </VBox>
+   </children>
+   <padding>
+      <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+   </padding>
+</HBox>

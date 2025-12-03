@@ -44,6 +44,38 @@ public class SceneManager {
         loadScene("/fxml/ScoreBoard.fxml");
     }
 
+    public void showBattleModeSelection() {
+        loadScene("/fxml/BattleModeSelection.fxml");
+    }
+
+    public void showPVPModeSelection() {
+        loadScene("/fxml/PVPModeSelection.fxml");
+    }
+
+    public void showPVPServerWaiting(Object gameServer, String serverIP) {
+        loadPVPServerWaitingScene("/fxml/PVPServerWaiting.fxml", gameServer, serverIP);
+    }
+
+    public void showPVPClientConnection() {
+        loadScene("/fxml/PVPClientConnection.fxml");
+    }
+
+    public void showPVPLobby(Object gameServer, Object gameClient, boolean isServer) {
+        loadPVPLobbyScene("/fxml/PVPLobby.fxml", gameServer, gameClient, isServer);
+    }
+
+    public void showPVPNetworkSelection(String gameMode) {
+        loadPVPNetworkScene("/fxml/PVPNetworkSelection.fxml", gameMode);
+    }
+
+    public void showBattleGameScreen(String battleMode) {
+        loadBattleScene("/fxml/BattleGameScreen.fxml", battleMode);
+    }
+
+    public void showPVPGameScreen(String gameMode, Object gameServer, Object gameClient, boolean isServer) {
+        loadPVPScene("/fxml/PVPGameScreen.fxml", gameMode, gameServer, gameClient, isServer);
+    }
+
     public void showGameOverScreen() {
         loadScene("/fxml/GameOverScreen.fxml", 0);
     }
@@ -98,6 +130,17 @@ public class SceneManager {
                 cssPath = "/css/ScoreBoard.css";
             } else if (fxmlPath.contains("GameOverScreen")) {
                 cssPath = "/css/GameOverScreen.css";
+            } else if (fxmlPath.contains("BattleModeSelection")) {
+                cssPath = "/css/MainMenu.css"; // 같은 스타일 사용
+            } else if (fxmlPath.contains("PVPModeSelection")
+                    || fxmlPath.contains("PVPNetworkSelection")
+                    || fxmlPath.contains("PVPServerWaiting")
+                    || fxmlPath.contains("PVPClientConnection")) {
+                cssPath = "/css/MainMenu.css"; // 같은 스타일 사용
+            } else if (fxmlPath.contains("BattleGameScreen")) {
+                cssPath = "/css/GameScreen.css"; // 같은 스타일 사용
+            } else if (fxmlPath.contains("PVPGameScreen")) {
+                cssPath = "/css/GameScreen.css"; // 같은 스타일 사용
             }
             
             if (cssPath != null) {
@@ -120,6 +163,14 @@ public class SceneManager {
                 ((tetris.ui.controllers.SettingsController) controller).setSceneManager(this);
             } else if (controller instanceof tetris.ui.controllers.ScoreBoardController) {
                 ((tetris.ui.controllers.ScoreBoardController) controller).setSceneManager(this);
+            } else if (controller instanceof tetris.ui.controllers.BattleModeSelectionController) {
+                ((tetris.ui.controllers.BattleModeSelectionController) controller).setSceneManager(this);
+            } else if (controller instanceof tetris.ui.controllers.PVPModeSelectionController) {
+                ((tetris.ui.controllers.PVPModeSelectionController) controller).setSceneManager(this);
+            } else if (controller instanceof tetris.ui.controllers.PVPServerWaitingController) {
+                ((tetris.ui.controllers.PVPServerWaitingController) controller).setSceneManager(this);
+            } else if (controller instanceof tetris.ui.controllers.PVPClientConnectionController) {
+                ((tetris.ui.controllers.PVPClientConnectionController) controller).setSceneManager(this);
             } else if (controller instanceof tetris.ui.controllers.GameOverController) {
                 tetris.ui.controllers.GameOverController gameOverController = 
                     (tetris.ui.controllers.GameOverController) controller;
@@ -129,15 +180,311 @@ public class SceneManager {
                 }
             }
 
-            primaryStage.setScene(scene);
-            primaryStage.show();
+            applyScene(scene);
         } catch (IOException e) {
             System.err.println("Error loading scene: " + fxmlPath);
             e.printStackTrace();
         }
     }
 
+    private void loadBattleScene(String fxmlPath, String battleMode) {
+        try {
+            String screenSize = SettingsManager.getInstance().getScreenSize();
+            double width = MEDIUM_WIDTH;
+            double height = MEDIUM_HEIGHT;
+
+            switch (screenSize) {
+                case "작게":
+                    width = SMALL_WIDTH;
+                    height = SMALL_HEIGHT;
+                    break;
+                case "중간":
+                    width = MEDIUM_WIDTH;
+                    height = MEDIUM_HEIGHT;
+                    break;
+                case "크게":
+                    width = LARGE_WIDTH;
+                    height = LARGE_HEIGHT;
+                    break;
+                default:
+                    width = MEDIUM_WIDTH;
+                    height = MEDIUM_HEIGHT;
+                    break;
+            }
+
+            // 대전 모드는 화면이 넓어야 하므로 가로로 확장
+            if (screenSize.equals("작게")) {
+                width = 840; 
+            } else if (screenSize.equals("크게")) {
+                width = 1080; 
+            } else {
+                width = width * 1.6; // 중간은 기존 비율 유지
+            }
+
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+            Scene scene = new Scene(loader.load(), width, height);
+
+            // CSS 스타일 로드
+            URL cssUrl = getClass().getResource("/css/BattleGameScreen.css");
+            if (cssUrl != null) {
+                scene.getStylesheets().add(cssUrl.toExternalForm());
+            }
+
+            // 컨트롤러에 SceneManager와 배틀 모드 설정
+            Object controller = loader.getController();
+            if (controller instanceof tetris.ui.controllers.BattleGameScreenController) {
+                tetris.ui.controllers.BattleGameScreenController battleController =
+                    (tetris.ui.controllers.BattleGameScreenController) controller;
+                battleController.setSceneManager(this);
+                battleController.setBattleMode(battleMode);
+            }
+
+            applyScene(scene);
+        } catch (IOException e) {
+            System.err.println("Error loading battle scene: " + fxmlPath);
+            e.printStackTrace();
+        }
+    }
+
+    private void loadPVPScene(String fxmlPath, String gameMode, Object gameServer, Object gameClient, boolean isServer) {
+        System.out.println("[SCENE] Loading PVP scene: " + fxmlPath);
+        System.out.println("[SCENE] Game mode: " + gameMode + ", isServer: " + isServer);
+        try {
+            String screenSize = SettingsManager.getInstance().getScreenSize();
+            double width = MEDIUM_WIDTH;
+            double height = MEDIUM_HEIGHT;
+
+            switch (screenSize) {
+                case "작게":
+                    width = SMALL_WIDTH;
+                    height = SMALL_HEIGHT;
+                    break;
+                case "중간":
+                    width = MEDIUM_WIDTH;
+                    height = MEDIUM_HEIGHT;
+                    break;
+                case "크게":
+                    width = LARGE_WIDTH;
+                    height = LARGE_HEIGHT;
+                    break;
+                default:
+                    width = MEDIUM_WIDTH;
+                    height = MEDIUM_HEIGHT;
+                    break;
+            }
+
+            // PVP 모드는 화면이 넓어야 하므로 가로로 확장 (2개 보드 표시)
+            if (screenSize.equals("작게")) {
+                width = 900; // 작은 화면: 900px
+            } else if (screenSize.equals("크게")) {
+                width = 1120; // 큰 화면: 1120px
+            } else {
+                width = width * 1.6; // 중간은 기존 비율 유지
+            }
+
+            System.out.println("[SCENE] Loading FXML...");
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+            Scene scene = new Scene(loader.load(), width, height);
+
+            // CSS 스타일 로드
+            URL cssUrl = getClass().getResource("/css/PVPGameScreen.css");
+            if (cssUrl != null) {
+                scene.getStylesheets().add(cssUrl.toExternalForm());
+                System.out.println("[SCENE] CSS loaded");
+            }
+
+            // 컨트롤러에 SceneManager와 게임 모드, 네트워크 객체 설정
+            System.out.println("[SCENE] Getting controller...");
+            Object controller = loader.getController();
+            if (controller instanceof tetris.ui.controllers.PVPGameScreenController) {
+                System.out.println("[SCENE] PVPGameScreenController found, configuring...");
+                tetris.ui.controllers.PVPGameScreenController pvpController =
+                    (tetris.ui.controllers.PVPGameScreenController) controller;
+                pvpController.setSceneManager(this);
+                pvpController.setGameMode(gameMode);
+
+                // PVPNetworkSelectionController에 게임 컨트롤러 참조 전달
+                System.out.println("[SCENE] Registering game controller to network handler");
+                tetris.ui.controllers.PVPNetworkSelectionController.setGameScreenController(pvpController);
+
+                pvpController.setNetworkObjects(gameServer, gameClient, isServer);
+            }
+
+            System.out.println("[SCENE] Displaying scene...");
+            applyScene(scene);
+            System.out.println("[SCENE] PVP scene loaded successfully");
+        } catch (IOException e) {
+            System.err.println("[SCENE] Error loading PVP scene: " + fxmlPath);
+            e.printStackTrace();
+        }
+    }
+
+    private void loadPVPNetworkScene(String fxmlPath, String gameMode) {
+        try {
+            String screenSize = SettingsManager.getInstance().getScreenSize();
+            double width = MEDIUM_WIDTH;
+            double height = MEDIUM_HEIGHT;
+
+            switch (screenSize) {
+                case "작게":
+                    width = SMALL_WIDTH;
+                    height = SMALL_HEIGHT;
+                    break;
+                case "중간":
+                    width = MEDIUM_WIDTH;
+                    height = MEDIUM_HEIGHT;
+                    break;
+                case "크게":
+                    width = LARGE_WIDTH;
+                    height = LARGE_HEIGHT;
+                    break;
+                default:
+                    width = MEDIUM_WIDTH;
+                    height = MEDIUM_HEIGHT;
+                    break;
+            }
+
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+            Scene scene = new Scene(loader.load(), width, height);
+
+            // CSS 스타일 로드
+            URL cssUrl = getClass().getResource("/css/MainMenu.css");
+            if (cssUrl != null) {
+                scene.getStylesheets().add(cssUrl.toExternalForm());
+            }
+
+            // 컨트롤러에 SceneManager와 게임 모드 설정
+            Object controller = loader.getController();
+            if (controller instanceof tetris.ui.controllers.PVPNetworkSelectionController) {
+                tetris.ui.controllers.PVPNetworkSelectionController networkController =
+                    (tetris.ui.controllers.PVPNetworkSelectionController) controller;
+                networkController.setSceneManager(this);
+                networkController.setGameMode(gameMode);
+            }
+
+            applyScene(scene);
+        } catch (IOException e) {
+            System.err.println("Error loading PVP network selection scene: " + fxmlPath);
+            e.printStackTrace();
+        }
+    }
+
+    private void loadPVPServerWaitingScene(String fxmlPath, Object gameServer, String serverIP) {
+        try {
+            String screenSize = SettingsManager.getInstance().getScreenSize();
+            double width = MEDIUM_WIDTH;
+            double height = MEDIUM_HEIGHT;
+
+            switch (screenSize) {
+                case "작게":
+                    width = SMALL_WIDTH;
+                    height = SMALL_HEIGHT;
+                    break;
+                case "중간":
+                    width = MEDIUM_WIDTH;
+                    height = MEDIUM_HEIGHT;
+                    break;
+                case "크게":
+                    width = LARGE_WIDTH;
+                    height = LARGE_HEIGHT;
+                    break;
+                default:
+                    width = MEDIUM_WIDTH;
+                    height = MEDIUM_HEIGHT;
+                    break;
+            }
+
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+            Scene scene = new Scene(loader.load(), width, height);
+
+            URL cssUrl = getClass().getResource("/css/MainMenu.css");
+            if (cssUrl != null) {
+                scene.getStylesheets().add(cssUrl.toExternalForm());
+            }
+
+            Object controller = loader.getController();
+            if (controller instanceof tetris.ui.controllers.PVPServerWaitingController) {
+                tetris.ui.controllers.PVPServerWaitingController waitingController =
+                    (tetris.ui.controllers.PVPServerWaitingController) controller;
+                waitingController.setSceneManager(this);
+                waitingController.setServerInfo(
+                    (tetris.network.GameServer) gameServer, 
+                    serverIP
+                );
+            }
+
+            applyScene(scene);
+        } catch (IOException e) {
+            System.err.println("Error loading PVP server waiting scene: " + fxmlPath);
+            e.printStackTrace();
+        }
+    }
+
+    private void loadPVPLobbyScene(String fxmlPath, Object gameServer, Object gameClient, boolean isServer) {
+        try {
+            String screenSize = SettingsManager.getInstance().getScreenSize();
+            double width = MEDIUM_WIDTH;
+            double height = MEDIUM_HEIGHT;
+
+            switch (screenSize) {
+                case "작게":
+                    width = SMALL_WIDTH;
+                    height = SMALL_HEIGHT;
+                    break;
+                case "중간":
+                    width = MEDIUM_WIDTH;
+                    height = MEDIUM_HEIGHT;
+                    break;
+                case "크게":
+                    width = LARGE_WIDTH;
+                    height = LARGE_HEIGHT;
+                    break;
+                default:
+                    width = MEDIUM_WIDTH;
+                    height = MEDIUM_HEIGHT;
+                    break;
+            }
+
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+            Scene scene = new Scene(loader.load(), width, height);
+
+            URL cssUrl = getClass().getResource("/css/MainMenu.css");
+            if (cssUrl != null) {
+                scene.getStylesheets().add(cssUrl.toExternalForm());
+            }
+
+            Object controller = loader.getController();
+            if (controller instanceof tetris.ui.controllers.PVPLobbyController) {
+                tetris.ui.controllers.PVPLobbyController lobbyController =
+                    (tetris.ui.controllers.PVPLobbyController) controller;
+                lobbyController.setSceneManager(this);
+                lobbyController.setNetworkObjects(
+                    (tetris.network.GameServer) gameServer,
+                    (tetris.network.GameClient) gameClient,
+                    isServer
+                );
+            }
+
+            applyScene(scene);
+        } catch (IOException e) {
+            System.err.println("Error loading PVP lobby scene: " + fxmlPath);
+            e.printStackTrace();
+        }
+    }
+
     public Stage getPrimaryStage() {
         return primaryStage;
+    }
+
+    private void applyScene(Scene scene) {
+        primaryStage.setScene(scene);
+        if (!isHeadlessEnvironment()) {
+            primaryStage.show();
+        }
+    }
+
+    private boolean isHeadlessEnvironment() {
+        return Boolean.parseBoolean(System.getProperty("testfx.headless", "false"))
+            || Boolean.parseBoolean(System.getProperty("java.awt.headless", "false"));
     }
 }

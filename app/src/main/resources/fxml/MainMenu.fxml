@@ -9,43 +9,53 @@
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.text.Font?>
 
-<StackPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="tetris.ui.controllers.MainMenuController">
+<StackPane fx:id="rootContainer" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="tetris.ui.controllers.MainMenuController">
    <children>
       <ImageView fx:id="backgroundImage" pickOnBounds="true" preserveRatio="false">
          <image>
             <Image url="@/assets/img/Tetris_Background.png" />
          </image>
       </ImageView>
-      <VBox alignment="BOTTOM_CENTER" spacing="30.0">
+      <VBox fx:id="buttonContainer" alignment="BOTTOM_CENTER" spacing="30.0" styleClass="menu-container">
          <children>
-            <Button fx:id="normalModeButton" mnemonicParsing="false" onAction="#onStartNormalMode" prefWidth="200.0" text="일반 모드" style="-fx-background-color: #3498db; -fx-text-fill: white;">
+            <Button fx:id="normalModeButton" mnemonicParsing="false" focusTraversable="true" onAction="#onStartNormalMode" prefWidth="200.0" text="일반 모드" styleClass="menu-button normal-mode-button">
                <font>
                   <Font size="18.0" />
                </font>
             </Button>
-            <Button fx:id="itemModeButton" mnemonicParsing="false" onAction="#onStartItemMode" prefWidth="200.0" text="아이템 모드" style="-fx-background-color: #e74c3c; -fx-text-fill: white;">
+            <Button fx:id="itemModeButton" mnemonicParsing="false" focusTraversable="true" onAction="#onStartItemMode" prefWidth="200.0" text="아이템 모드" styleClass="menu-button item-mode-button">
                <font>
                   <Font size="18.0" />
                </font>
             </Button>
-            <Button fx:id="scoreBoardButton" mnemonicParsing="false" onAction="#onScoreBoard" prefWidth="200.0" text="스코어보드">
+            <Button fx:id="battleModeButton" mnemonicParsing="false" focusTraversable="true" onAction="#onStartBattleMode" prefWidth="200.0" text="대전 모드" styleClass="menu-button battle-mode-button">
                <font>
                   <Font size="18.0" />
                </font>
             </Button>
-            <Button fx:id="settingsButton" mnemonicParsing="false" onAction="#onSettings" prefWidth="200.0" text="설정">
+            <Button fx:id="pvpModeButton" mnemonicParsing="false" focusTraversable="true" onAction="#onStartPVPMode" prefWidth="200.0" text="PVP 대전 모드" styleClass="menu-button pvp-mode-button">
                <font>
                   <Font size="18.0" />
                </font>
             </Button>
-            <Button fx:id="exitButton" mnemonicParsing="false" onAction="#onExit" prefWidth="200.0" text="종료">
+            <Button fx:id="scoreBoardButton" mnemonicParsing="false" focusTraversable="true" onAction="#onScoreBoard" prefWidth="200.0" text="스코어보드" styleClass="menu-button score-board-button">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Button>
+            <Button fx:id="settingsButton" mnemonicParsing="false" focusTraversable="true" onAction="#onSettings" prefWidth="200.0" text="설정" styleClass="menu-button settings-button">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Button>
+            <Button fx:id="exitButton" mnemonicParsing="false" focusTraversable="true" onAction="#onExit" prefWidth="200.0" text="종료" styleClass="menu-button exit-button">
                <font>
                   <Font size="18.0" />
                </font>
             </Button>
          </children>
          <padding>
-            <Insets bottom="50.0" left="50.0" right="50.0" top="50.0" />
+            <Insets bottom="30.0" left="50.0" right="50.0" top="50.0" />
          </padding>
       </VBox>
    </children>

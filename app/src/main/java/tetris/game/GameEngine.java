@@ -12,14 +12,26 @@ public class GameEngine {
     private int linesClearedSinceLastItem;  // 마지막 아이템 이후 삭제된 줄 수
     private boolean isGameRunning;
     private boolean isPaused;
+    private long currentFallSpeed = 1_000_000_000L;
+    
+    // 블록 배치 후 콜백 (대전 모드 공격 적용용)
+    private Runnable onPiecePlacedCallback = null;
+    
+    // 줄 삭제 콜백 (삭제된 줄 개수와 함께)
+    private java.util.function.Consumer<Integer> onLinesClearedCallback = null;
+    
+    private static final long BASE_FALL_SPEED = 1_000_000_000L;
 
     // 아이템 생성 조건
-    private static final int LINES_TO_SPAWN_ITEM = 10;
+    private static final int LINES_TO_SPAWN_ITEM = 10; // 10줄 제거
 
     // 점수 2배 아이템 관련
     private boolean isDoubleScoreActive;
     private long doubleScoreEndTime;  // 나노초 단위
     private static final long DOUBLE_SCORE_DURATION = 30_000_000_000L;  // 30초
+    
+    // 마지막으로 배치된 블록의 열 위치 (공격 메커니즘용)
+    private int lastPlacedBlockCol = -1;
 
     public GameEngine() {
         this.gameBoard = new GameBoard();
@@ -72,6 +84,16 @@ public class GameEngine {
             skipCurrentPiece();
         }
     }
+
+    public void setFallSpeed(long fallSpeed) {
+        this.currentFallSpeed = fallSpeed;
+    }
+
+    public int getFallSpeedBonusMultiplier() {
+        double multiplier = (double) BASE_FALL_SPEED / currentFallSpeed;
+        return Math.max(1, (int) Math.round(multiplier));
+    }
+
     private void movePieceLeft() {
         if (currentPiece != null) {
             // 무게추가 이미 착지했으면 좌우 이동 불가
@@ -100,6 +122,9 @@ public class GameEngine {
         }
     }
 
+    // 블록이 방금 배치되었는지 여부 (공격 적용 타이밍용)
+    private boolean pieceJustPlaced = false;
+    
     public void movePieceDown() {
         if (currentPiece != null) {
             currentPiece.moveDown();
@@ -108,13 +133,32 @@ public class GameEngine {
                 // 이동 불가능 - 블록이 착지함
                 currentPiece.moveUp();
                 placePiece();
+                pieceJustPlaced = true; // 블록이 배치됨을 표시
             } else {
                 // 이동 성공 - 무게추면 밑의 블록 지우기
                 if (currentPiece.isWeightPiece()) {
                     gameBoard.processWeightEffect(currentPiece);
                 }
+
+                // 소프트드롭 점수 추가
+                updateScoreForSoftDrop();
+                pieceJustPlaced = false;
             }
         }
+    }
+    
+    /**
+     * 블록이 방금 배치되었는지 확인 (공격 적용 타이밍용)
+     */
+    public boolean isPieceJustPlaced() {
+        return pieceJustPlaced;
+    }
+    
+    /**
+     * 블록 배치 플래그 리셋 (공격 적용 후 호출)
+     */
+    public void resetPieceJustPlaced() {
+        pieceJustPlaced = false;
     }
 
     private void rotatePiece() {
@@ -128,6 +172,8 @@ public class GameEngine {
 
     private void hardDrop() {
         if (currentPiece != null) {
+            int dropDistance = 0; // 하드드롭으로 떨어진 거리
+
             // 무게추 블록인 경우, 한 칸씩 내려가면서 무게추 효과 적용
             if (currentPiece.isWeightPiece()) {
                 while (gameBoard.isValidPosition(currentPiece)) {
@@ -149,6 +195,7 @@ public class GameEngine {
                         currentPiece.moveUp();
                         break;
                     }
+                    dropDistance++;
                 }
                 currentPiece.setLanded(true);  // 무게추는 착지 후 좌우 이동 불가
                 placePiece();
@@ -156,9 +203,16 @@ public class GameEngine {
                 // 일반 블록은 기존처럼 빠르게 하드드롭
                 while (gameBoard.isValidPosition(currentPiece)) {
                     currentPiece.moveDown();
+                    dropDistance++;
                 }
                 currentPiece.moveUp();
+                dropDistance--;
                 placePiece();
+            }
+
+            // 하드드롭 점수 추가
+            if (dropDistance > 0) {
+                updateScoreForHardDrop(dropDistance);
             }
         }
     }
@@ -181,25 +235,76 @@ public class GameEngine {
                 }
             }
 
+            // 마지막 블록 위치 저장 (가장 오른쪽 열)
+            int maxCol = -1;
+            int[][] shape = currentPiece.getShape();
+            int x = currentPiece.getX();
+            for (int row = 0; row < shape.length; row++) {
+                for (int col = 0; col < shape[row].length; col++) {
+                    if (shape[row][col] != 0) {
+                        int boardCol = x + col;
+                        if (boardCol > maxCol) {
+                            maxCol = boardCol;
+                        }
+                    }
+                }
+            }
+            lastPlacedBlockCol = Math.max(0, Math.min(maxCol, GameBoard.BOARD_WIDTH - 1));
+
             // 블록을 보드에 배치
             gameBoard.placePiece(currentPiece);
 
             // 아이템 효과 처리 (LINE_CLEAR 아이템이 있으면 즉시 줄 삭제)
             int itemClearedLines = gameBoard.processItemEffects(currentPiece);
+            
+            // 일반 줄 삭제는 하지 않음 - 애니메이션 처리를 위해 별도로 호출
+            // int normalClearedLines = gameBoard.clearLines();
 
-            // 일반 줄 삭제 (꽉 찬 줄)
-            int normalClearedLines = gameBoard.clearLines();
-
-            // 총 삭제된 줄 수 (아이템 + 일반)
-            int totalClearedLines = itemClearedLines + normalClearedLines;
-            updateScore(totalClearedLines);
+            // 아이템으로 삭제된 줄만 점수 업데이트
+            if (itemClearedLines > 0) {
+                updateScore(itemClearedLines);
+            }
 
             spawnNewPiece();
 
+            // 공격 블록이 추가된 후에도 게임 오버 체크
             if (!gameBoard.isValidPosition(currentPiece)) {
                 stopGame();
             }
+            
+            // 블록 배치 후 콜백 호출 (대전 모드 공격 적용용)
+            if (onPiecePlacedCallback != null) {
+                onPiecePlacedCallback.run();
+            }
         }
+    }
+    
+    /**
+     * 블록 배치 후 콜백 설정 (대전 모드 공격 적용용)
+     */
+    public void setOnPiecePlacedCallback(Runnable callback) {
+        this.onPiecePlacedCallback = callback;
+    }
+    
+    /**
+     * 줄 삭제를 수동으로 처리 (애니메이션 후 호출)
+     */
+    public void clearLinesManually() {
+        int normalClearedLines = gameBoard.clearLines();
+        if (normalClearedLines > 0) {
+            updateScore(normalClearedLines);
+            // 줄이 삭제되었을 때 콜백 호출
+            if (onLinesClearedCallback != null) {
+                onLinesClearedCallback.accept(normalClearedLines);
+            }
+        }
+    }
+
+    /**
+     * 줄 삭제 콜백 설정
+     */
+    public void setOnLinesClearedCallback(java.util.function.Consumer<Integer> callback) {
+        this.onLinesClearedCallback = callback;
     }
 
     private void spawnNewPiece() {
@@ -223,6 +328,32 @@ public class GameEngine {
         if (shouldHaveItem && nextPiece.hasItem()) {
             linesClearedSinceLastItem = 0;
         }
+    }
+
+    private void updateScoreForSoftDrop() {
+        int base = 1;
+        int bonus = getFallSpeedBonusMultiplier();
+
+        int softDropScore = base * bonus;
+        
+        if (isDoubleScoreActive) {
+            softDropScore *= 2;
+        }
+
+        score += softDropScore;
+    }
+
+    private void updateScoreForHardDrop(int dropDistance) {
+        int basePerCell = 2;
+        int bonus = getFallSpeedBonusMultiplier();
+
+        int hardDropScore = dropDistance * basePerCell * bonus;
+
+        if (isDoubleScoreActive) {
+            hardDropScore *= 2;
+        }
+
+        score += hardDropScore;
     }
 
     private void updateScore(int clearedLines) {
@@ -273,6 +404,13 @@ public class GameEngine {
 
     public GameBoard getGameBoard() {
         return gameBoard;
+    }
+    
+    /**
+     * 줄 삭제로 인한 점수 업데이트 (UI에서 직접 호출)
+     */
+    public void updateScoreForClear(int clearedLines) {
+        updateScore(clearedLines);
     }
 
     public Piece getCurrentPiece() {
@@ -418,5 +556,119 @@ public class GameEngine {
         if (shouldHaveItem && nextPiece.hasItem()) {
             linesClearedSinceLastItem = 0;
         }
+    }
+    
+    /**
+     * 삭제될 줄들의 행 번호를 반환 (애니메이션용)
+     */
+    public java.util.List<Integer> getFullLines() {
+        return gameBoard.getFullLines();
+    }
+    
+    /**
+     * 마지막으로 배치된 블록의 열 위치 반환 (공격 메커니즘용)
+     */
+    public int getLastPlacedBlockCol() {
+        return lastPlacedBlockCol;
+    }
+    
+    /**
+     * 현재 블록이 착지할 위치의 블록을 반환
+     * @return 착지할 위치의 블록, 블록이 없으면 null
+     */
+    public Piece getLandingPiece() {
+        if (currentPiece == null) {
+            return null;
+        }
+        
+        // 블록의 복사본을 만들어서 시뮬레이션
+        Piece testPiece = currentPiece.copy();
+        
+        // 블록을 아래로 내려가면서 착지 위치 찾기
+        while (gameBoard.isValidPosition(testPiece)) {
+            testPiece.moveDown();
+        }
+        // 유효하지 않은 위치가 되었으므로 한 칸 위로 올려서 착지 위치로 설정
+        testPiece.moveUp();
+        
+        return testPiece;
+    }
+    
+    /**
+     * 현재 블록이 착지할 위치를 계산하여 반환
+     * 블록의 양 끝 열에서 착지할 행을 계산
+     * @return int 배열 [왼쪽 끝 열의 착지 행, 오른쪽 끝 열의 착지 행], 블록이 없으면 null
+     */
+    public int[] getLandingPositions() {
+        Piece landingPiece = getLandingPiece();
+        if (landingPiece == null) {
+            return null;
+        }
+        
+        int[][] shape = landingPiece.getShape();
+        int pieceX = landingPiece.getX();
+        
+        // 블록의 양 끝 열 찾기
+        int minCol = Integer.MAX_VALUE;
+        int maxCol = Integer.MIN_VALUE;
+        
+        for (int row = 0; row < shape.length; row++) {
+            for (int col = 0; col < shape[row].length; col++) {
+                if (shape[row][col] != 0) {
+                    int boardCol = pieceX + col;
+                    minCol = Math.min(minCol, boardCol);
+                    maxCol = Math.max(maxCol, boardCol);
+                }
+            }
+        }
+        
+        if (minCol == Integer.MAX_VALUE || maxCol == Integer.MIN_VALUE) {
+            return null;
+        }
+        
+        // 착지 위치에서 각 열의 행 계산
+        int leftLandingRow = calculateRowInCol(minCol, landingPiece);
+        int rightLandingRow = calculateRowInCol(maxCol, landingPiece);
+        
+        return new int[]{leftLandingRow, rightLandingRow};
+    }
+    
+    /**
+     * 착지 위치에서 특정 열의 행을 계산
+     * @param col 계산할 열
+     * @param piece 착지한 블록
+     * @return 해당 열에서 가장 아래 블록의 행
+     */
+    private int calculateRowInCol(int col, Piece piece) {
+        int[][] shape = piece.getShape();
+        int pieceX = piece.getX();
+        int pieceY = piece.getY();
+        
+        // 해당 열에 있는 블록 중 가장 아래쪽 행 찾기
+        int maxRow = -1;
+        for (int row = 0; row < shape.length; row++) {
+            for (int c = 0; c < shape[row].length; c++) {
+                if (shape[row][c] != 0 && (pieceX + c) == col) {
+                    maxRow = Math.max(maxRow, row);
+                }
+            }
+        }
+        
+        if (maxRow == -1) {
+            return -1;
+        }
+        
+        // 착지 위치에서의 행 계산
+        int landingRow = pieceY + maxRow;
+        
+        // 보드 범위 체크
+        if (landingRow < 0) {
+            return 0;
+        }
+        if (landingRow >= GameBoard.BOARD_HEIGHT) {
+            return GameBoard.BOARD_HEIGHT - 1;
+        }
+        
+        return landingRow;
     }
 }

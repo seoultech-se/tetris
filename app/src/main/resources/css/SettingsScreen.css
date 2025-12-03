@@ -129,3 +129,48 @@
     -fx-background-color: #ffffff;
 }
 
+.settings-content {
+    -fx-padding: 50 50 50 50;
+    -fx-spacing: 20px;
+    -fx-background-color: #000000;
+}
+
+.settings-content.compact {
+    -fx-padding: 30 20 30 20;
+    -fx-spacing: 12px;
+}
+
+.settings-content.compact .section-label {
+    -fx-font-size: 20px;
+}
+
+.settings-content.compact .label {
+    -fx-font-size: 14px;
+}
+
+.settings-content.compact .text-field {
+    -fx-font-size: 16px;
+}
+
+.settings-content.compact .combo-box {
+    -fx-font-size: 14px;
+}
+
+.settings-content.compact .check-box {
+    -fx-font-size: 16px;
+}
+
+.settings-content.compact .button {
+    -fx-pref-width: 160px;
+    -fx-pref-height: 48px;
+    -fx-font-size: 16px;
+}
+
+.settings-root {
+    -fx-background-color: #000000;
+}
+
+.settings-root .viewport {
+    -fx-background-color: #000000;
+}
+

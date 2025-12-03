@@ -1,0 +1,162 @@
+/* BattleGameScreen 스타일 시트 */
+
+/* 전체 폰트 설정 */
+.root {
+    -fx-font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", sans-serif;
+    -fx-font-weight: bold;
+}
+
+/* 메인 컨테이너 */
+.main-container {
+    -fx-background-color: #000000;
+    -fx-padding: 15px;
+}
+
+/* 플레이어 컨테이너 */
+.player-container {
+    -fx-background-color: #111111;
+    -fx-padding: 10px;
+    -fx-border-color: #333333;
+    -fx-border-width: 2px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+}
+
+/* 플레이어 제목 */
+.player-title {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+/* 게임 캔버스 */
+.game-canvas {
+    -fx-border-color: #ffffff;
+    -fx-border-width: 2px;
+    -fx-border-radius: 4px;
+}
+
+/* 다음 블록 캔버스 */
+.next-piece-canvas {
+    -fx-border-color: #666666;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px;
+    -fx-background-color: #000000;
+}
+
+/* 넘어가는 줄 캔버스 */
+.incoming-canvas {
+    -fx-border-color: #ff6666;
+    -fx-border-width: 2px;
+    -fx-border-radius: 4px;
+    -fx-background-color: #000000;
+}
+
+/* 미리보기 라벨 */
+.preview-label {
+    -fx-text-fill: #cccccc;
+    -fx-font-size: 10px;
+}
+
+/* 정보 박스 */
+.info-box {
+    -fx-background-color: #1a1a1a;
+    -fx-padding: 8px;
+    -fx-border-color: #444444;
+    -fx-border-width: 1px;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+}
+
+/* 점수 제목 */
+.score-title {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+/* 점수 값 */
+.score-value {
+    -fx-text-fill: #00ff00;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+/* 게임 정보 라벨 */
+.game-info-label {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+/* 중앙 정보 영역 */
+.center-info {
+    -fx-background-color: #0a0a0a;
+    -fx-padding: 15px;
+    -fx-border-color: #555555;
+    -fx-border-width: 2px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+}
+
+/* 타이머 라벨 */
+.timer-label {
+    -fx-text-fill: #ffff00;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+/* 랙 경고 라벨 */
+.lag-warning {
+    -fx-text-fill: #ff6600;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-padding: 5px 10px;
+    -fx-background-color: rgba(255, 102, 0, 0.2);
+    -fx-border-color: #ff6600;
+    -fx-border-width: 1px;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+}
+
+.lag-warning.critical {
+    -fx-text-fill: #ff0000;
+    -fx-background-color: rgba(255, 0, 0, 0.3);
+    -fx-border-color: #ff0000;
+}
+
+/* 승자 라벨 */
+.winner-label {
+    -fx-text-fill: #00ff00;
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-min-width: 200px;
+    -fx-pref-width: 200px;
+    -fx-alignment: center;
+}
+
+/* 버튼 스타일 */
+.button {
+    -fx-pref-width: 100px;
+    -fx-pref-height: 35px;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-background-color: #000000;
+    -fx-text-fill: #ffffff;
+    -fx-border-color: #555555;
+    -fx-border-width: 1px;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+}
+
+.button:hover {
+    -fx-background-color: #111111;
+    -fx-border-color: #777777;
+}
+
+.button:pressed {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #000000;
+    -fx-border-color: #ffffff;
+}
+

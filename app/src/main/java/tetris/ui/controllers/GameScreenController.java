@@ -9,11 +9,11 @@ import javafx.scene.paint.Color;
 import javafx.animation.AnimationTimer;
 import tetris.ui.SceneManager;
 import tetris.ui.SettingsManager;
+import tetris.ui.MusicManager;
 import tetris.game.GameEngine;
 import tetris.game.GameBoard;
 import tetris.game.Piece;
 import tetris.game.ItemType;
-
 import java.net.URL;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
@@ -43,6 +43,9 @@ public class GameScreenController implements Initializable {
     private Label skipNotificationLabel;
 
     @FXML
+    private Label pauseStatusLabel;
+
+    @FXML
     private Canvas nextPieceCanvas;
 
     private SceneManager sceneManager;
@@ -52,8 +55,16 @@ public class GameScreenController implements Initializable {
     private long lastUpdateTime = 0;
     private long fallSpeed = 1_000_000_000; // 1 second in nanoseconds
 
-    // 블록 크기와 색상 설정 (ColorBlind Safe 팔레트)
-    private static final int BLOCK_SIZE = 25;
+    // 줄 삭제 애니메이션 관련
+    private java.util.List<Integer> linesToClear = null;
+    private long clearAnimationStartTime = 0;
+    private static final long CLEAR_ANIMATION_DURATION = 50_000_000; // 0.05초 (시각적 효과만)
+    private boolean isAnimatingClear = false;
+
+    // 블록 크기 (화면 크기에 따라 동적으로 설정)
+    private int BLOCK_SIZE = 30;
+    
+    // 블록 색상 설정 (ColorBlind Safe 팔레트)
     private static final Color[] PIECE_COLORS = {
         Color.BLACK,
         Color.web("#56B4E9"),          // 1 - I 피스 (하늘색)
@@ -85,6 +96,23 @@ public class GameScreenController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         // 설정 매니저 초기화
         settingsManager = SettingsManager.getInstance();
+       
+         // 화면 크기에 따라 블록 크기 설정
+        String screenSize = settingsManager.getScreenSize();
+        switch (screenSize) {
+            case "작게":
+                BLOCK_SIZE = 20; // 작게: 10칸 × 20 = 200px, 20칸 × 20 = 400px
+                break;
+            case "중간":
+                BLOCK_SIZE = 25; // 중간: 10칸 × 25 = 250px, 20칸 × 25 = 500px
+                break;
+            case "크게":
+                BLOCK_SIZE = 30; // 크게: 10칸 × 30 = 300px, 20칸 × 30 = 600px
+                break;
+            default:
+                BLOCK_SIZE = 25;
+                break;
+        }
         
         // 게임 엔진 초기화
         gameEngine = new GameEngine();
@@ -99,6 +127,9 @@ public class GameScreenController implements Initializable {
                 }
             });
         }
+        
+        // 게임 브금 재생
+        MusicManager.getInstance().playGameMusic();
         
         startGameLoop();
         gameEngine.startGame();
@@ -121,6 +152,15 @@ public class GameScreenController implements Initializable {
         // Scene에 키 이벤트 핸들러 등록
         if (gameCanvas != null && gameCanvas.getScene() != null) {
             gameCanvas.getScene().setOnKeyPressed(event -> {
+
+                                // ESC 키로 일시정지/재개
+                if (event.getCode() == javafx.scene.input.KeyCode.ESCAPE) {
+                    if (gameEngine != null && gameEngine.isGameRunning()) {
+                        onPause();
+                        event.consume();
+                    }
+                    return;
+                }
                 if (gameEngine != null && gameEngine.isGameRunning() && !gameEngine.isPaused()) {
                     // 게임 진행 중에만 키 입력을 게임 엔진으로 전달
                     gameEngine.handleKeyPress(event.getCode());
@@ -167,11 +207,58 @@ public class GameScreenController implements Initializable {
                     return;
                 }
 
+                // 삭제 애니메이션 처리 (시각적 효과만, 실제 삭제는 즉시 실행됨)
+                if (isAnimatingClear) {
+                    long elapsed = now - clearAnimationStartTime;
+                    if (elapsed >= CLEAR_ANIMATION_DURATION) {
+                        // 애니메이션 종료
+                        isAnimatingClear = false;
+                        linesToClear = null;
+                    }
+                }
+
                 if (now - lastUpdateTime >= fallSpeed) {
                     if (gameEngine.isGameRunning() && !gameEngine.isPaused()) {
                         gameEngine.movePieceDown();
+                        
+                        // 블록이 떨어진 후 삭제할 줄이 있는지 확인
+                        java.util.List<Integer> fullLines = gameEngine.getFullLines();
+                        if (!fullLines.isEmpty()) {
+                            // 즉시 줄 삭제
+                            int linesCleared = gameEngine.getGameBoard().clearLines();
+                            if (linesCleared > 0) {
+                                gameEngine.updateScoreForClear(linesCleared);
+                                // 줄 삭제 직후 즉시 효과음 재생
+                                MusicManager.getInstance().playRemoveBlockSound();
+                            }
+                            
+                            // 애니메이션 시작 (시각적 효과만)
+                            linesToClear = fullLines;
+                            isAnimatingClear = true;
+                            clearAnimationStartTime = now;
+                            lastUpdateTime = now; // 타이머 리셋
+                        }
                     }
                     lastUpdateTime = now;
+                }
+                
+                // 하드드롭 직후 또는 매 프레임마다 줄 삭제 확인 (타이밍 외)
+                if (!isAnimatingClear && gameEngine.isGameRunning() && !gameEngine.isPaused()) {
+                    java.util.List<Integer> fullLines = gameEngine.getFullLines();
+                    if (!fullLines.isEmpty()) {
+                        // 즉시 줄 삭제
+                        int linesCleared = gameEngine.getGameBoard().clearLines();
+                        if (linesCleared > 0) {
+                            gameEngine.updateScoreForClear(linesCleared);
+                            // 줄 삭제 직후 즉시 효과음 재생
+                            MusicManager.getInstance().playRemoveBlockSound();
+                        }
+                        
+                        // 애니메이션 시작 (시각적 효과만)
+                        linesToClear = fullLines;
+                        isAnimatingClear = true;
+                        clearAnimationStartTime = now;
+                    }
                 }
 
                 // 점수 2배 상태 업데이트
@@ -188,7 +275,8 @@ public class GameScreenController implements Initializable {
 
     // 블록 낙하 속도 조절
     private void updateFallSpeed() {
-        fallSpeed = (long) (1_000_000_000 / (1 + 0.1 * gameEngine.getLevel()));
+        fallSpeed = (long) (1_000_000_000 * Math.pow(0.9, gameEngine.getLevel() - 1));
+        gameEngine.setFallSpeed(fallSpeed);
     }
 
     private void renderGame() {
@@ -199,6 +287,9 @@ public class GameScreenController implements Initializable {
         // 배경을 검은색으로 설정
         gc.setFill(Color.BLACK);
         gc.fillRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
+        
+        // 회색 격자 표시
+        drawGrid(gc);
 
         // 게임 보드 렌더링
         GameBoard board = gameEngine.getGameBoard();
@@ -207,19 +298,48 @@ public class GameScreenController implements Initializable {
                 int cellValue = board.getCell(row, col);
                 if (cellValue > 0) {
                     ItemType itemType = board.getItemAt(row, col);
-                    renderBlock(gc, col * BLOCK_SIZE, row * BLOCK_SIZE, PIECE_COLORS[cellValue], cellValue, itemType);
+                    
+                    // 삭제 애니메이션 중인 줄이면 하얀색으로 표시
+                    if (isAnimatingClear && linesToClear != null && linesToClear.contains(row)) {
+                        renderBlock(gc, col * BLOCK_SIZE, row * BLOCK_SIZE, Color.WHITE, cellValue, itemType);
+                    } else {
+                        renderBlock(gc, col * BLOCK_SIZE, row * BLOCK_SIZE, PIECE_COLORS[cellValue], cellValue, itemType);
+                    }
                 }
             }
         }
 
-        // 현재 피스 렌더링
-        Piece currentPiece = gameEngine.getCurrentPiece();
-        if (currentPiece != null) {
-            renderPiece(gc, currentPiece);
+        // 현재 피스 렌더링 (애니메이션 중이 아닐 때만)
+        if (!isAnimatingClear) {
+            Piece currentPiece = gameEngine.getCurrentPiece();
+            if (currentPiece != null) {
+                renderPiece(gc, currentPiece);
+                // 착지 위치에 형광 초록색 표시
+                renderLandingIndicator(gc, currentPiece);
+            }
         }
 
         // 테두리 렌더링
         renderBorder(gc);
+    }
+
+    // 색약모드용 보드 격자선 렌더링
+    private void drawGrid(GraphicsContext gc) {
+        gc.setStroke(Color.web("#444444"));
+        gc.setLineWidth(1);
+        double width = gameCanvas.getWidth();
+        double height = gameCanvas.getHeight();
+
+        // 세로선
+        for (int x = 0; x <= GameBoard.BOARD_WIDTH; x++) {
+            double px = x * BLOCK_SIZE;
+            gc.strokeLine(px, 0, px, height);
+        }
+        // 가로선
+        for (int y = 0; y <= GameBoard.BOARD_HEIGHT; y++) {
+            double py = y * BLOCK_SIZE;
+            gc.strokeLine(0, py, width, py);
+        }
     }
 
     private void renderNextPiece() {
@@ -269,11 +389,8 @@ public class GameScreenController implements Initializable {
     }
 
     private void renderBlock(GraphicsContext gc, int x, int y, Color color, int pieceType, ItemType itemType) {
-        // 접근성 모드가 켜져 있으면 색 대신 심볼로 채운다
-        if (settingsManager != null && settingsManager.isAccessibilityModeEnabled()) {
-            // 배경을 검게 유지
-            gc.setFill(Color.BLACK);
-            gc.fillRect(x, y, BLOCK_SIZE, BLOCK_SIZE);
+        // 색약모드가 켜져 있으면 색 대신 심볼로 채운다
+        if (settingsManager != null && settingsManager.isColorBlindModeEnabled()) {
 
             String symbol = "?";
             if (pieceType >= 0 && pieceType < PIECE_SYMBOLS.length) {
@@ -341,10 +458,51 @@ public class GameScreenController implements Initializable {
         }
     }
     
-    
+    /**
+     * 블록의 착지 위치에 형광 초록색으로 블록 전체 표시
+     */
+    private void renderLandingIndicator(GraphicsContext gc, Piece piece) {
+        if (piece == null || gameEngine == null) {
+            return;
+        }
+        
+        // 착지할 위치의 블록 가져오기
+        Piece landingPiece = gameEngine.getLandingPiece();
+        if (landingPiece == null) {
+            return;
+        }
+        
+        // 형광 초록색 설정 (반투명)
+        Color indicatorColor = Color.web("#00FF00", 0.5); // 형광 초록색, 50% 투명도
+        gc.setFill(indicatorColor);
+        gc.setStroke(Color.web("#00FF00")); // 테두리는 불투명
+        gc.setLineWidth(2);
+        
+        // 착지할 블록의 shape를 형광 초록색으로 표시
+        int[][] shape = landingPiece.getShape();
+        int pieceX = landingPiece.getX();
+        int pieceY = landingPiece.getY();
+        
+        for (int row = 0; row < shape.length; row++) {
+            for (int col = 0; col < shape[row].length; col++) {
+                if (shape[row][col] != 0) {
+                    int x = (pieceX + col) * BLOCK_SIZE;
+                    int y = (pieceY + row) * BLOCK_SIZE;
+                    
+                    // 보드 범위 체크
+                    if (x >= 0 && x < gameCanvas.getWidth() && 
+                        y >= 0 && y < gameCanvas.getHeight()) {
+                        // 반투명한 초록색 사각형 그리기
+                        gc.fillRect(x, y, BLOCK_SIZE, BLOCK_SIZE);
+                        gc.strokeRect(x, y, BLOCK_SIZE, BLOCK_SIZE);
+                    }
+                }
+            }
+        }
+    }
 
     private void renderBorder(GraphicsContext gc) {
-        // 접근성 모드에서도 게임 보드 외곽 테두리 표시
+        // 색약모드에서도 게임 보드 외곽 테두리 표시
         gc.setStroke(Color.WHITE);
         gc.setLineWidth(3);
         gc.strokeRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
@@ -365,6 +523,15 @@ public class GameScreenController implements Initializable {
     private void onPause() {
         if (gameEngine != null) {
             gameEngine.pauseGame();
+            boolean isPaused = gameEngine.isPaused();
+            if (pauseStatusLabel != null) {
+                if (isPaused) {
+                    pauseStatusLabel.setText("일시 정지");
+                    pauseStatusLabel.setStyle("-fx-text-fill: #ffff00; -fx-font-weight: bold;");
+                } else {
+                    pauseStatusLabel.setText("");
+                }
+            }
         }
     }
 
@@ -408,7 +575,7 @@ public class GameScreenController implements Initializable {
                     nextItemLabel.setText("Next Item: Ready!");
                     nextItemLabel.setStyle("-fx-text-fill: #00FF00; -fx-font-weight: bold;");
                 } else {
-                    nextItemLabel.setText("Next Item: " + linesUntilItem + " lines");
+                    nextItemLabel.setText("Next Item: " + linesUntilItem + " Lines");
                     nextItemLabel.setStyle("-fx-text-fill: #FFFFFF;");
                 }
             } else {

@@ -32,3 +32,184 @@
     -fx-border-color: #ffffff;
 }
 
+.button:focused {
+    -fx-background-color: #333333;
+    -fx-border-color: #00ff00;
+    -fx-border-width: 3px;
+    -fx-text-fill: #00ff00;
+}
+
+/* 메뉴 버튼 기본 스타일 */
+.menu-button {
+    -fx-pref-width: 200px;
+    -fx-pref-height: 50px;
+    -fx-font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", sans-serif;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-background-color: #000000;
+    -fx-text-fill: #ffffff;
+    -fx-border-color: #ffffff;
+    -fx-border-width: 2px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+}
+
+.menu-button:hover {
+    -fx-background-color: #111111;
+    -fx-border-color: #ffffff;
+}
+
+.menu-button:pressed {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #000000;
+    -fx-border-color: #ffffff;
+}
+
+.menu-button:focused {
+    -fx-background-color: #333333;
+    -fx-border-color: #00ff00;
+    -fx-border-width: 3px;
+    -fx-text-fill: #00ff00;
+}
+
+.menu-container {
+    -fx-spacing: 30px;
+}
+
+.menu-row {
+    -fx-spacing: 16px;
+}
+
+.menu-medium {
+    -fx-spacing: 24px;
+    -fx-padding: 40px 30px 35px 30px;
+}
+
+.menu-medium .menu-button {
+    -fx-pref-width: 170px;
+    -fx-pref-height: 48px;
+    -fx-font-size: 17px;
+}
+
+.menu-compact {
+    -fx-spacing: 18px;
+    -fx-padding: 30px 20px 25px 20px;
+}
+
+.menu-compact .menu-row {
+    -fx-spacing: 10px;
+}
+
+.menu-compact .menu-button {
+    -fx-pref-width: 140px;
+    -fx-pref-height: 44px;
+    -fx-font-size: 16px;
+}
+
+/* 각 버튼별 색상 */
+.double-button-row {
+    -fx-spacing: 15px;
+}
+
+.normal-mode-button {
+    -fx-background-color: #3498db;
+}
+
+.normal-mode-button:hover {
+    -fx-background-color: #2980b9;
+}
+
+.item-mode-button {
+    -fx-background-color: #e74c3c;
+}
+
+.item-mode-button:hover {
+    -fx-background-color: #c0392b;
+}
+
+.score-board-button {
+    -fx-background-color: #9b59b6;
+}
+
+.score-board-button:hover {
+    -fx-background-color: #8e44ad;
+}
+
+.settings-button {
+    -fx-background-color: #f39c12;
+}
+
+.settings-button:hover {
+    -fx-background-color: #e67e22;
+}
+
+.exit-button {
+    -fx-background-color: #95a5a6;
+}
+
+.exit-button:hover {
+    -fx-background-color: #7f8c8d;
+}
+
+/* PVP 네트워크 선택 화면 스타일 */
+.title-label {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+}
+
+.info-label {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: normal;
+}
+
+.ip-label {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+    -fx-background-color: rgba(0, 0, 0, 0.5);
+    -fx-padding: 10px 20px;
+    -fx-background-radius: 5px;
+}
+
+.status-label {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: normal;
+}
+
+.ip-field {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #000000;
+    -fx-border-color: #555555;
+    -fx-border-width: 2px;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+    -fx-padding: 5px 10px;
+}
+
+.ip-field:focused {
+    -fx-border-color: #00ff00;
+    -fx-border-width: 3px;
+}
+
+/* RadioButton 스타일 */
+.radio-button {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 16px;
+}
+
+.radio-button .radio {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #555555;
+    -fx-border-width: 2px;
+    -fx-border-radius: 10px;
+}
+
+.radio-button:selected .radio {
+    -fx-background-color: #00ff00;
+    -fx-border-color: #00ff00;
+}
+
+.radio-button .dot {
+    -fx-background-color: #00ff00;
+    -fx-background-insets: 0;
+}
+
