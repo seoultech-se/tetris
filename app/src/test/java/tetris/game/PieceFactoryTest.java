@@ -73,5 +73,101 @@ class PieceFactoryTest {
             }
         }
     }
+
+    @Test
+    void testPieceGenerationProbability_Normal() {
+        SettingsManager.getInstance().setDifficulty("Normal");
+        final int ITERATIONS = 10000;
+        final double[] EXPECTED_PROBABILITIES = {
+            10.0 / 70.0, // I
+            10.0 / 70.0, // O
+            10.0 / 70.0, // T
+            10.0 / 70.0, // S
+            10.0 / 70.0, // Z
+            10.0 / 70.0, // J
+            10.0 / 70.0  // L
+        };
+        final double DELTA = 0.05; // 5%p 오차
+
+        java.util.Map<Integer, Integer> counts = new java.util.HashMap<>();
+        for (int i = 1; i <= 7; i++) {
+            counts.put(i, 0);
+        }
+
+        for (int i = 0; i < ITERATIONS; i++) {
+            Piece piece = PieceFactory.createRandomPiece(false);
+            counts.put(piece.getType(), counts.get(piece.getType()) + 1);
+        }
+
+        for (int type = 1; type <= 7; type++) {
+            double actualProbability = (double) counts.get(type) / ITERATIONS;
+            assertEquals(EXPECTED_PROBABILITIES[type - 1], actualProbability, DELTA,
+                "Type " + type + " probability is out of range for Normal difficulty.");
+        }
+    }
+
+    @Test
+    void testPieceGenerationProbability_Easy() {
+        SettingsManager.getInstance().setDifficulty("Easy");
+        final int ITERATIONS = 10000;
+        final double[] EXPECTED_PROBABILITIES = {
+            12.0 / 72.0, // I
+            10.0 / 72.0, // O
+            10.0 / 72.0, // T
+            10.0 / 72.0, // S
+            10.0 / 72.0, // Z
+            10.0 / 72.0, // J
+            10.0 / 72.0  // L
+        };
+        final double DELTA = 0.05; // 5%p 오차
+
+        java.util.Map<Integer, Integer> counts = new java.util.HashMap<>();
+        for (int i = 1; i <= 7; i++) {
+            counts.put(i, 0);
+        }
+
+        for (int i = 0; i < ITERATIONS; i++) {
+            Piece piece = PieceFactory.createRandomPiece(false);
+            counts.put(piece.getType(), counts.get(piece.getType()) + 1);
+        }
+
+        for (int type = 1; type <= 7; type++) {
+            double actualProbability = (double) counts.get(type) / ITERATIONS;
+            assertEquals(EXPECTED_PROBABILITIES[type - 1], actualProbability, DELTA,
+                "Type " + type + " probability is out of range for Easy difficulty.");
+        }
+    }
+
+    @Test
+    void testPieceGenerationProbability_Hard() {
+        SettingsManager.getInstance().setDifficulty("Hard");
+        final int ITERATIONS = 10000;
+        final double[] EXPECTED_PROBABILITIES = {
+            8.0 / 68.0,  // I
+            10.0 / 68.0, // O
+            10.0 / 68.0, // T
+            10.0 / 68.0, // S
+            10.0 / 68.0, // Z
+            10.0 / 68.0, // J
+            10.0 / 68.0  // L
+        };
+        final double DELTA = 0.05; // 5%p 오차
+
+        java.util.Map<Integer, Integer> counts = new java.util.HashMap<>();
+        for (int i = 1; i <= 7; i++) {
+            counts.put(i, 0);
+        }
+
+        for (int i = 0; i < ITERATIONS; i++) {
+            Piece piece = PieceFactory.createRandomPiece(false);
+            counts.put(piece.getType(), counts.get(piece.getType()) + 1);
+        }
+
+        for (int type = 1; type <= 7; type++) {
+            double actualProbability = (double) counts.get(type) / ITERATIONS;
+            assertEquals(EXPECTED_PROBABILITIES[type - 1], actualProbability, DELTA,
+                "Type " + type + " probability is out of range for Hard difficulty.");
+        }
+    }
 }
 

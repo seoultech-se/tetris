@@ -176,6 +176,68 @@ class BattleModeSelectionControllerTest extends JavaFXTestBase {
         });
     }
 
+    @Test
+    void testItemBattleNavigates() throws Exception {
+        runOnFxThreadAndWait(() -> {
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/BattleModeSelection.fxml"));
+                loader.load();
+                BattleModeSelectionController controller = loader.getController();
+
+                TestSceneManager sceneManager = new TestSceneManager(new Stage());
+                controller.setSceneManager(sceneManager);
+
+                invoke(controller, "onItemBattle");
+                assertEquals("ITEM", sceneManager.lastBattleMode);
+            } catch (Exception e) {
+                fail("Item battle navigation failed: " + e.getMessage());
+            }
+        });
+    }
+
+    @Test
+    void testTimeLimitBattleNavigates() throws Exception {
+        runOnFxThreadAndWait(() -> {
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/BattleModeSelection.fxml"));
+                loader.load();
+                BattleModeSelectionController controller = loader.getController();
+
+                TestSceneManager sceneManager = new TestSceneManager(new Stage());
+                controller.setSceneManager(sceneManager);
+
+                invoke(controller, "onTimeLimitBattle");
+                assertEquals("TIME_LIMIT", sceneManager.lastBattleMode);
+            } catch (Exception e) {
+                fail("Time-limit battle navigation failed: " + e.getMessage());
+            }
+        });
+    }
+
+    @Test
+    void testSelectCurrentButton_ItemBattle() throws Exception {
+        runOnFxThreadAndWait(() -> {
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/BattleModeSelection.fxml"));
+                loader.load();
+                BattleModeSelectionController controller = loader.getController();
+                
+                TestSceneManager sceneManager = new TestSceneManager(new Stage());
+                controller.setSceneManager(sceneManager);
+
+                // Set current index to item battle button (index 1)
+                java.lang.reflect.Field currentIndexField = BattleModeSelectionController.class.getDeclaredField("currentIndex");
+                currentIndexField.setAccessible(true);
+                currentIndexField.set(controller, 1);
+
+                invoke(controller, "selectCurrentButton");
+                assertEquals("ITEM", sceneManager.lastBattleMode);
+            } catch (Exception e) {
+                fail("Select current button (item) failed: " + e.getMessage());
+            }
+        });
+    }
+
     private void invoke(BattleModeSelectionController controller, String methodName) throws Exception {
         var method = BattleModeSelectionController.class.getDeclaredMethod(methodName);
         method.setAccessible(true);

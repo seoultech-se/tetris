@@ -4,6 +4,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Button;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
+import tetris.network.GameServer;
 import tetris.ui.SceneManager;
 import tetris.ui.SettingsManager;
 
@@ -350,6 +351,82 @@ class PVPModeSelectionControllerTest extends JavaFXTestBase {
     }
 
     @Test
+    void testSelectCurrentButton_ServerMode() throws Exception {
+        runOnFxThreadAndWait(() -> {
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/PVPModeSelection.fxml"));
+                loader.load();
+                
+                PVPModeSelectionController controller = loader.getController();
+                
+                TestSceneManager sceneManager = new TestSceneManager(new Stage());
+                controller.setSceneManager(sceneManager);
+                
+                Field currentIndexField = PVPModeSelectionController.class.getDeclaredField("currentIndex");
+                currentIndexField.setAccessible(true);
+                currentIndexField.set(controller, 0); // 0 is serverButton
+                
+                Method selectCurrentButton = PVPModeSelectionController.class.getDeclaredMethod("selectCurrentButton");
+                selectCurrentButton.setAccessible(true);
+                selectCurrentButton.invoke(controller);
+                
+                assertTrue(sceneManager.pvpServerWaitingShown, "PVP server waiting screen should be shown");
+                assertNotNull(sceneManager.passedInServer, "A GameServer instance should be passed");
+                ((GameServer) sceneManager.passedInServer).close(); // Clean up the server
+            } catch (Exception e) {
+                fail("Select current button server mode test failed: " + e.getMessage());
+            }
+        });
+    }
+
+    @Test
+    void testStartServer_IOException() throws Exception {
+        runOnFxThreadAndWait(() -> {
+            try (java.net.ServerSocket socket = new java.net.ServerSocket(7777)) {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/PVPModeSelection.fxml"));
+                loader.load();
+                PVPModeSelectionController controller = loader.getController();
+
+                TestSceneManager sceneManager = new TestSceneManager(new Stage());
+                controller.setSceneManager(sceneManager);
+
+                Method startServer = PVPModeSelectionController.class.getDeclaredMethod("startServer");
+                startServer.setAccessible(true);
+                startServer.invoke(controller);
+
+                assertFalse(sceneManager.pvpServerWaitingShown, "Should not navigate on server start failure");
+
+            } catch (Exception e) {
+                fail("startServer IOException test failed: " + e.getMessage());
+            }
+        });
+    }
+
+    @Test
+    void testOnServerMode_Success() throws Exception {
+        runOnFxThreadAndWait(() -> {
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/PVPModeSelection.fxml"));
+                loader.load();
+                PVPModeSelectionController controller = loader.getController();
+                
+                TestSceneManager sceneManager = new TestSceneManager(new Stage());
+                controller.setSceneManager(sceneManager);
+
+                Method onServerMode = PVPModeSelectionController.class.getDeclaredMethod("onServerMode");
+                onServerMode.setAccessible(true);
+                onServerMode.invoke(controller);
+
+                assertTrue(sceneManager.pvpServerWaitingShown, "PVP server waiting screen should be shown");
+                assertNotNull(sceneManager.passedInServer, "A GameServer instance should be passed");
+                ((GameServer) sceneManager.passedInServer).close(); // Clean up the server
+            } catch (Exception e) {
+                fail("onServerMode success test failed: " + e.getMessage());
+            }
+        });
+    }
+
+    @Test
     void testBackgroundImageSizes() throws Exception {
         runOnFxThreadAndWait(() -> {
             try {
@@ -385,6 +462,9 @@ class PVPModeSelectionControllerTest extends JavaFXTestBase {
     private static class TestSceneManager extends SceneManager {
         boolean mainMenuShown = false;
         boolean pvpClientConnectionShown = false;
+        boolean pvpServerWaitingShown = false;
+        Object passedInServer;
+
 
         TestSceneManager(Stage stage) {
             super(stage);
@@ -398,6 +478,12 @@ class PVPModeSelectionControllerTest extends JavaFXTestBase {
         @Override
         public void showPVPClientConnection() {
             pvpClientConnectionShown = true;
+        }
+
+        @Override
+        public void showPVPServerWaiting(Object server, String ip) {
+            this.pvpServerWaitingShown = true;
+            this.passedInServer = server;
         }
     }
 

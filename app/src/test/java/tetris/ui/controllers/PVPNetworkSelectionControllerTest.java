@@ -686,6 +686,86 @@ class PVPNetworkSelectionControllerTest extends JavaFXTestBase {
         verify(mockSceneManager).showPVPGameScreen(eq("ITEM"), isNull(), eq(mockClient), eq(false));
     }
 
+    @Test
+    void testOnServerMode_IOException() throws Exception {
+        // 미리 포트를 점유하여 IOException 유도
+        try (java.net.ServerSocket socket = new java.net.ServerSocket(7777)) {
+            runOnFxThreadAndWait(() -> {
+                try {
+                    FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/PVPNetworkSelection.fxml"));
+                    loader.load();
+                    PVPNetworkSelectionController controller = loader.getController();
+
+                    invoke(controller, "onServerMode");
+
+                    Label connectionStatusLabel = getNode(loader, "connectionStatusLabel");
+                    assertTrue(connectionStatusLabel.getText().contains("Server Start Failed"), "Should show error on port conflict");
+                    
+                    // 리소스 정리
+                    invoke(controller, "cleanup");
+                } catch (Exception e) {
+                    fail("Test failed: " + e.getMessage());
+                }
+            });
+        }
+    }
+
+    @Test
+    void testServerMessageHandler_onDisconnected() throws Exception {
+        Label[] statusLabelHolder = new Label[1];
+
+        runOnFxThreadAndWait(() -> {
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/PVPNetworkSelection.fxml"));
+                loader.load();
+                PVPNetworkSelectionController controller = loader.getController();
+                statusLabelHolder[0] = getNode(loader, "connectionStatusLabel");
+                
+                GameServer.MessageHandler handler = createServerMessageHandler(controller);
+                handler.onClientDisconnected();
+
+            } catch (Exception e) {
+                fail("Test setup failed: " + e.getMessage());
+            }
+        });
+
+        waitFor(150);
+
+        runOnFxThreadAndWait(() ->
+            assertEquals("Client Disconnected", statusLabelHolder[0].getText())
+        );
+    }
+    
+    @Test
+    void testClientMessageHandler_onDisconnected() throws Exception {
+        Label[] statusLabelHolder = new Label[1];
+        Button[] connectButtonHolder = new Button[1];
+
+        runOnFxThreadAndWait(() -> {
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/PVPNetworkSelection.fxml"));
+                loader.load();
+                PVPNetworkSelectionController controller = loader.getController();
+                statusLabelHolder[0] = getNode(loader, "clientStatusLabel");
+                connectButtonHolder[0] = getNode(loader, "connectButton");
+                connectButtonHolder[0].setDisable(true); // Simulate button being disabled during connection attempt
+                
+                GameClient.MessageHandler handler = createClientMessageHandler(controller);
+                handler.onDisconnected();
+
+            } catch (Exception e) {
+                fail("Test setup failed: " + e.getMessage());
+            }
+        });
+
+        waitFor(150);
+
+        runOnFxThreadAndWait(() -> {
+            assertEquals("Server Disconnected", statusLabelHolder[0].getText());
+            assertFalse(connectButtonHolder[0].isDisabled());
+        });
+    }
+
     private <T> T getNode(FXMLLoader loader, String fxId) {
         Object node = loader.getNamespace().get(fxId);
         assertNotNull(node, fxId + " should exist");
