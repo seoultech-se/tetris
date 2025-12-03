@@ -184,8 +184,7 @@ public class SceneManager {
                 }
             }
 
-            primaryStage.setScene(scene);
-            primaryStage.show();
+            applyScene(scene);
         } catch (IOException e) {
             System.err.println("Error loading scene: " + fxmlPath);
             e.printStackTrace();
@@ -218,7 +217,13 @@ public class SceneManager {
             }
 
             // 대전 모드는 화면이 넓어야 하므로 가로로 확장
-            width = width * 1.6; // 2개 보드를 표시하기 위해 넓게
+            if (screenSize.equals("작게")) {
+                width = 840; 
+            } else if (screenSize.equals("크게")) {
+                width = 1080; 
+            } else {
+                width = width * 1.6; // 중간은 기존 비율 유지
+            }
 
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
             Scene scene = new Scene(loader.load(), width, height);
@@ -238,8 +243,7 @@ public class SceneManager {
                 battleController.setBattleMode(battleMode, vsComputer);
             }
 
-            primaryStage.setScene(scene);
-            primaryStage.show();
+            applyScene(scene);
         } catch (IOException e) {
             System.err.println("Error loading battle scene: " + fxmlPath);
             e.printStackTrace();
@@ -274,7 +278,14 @@ public class SceneManager {
             }
 
             // PVP 모드는 화면이 넓어야 하므로 가로로 확장 (2개 보드 표시)
-            width = width * 1.6;
+            // 대전 모드와 동일한 크기로 설정
+            if (screenSize.equals("작게")) {
+                width = 840; 
+            } else if (screenSize.equals("크게")) {
+                width = 1080; 
+            } else {
+                width = width * 1.6; // 중간은 기존 비율 유지
+            }
 
             System.out.println("[SCENE] Loading FXML...");
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
@@ -305,8 +316,7 @@ public class SceneManager {
             }
 
             System.out.println("[SCENE] Displaying scene...");
-            primaryStage.setScene(scene);
-            primaryStage.show();
+            applyScene(scene);
             System.out.println("[SCENE] PVP scene loaded successfully");
         } catch (IOException e) {
             System.err.println("[SCENE] Error loading PVP scene: " + fxmlPath);
@@ -357,8 +367,7 @@ public class SceneManager {
                 networkController.setGameMode(gameMode);
             }
 
-            primaryStage.setScene(scene);
-            primaryStage.show();
+            applyScene(scene);
         } catch (IOException e) {
             System.err.println("Error loading PVP network selection scene: " + fxmlPath);
             e.printStackTrace();
@@ -409,8 +418,7 @@ public class SceneManager {
                 );
             }
 
-            primaryStage.setScene(scene);
-            primaryStage.show();
+            applyScene(scene);
         } catch (IOException e) {
             System.err.println("Error loading PVP server waiting scene: " + fxmlPath);
             e.printStackTrace();
@@ -462,8 +470,7 @@ public class SceneManager {
                 );
             }
 
-            primaryStage.setScene(scene);
-            primaryStage.show();
+            applyScene(scene);
         } catch (IOException e) {
             System.err.println("Error loading PVP lobby scene: " + fxmlPath);
             e.printStackTrace();
@@ -472,5 +479,17 @@ public class SceneManager {
 
     public Stage getPrimaryStage() {
         return primaryStage;
+    }
+
+    private void applyScene(Scene scene) {
+        primaryStage.setScene(scene);
+        if (!isHeadlessEnvironment()) {
+            primaryStage.show();
+        }
+    }
+
+    private boolean isHeadlessEnvironment() {
+        return Boolean.parseBoolean(System.getProperty("testfx.headless", "false"))
+            || Boolean.parseBoolean(System.getProperty("java.awt.headless", "false"));
     }
 }

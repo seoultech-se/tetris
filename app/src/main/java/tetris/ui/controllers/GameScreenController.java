@@ -9,6 +9,7 @@ import javafx.scene.paint.Color;
 import javafx.animation.AnimationTimer;
 import tetris.ui.SceneManager;
 import tetris.ui.SettingsManager;
+import tetris.ui.MusicManager;
 import tetris.game.GameEngine;
 import tetris.game.GameBoard;
 import tetris.game.Piece;
@@ -126,6 +127,9 @@ public class GameScreenController implements Initializable {
         
         startGameLoop();
         gameEngine.startGame();
+        
+        // 게임 브금 재생
+        MusicManager.getInstance().playGameMusic();
     }
 
     public void setSceneManager(SceneManager sceneManager) {
@@ -200,20 +204,14 @@ public class GameScreenController implements Initializable {
                     return;
                 }
 
-                // 삭제 애니메이션 처리 중
+                // 삭제 애니메이션 처리 (시각적 효과만, 실제 삭제는 즉시 실행됨)
                 if (isAnimatingClear) {
                     long elapsed = now - clearAnimationStartTime;
                     if (elapsed >= CLEAR_ANIMATION_DURATION) {
-                        // 애니메이션 종료, 실제로 줄 삭제
-                        gameEngine.clearLinesManually();
+                        // 애니메이션 종료
                         isAnimatingClear = false;
                         linesToClear = null;
-                        lastUpdateTime = now; // 타이머 리셋
                     }
-                    renderGame();
-                    renderNextPiece();
-                    updateUI();
-                    return;
                 }
 
                 if (now - lastUpdateTime >= fallSpeed) {
@@ -223,10 +221,15 @@ public class GameScreenController implements Initializable {
                         // 블록이 떨어진 후 삭제할 줄이 있는지 확인
                         java.util.List<Integer> fullLines = gameEngine.getFullLines();
                         if (!fullLines.isEmpty()) {
-                            // 애니메이션 시작
+                            // 즉시 줄 삭제
+                            gameEngine.clearLinesManually();
+                            // 애니메이션 시작 (시각적 효과만)
                             linesToClear = fullLines;
                             isAnimatingClear = true;
                             clearAnimationStartTime = now;
+                            // 블록 삭제 효과음 재생
+                            MusicManager.getInstance().playRemoveBlockSound();
+                            lastUpdateTime = now; // 타이머 리셋
                         }
                     }
                     lastUpdateTime = now;
@@ -259,10 +262,8 @@ public class GameScreenController implements Initializable {
         gc.setFill(Color.BLACK);
         gc.fillRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
         
-        // 색약모드에서는 회색 격자 표시
-        if (settingsManager != null && settingsManager.isColorBlindModeEnabled()) {
-            drawGrid(gc);
-        }
+        // 회색 격자 표시
+        // drawGrid(gc);
 
         // 게임 보드 렌더링
         GameBoard board = gameEngine.getGameBoard();
@@ -287,6 +288,8 @@ public class GameScreenController implements Initializable {
             Piece currentPiece = gameEngine.getCurrentPiece();
             if (currentPiece != null) {
                 renderPiece(gc, currentPiece);
+                // 착지 위치에 형광 초록색 표시
+                renderLandingIndicator(gc, currentPiece);
             }
         }
 
@@ -429,7 +432,48 @@ public class GameScreenController implements Initializable {
         }
     }
     
-    
+    /**
+     * 블록의 착지 위치에 형광 초록색으로 블록 전체 표시
+     */
+    private void renderLandingIndicator(GraphicsContext gc, Piece piece) {
+        if (piece == null || gameEngine == null) {
+            return;
+        }
+        
+        // 착지할 위치의 블록 가져오기
+        Piece landingPiece = gameEngine.getLandingPiece();
+        if (landingPiece == null) {
+            return;
+        }
+        
+        // 형광 초록색 설정 (반투명)
+        Color indicatorColor = Color.web("#00FF00", 0.5); // 형광 초록색, 50% 투명도
+        gc.setFill(indicatorColor);
+        gc.setStroke(Color.web("#00FF00")); // 테두리는 불투명
+        gc.setLineWidth(2);
+        
+        // 착지할 블록의 shape를 형광 초록색으로 표시
+        int[][] shape = landingPiece.getShape();
+        int pieceX = landingPiece.getX();
+        int pieceY = landingPiece.getY();
+        
+        for (int row = 0; row < shape.length; row++) {
+            for (int col = 0; col < shape[row].length; col++) {
+                if (shape[row][col] != 0) {
+                    int x = (pieceX + col) * BLOCK_SIZE;
+                    int y = (pieceY + row) * BLOCK_SIZE;
+                    
+                    // 보드 범위 체크
+                    if (x >= 0 && x < gameCanvas.getWidth() && 
+                        y >= 0 && y < gameCanvas.getHeight()) {
+                        // 반투명한 초록색 사각형 그리기
+                        gc.fillRect(x, y, BLOCK_SIZE, BLOCK_SIZE);
+                        gc.strokeRect(x, y, BLOCK_SIZE, BLOCK_SIZE);
+                    }
+                }
+            }
+        }
+    }
 
     private void renderBorder(GraphicsContext gc) {
         // 색약모드에서도 게임 보드 외곽 테두리 표시
@@ -453,6 +497,12 @@ public class GameScreenController implements Initializable {
     private void onPause() {
         if (gameEngine != null) {
             gameEngine.pauseGame();
+            // 일시정지 시 음악 일시정지/재개
+            if (gameEngine.isPaused()) {
+                MusicManager.getInstance().pauseGameMusic();
+            } else {
+                MusicManager.getInstance().resumeGameMusic();
+            }
         }
     }
 
@@ -464,6 +514,8 @@ public class GameScreenController implements Initializable {
         if (gameEngine != null) {
             gameEngine.stopGame();
         }
+        // 배경 음악으로 전환
+        MusicManager.getInstance().playBackgroundMusic();
         if (sceneManager != null) {
             sceneManager.showMainMenu();
         }
