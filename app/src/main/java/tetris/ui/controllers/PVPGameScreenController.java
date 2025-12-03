@@ -898,7 +898,7 @@ public class PVPGameScreenController implements Initializable {
         );
 
         // 회색 격자 표시
-        // drawGrid(gc, myCanvas, blockSize);
+        drawGrid(gc, myCanvas, blockSize);
 
         GameBoard board = getMyEngine().getGameBoard();
         for (int row = 0; row < GameBoard.BOARD_HEIGHT; row++) {

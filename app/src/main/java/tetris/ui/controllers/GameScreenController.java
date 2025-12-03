@@ -263,7 +263,7 @@ public class GameScreenController implements Initializable {
         gc.fillRect(0, 0, gameCanvas.getWidth(), gameCanvas.getHeight());
         
         // 회색 격자 표시
-        // drawGrid(gc);
+        drawGrid(gc);
 
         // 게임 보드 렌더링
         GameBoard board = gameEngine.getGameBoard();

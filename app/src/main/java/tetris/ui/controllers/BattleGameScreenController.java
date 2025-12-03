@@ -408,7 +408,7 @@ public class BattleGameScreenController implements Initializable {
         );
 
         // 회색 격자 표시
-        // drawGrid(gc, player1Canvas, blockSize);
+        drawGrid(gc, player1Canvas, blockSize);
 
         GameBoard board = battleEngine.getPlayer1Engine().getGameBoard();
         for (int row = 0; row < GameBoard.BOARD_HEIGHT; row++) {
@@ -458,7 +458,7 @@ public class BattleGameScreenController implements Initializable {
         );
 
         // 회색 격자 표시
-        // drawGrid(gc, player2Canvas, blockSize);
+        drawGrid(gc, player2Canvas, blockSize);
 
         GameBoard board = battleEngine.getPlayer2Engine().getGameBoard();
         for (int row = 0; row < GameBoard.BOARD_HEIGHT; row++) {
