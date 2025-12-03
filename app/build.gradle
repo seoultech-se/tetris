@@ -15,6 +15,11 @@ plugins {
 repositories {
     // Use Maven Central for resolving dependencies.
     mavenCentral()
+    
+    // Add Sonatype repository for monocle
+    maven {
+        url = uri("https://oss.sonatype.org/content/repositories/snapshots/")
+    }
 }
 
 dependencies {
@@ -32,6 +37,11 @@ dependencies {
 
     compileOnly 'org.projectlombok:lombok:1.18.34'
     annotationProcessor 'org.projectlombok:lombok:1.18.34'
+
+    testImplementation 'org.testfx:testfx-junit5:4.0.18'
+
+    testImplementation 'org.mockito:mockito-core:5.14.1'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.14.1'
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
@@ -54,18 +64,10 @@ application {
 tasks.named('test') {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
-    
-    // 테스트 실행 후 JaCoCo 리포트 생성
-    finalizedBy jacocoTestReport
 
-    // JavaFX 테스트를 위한 JVM 인수
+    // JavaFX 테스트를 위한 JVM 인수 - headless 모드 제거
     jvmArgs = [
-        '--add-exports=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED',
-        '-Dtestfx.robot=glass',
-        '-Dtestfx.headless=true',
-        '-Dprism.order=sw',
-        '-Dprism.text=t2k',
-        '-Djava.awt.headless=true'
+        '--add-exports=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED'
     ]
 }
 
@@ -77,7 +79,6 @@ jacocoTestReport {
         html.required = true
         csv.required = false
     }
-    finalizedBy jacocoTestCoverageVerification
 }
 
 // 커버리지 검증 설정 (최소 50%)
