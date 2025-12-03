@@ -87,7 +87,9 @@ public class BattleGameScreenController implements Initializable {
     private java.util.List<Integer> player2LinesToClear = null;
     private long clearAnimationStartTime1 = 0;
     private long clearAnimationStartTime2 = 0;
-    private static final long CLEAR_ANIMATION_DURATION = 50_000_000; // 0.05초 (시각적 효과만)
+    private static final long CLEAR_ANIMATION_BASE = 50_000_000; // 기본 50ms
+    private long currentClearAnimationDuration1 = CLEAR_ANIMATION_BASE;
+    private long currentClearAnimationDuration2 = CLEAR_ANIMATION_BASE;
     private boolean isAnimatingClear1 = false;
     private boolean isAnimatingClear2 = false;
     
@@ -163,8 +165,16 @@ public class BattleGameScreenController implements Initializable {
             battleEngine.setTimeLimit(180); // 3분
         }
 
-        battleEngine.getPlayer1Engine().setOnPiecePlacedCallback(() -> battleEngine.applyPendingAttacks(1));
-        battleEngine.getPlayer2Engine().setOnPiecePlacedCallback(() -> battleEngine.applyPendingAttacks(2));
+        battleEngine.getPlayer1Engine().setOnPiecePlacedCallback(() -> {
+            battleEngine.applyPendingAttacks(1);
+            // 블록 배치 후 즉시 줄 삭제 체크
+            checkAndClearLinesForPlayer1();
+        });
+        battleEngine.getPlayer2Engine().setOnPiecePlacedCallback(() -> {
+            battleEngine.applyPendingAttacks(2);
+            // 블록 배치 후 즉시 줄 삭제 체크
+            checkAndClearLinesForPlayer2();
+        });
 
         startGameLoop();
         battleEngine.startGame();
@@ -274,33 +284,36 @@ public class BattleGameScreenController implements Initializable {
                 if (now - lastUpdateTime1 >= fallSpeed1) {
                     if (battleEngine.isGameRunning() && !battleEngine.isPaused()) {
                         battleEngine.getPlayer1Engine().movePieceDown();
-                        // 공격은 placePiece() 내부의 콜백에서 자동으로 적용됨
-                        java.util.List<Integer> fullLines = battleEngine.getPlayer1Engine().getFullLines();
-                        if (!fullLines.isEmpty()) {
-                            // 즉시 줄 삭제
-                            int linesCleared = battleEngine.getPlayer1Engine().getGameBoard().clearLines();
-                            if (linesCleared > 0) {
-                                battleEngine.getPlayer1Engine().updateScoreForClear(linesCleared);
-                                // 줄 삭제 직후 즉시 효과음 재생
-                                MusicManager.getInstance().playRemoveBlockSound();
-                                
-                                // 공격 메커니즘 처리 (줄 삭제 직후 바로 처리)
-                                if (linesCleared >= 2) {
-                                    int lastBlockCol = battleEngine.getPlayer1Engine().getLastPlacedBlockCol();
-                                    battleEngine.processPlayer1Attack(linesCleared, lastBlockCol);
+                        // 애니메이션 중이 아닐 때만 줄 삭제 체크
+                        if (!isAnimatingClear1) {
+                            java.util.List<Integer> fullLines = battleEngine.getPlayer1Engine().getFullLines();
+                            if (!fullLines.isEmpty()) {
+                                // 즉시 줄 삭제
+                                int linesCleared = battleEngine.getPlayer1Engine().getGameBoard().clearLines();
+                                if (linesCleared > 0) {
+                                    battleEngine.getPlayer1Engine().updateScoreForClear(linesCleared);
+                                    // 줄 삭제 직후 즉시 효과음 재생
+                                    MusicManager.getInstance().playRemoveBlockSound();
+                                    
+                                    // 공격 메커니즘 처리 (줄 삭제 직후 바로 처리)
+                                    if (linesCleared >= 2) {
+                                        int lastBlockCol = battleEngine.getPlayer1Engine().getLastPlacedBlockCol();
+                                        battleEngine.processPlayer1Attack(linesCleared, lastBlockCol);
+                                    }
                                 }
+                                
+                                // 애니메이션 시작 (줄 수에 따라 시간 조정)
+                                player1LinesToClear = fullLines;
+                                isAnimatingClear1 = true;
+                                clearAnimationStartTime1 = now;
+                                currentClearAnimationDuration1 = CLEAR_ANIMATION_BASE + (linesCleared - 1) * 10_000_000;
+                                lastUpdateTime1 = now; // 타이머 리셋
                             }
-                            
-                            // 애니메이션 시작 (시각적 효과만)
-                            player1LinesToClear = fullLines;
-                            isAnimatingClear1 = true;
-                            clearAnimationStartTime1 = now;
-                            lastUpdateTime1 = now; // 타이머 리셋
                         }
                     }
                     lastUpdateTime1 = now;
                 } else if (battleEngine.isGameRunning() && !battleEngine.isPaused() && !isAnimatingClear1) {
-                    // 하드드롭 직후 줄 삭제 감지 (타이밍 외)
+                    // 하드드롭 직후 줄 삭제 감지 (타이밍 외) - 즉시 체크하여 딜레이 방지
                     java.util.List<Integer> fullLines = battleEngine.getPlayer1Engine().getFullLines();
                     if (!fullLines.isEmpty()) {
                         int linesCleared = battleEngine.getPlayer1Engine().getGameBoard().clearLines();
@@ -312,11 +325,12 @@ public class BattleGameScreenController implements Initializable {
                                 int lastBlockCol = battleEngine.getPlayer1Engine().getLastPlacedBlockCol();
                                 battleEngine.processPlayer1Attack(linesCleared, lastBlockCol);
                             }
+                            
+                            player1LinesToClear = fullLines;
+                            isAnimatingClear1 = true;
+                            clearAnimationStartTime1 = now;
+                            currentClearAnimationDuration1 = CLEAR_ANIMATION_BASE + (linesCleared - 1) * 10_000_000;
                         }
-                        
-                        player1LinesToClear = fullLines;
-                        isAnimatingClear1 = true;
-                        clearAnimationStartTime1 = now;
                     }
                 }
 
@@ -324,33 +338,36 @@ public class BattleGameScreenController implements Initializable {
                 if (now - lastUpdateTime2 >= fallSpeed2) {
                     if (battleEngine.isGameRunning() && !battleEngine.isPaused()) {
                         battleEngine.getPlayer2Engine().movePieceDown();
-                        // 공격은 placePiece() 내부의 콜백에서 자동으로 적용됨
-                        java.util.List<Integer> fullLines = battleEngine.getPlayer2Engine().getFullLines();
-                        if (!fullLines.isEmpty()) {
-                            // 즉시 줄 삭제
-                            int linesCleared = battleEngine.getPlayer2Engine().getGameBoard().clearLines();
-                            if (linesCleared > 0) {
-                                battleEngine.getPlayer2Engine().updateScoreForClear(linesCleared);
-                                // 줄 삭제 직후 즉시 효과음 재생
-                                MusicManager.getInstance().playRemoveBlockSound();
-                                
-                                // 공격 메커니즘 처리 (줄 삭제 직후 바로 처리)
-                                if (linesCleared >= 2) {
-                                    int lastBlockCol = battleEngine.getPlayer2Engine().getLastPlacedBlockCol();
-                                    battleEngine.processPlayer2Attack(linesCleared, lastBlockCol);
+                        // 애니메이션 중이 아닐 때만 줄 삭제 체크
+                        if (!isAnimatingClear2) {
+                            java.util.List<Integer> fullLines = battleEngine.getPlayer2Engine().getFullLines();
+                            if (!fullLines.isEmpty()) {
+                                // 즉시 줄 삭제
+                                int linesCleared = battleEngine.getPlayer2Engine().getGameBoard().clearLines();
+                                if (linesCleared > 0) {
+                                    battleEngine.getPlayer2Engine().updateScoreForClear(linesCleared);
+                                    // 줄 삭제 직후 즉시 효과음 재생
+                                    MusicManager.getInstance().playRemoveBlockSound();
+                                    
+                                    // 공격 메커니즘 처리 (줄 삭제 직후 바로 처리)
+                                    if (linesCleared >= 2) {
+                                        int lastBlockCol = battleEngine.getPlayer2Engine().getLastPlacedBlockCol();
+                                        battleEngine.processPlayer2Attack(linesCleared, lastBlockCol);
+                                    }
                                 }
+                                
+                                // 애니메이션 시작 (줄 수에 따라 시간 조정)
+                                player2LinesToClear = fullLines;
+                                isAnimatingClear2 = true;
+                                clearAnimationStartTime2 = now;
+                                currentClearAnimationDuration2 = CLEAR_ANIMATION_BASE + (linesCleared - 1) * 10_000_000;
+                                lastUpdateTime2 = now; // 타이머 리셋
                             }
-                            
-                            // 애니메이션 시작 (시각적 효과만)
-                            player2LinesToClear = fullLines;
-                            isAnimatingClear2 = true;
-                            clearAnimationStartTime2 = now;
-                            lastUpdateTime2 = now; // 타이머 리셋
                         }
                     }
                     lastUpdateTime2 = now;
                 } else if (battleEngine.isGameRunning() && !battleEngine.isPaused() && !isAnimatingClear2) {
-                    // 하드드롭 직후 줄 삭제 감지 (타이밍 외)
+                    // 하드드롭 직후 줄 삭제 감지 (타이밍 외) - 즉시 체크하여 딜레이 방지
                     java.util.List<Integer> fullLines = battleEngine.getPlayer2Engine().getFullLines();
                     if (!fullLines.isEmpty()) {
                         int linesCleared = battleEngine.getPlayer2Engine().getGameBoard().clearLines();
@@ -362,18 +379,19 @@ public class BattleGameScreenController implements Initializable {
                                 int lastBlockCol = battleEngine.getPlayer2Engine().getLastPlacedBlockCol();
                                 battleEngine.processPlayer2Attack(linesCleared, lastBlockCol);
                             }
+                            
+                            player2LinesToClear = fullLines;
+                            isAnimatingClear2 = true;
+                            clearAnimationStartTime2 = now;
+                            currentClearAnimationDuration2 = CLEAR_ANIMATION_BASE + (linesCleared - 1) * 10_000_000;
                         }
-                        
-                        player2LinesToClear = fullLines;
-                        isAnimatingClear2 = true;
-                        clearAnimationStartTime2 = now;
                     }
                 }
                 
                 // 애니메이션 처리 (시각적 효과만)
                 if (isAnimatingClear1) {
                     long elapsed = now - clearAnimationStartTime1;
-                    if (elapsed >= CLEAR_ANIMATION_DURATION) {
+                    if (elapsed >= currentClearAnimationDuration1) {
                         isAnimatingClear1 = false;
                         player1LinesToClear = null;
                     }
@@ -381,7 +399,7 @@ public class BattleGameScreenController implements Initializable {
 
                 if (isAnimatingClear2) {
                     long elapsed = now - clearAnimationStartTime2;
-                    if (elapsed >= CLEAR_ANIMATION_DURATION) {
+                    if (elapsed >= currentClearAnimationDuration2) {
                         isAnimatingClear2 = false;
                         player2LinesToClear = null;
                     }
@@ -976,6 +994,60 @@ public class BattleGameScreenController implements Initializable {
             startGameLoop();
             battleEngine.startGame();
         });
+    }
+    
+    /**
+     * 플레이어 1의 줄 삭제 체크 및 처리 (블록 배치 콜백에서 호출)
+     */
+    private void checkAndClearLinesForPlayer1() {
+        if (!isAnimatingClear1 && battleEngine.isGameRunning() && !battleEngine.isPaused()) {
+            java.util.List<Integer> fullLines = battleEngine.getPlayer1Engine().getFullLines();
+            if (!fullLines.isEmpty()) {
+                int linesCleared = battleEngine.getPlayer1Engine().getGameBoard().clearLines();
+                if (linesCleared > 0) {
+                    battleEngine.getPlayer1Engine().updateScoreForClear(linesCleared);
+                    MusicManager.getInstance().playRemoveBlockSound();
+                    
+                    if (linesCleared >= 2) {
+                        int lastBlockCol = battleEngine.getPlayer1Engine().getLastPlacedBlockCol();
+                        battleEngine.processPlayer1Attack(linesCleared, lastBlockCol);
+                    }
+                    
+                    // 애니메이션 시작
+                    player1LinesToClear = fullLines;
+                    isAnimatingClear1 = true;
+                    clearAnimationStartTime1 = System.nanoTime();
+                    currentClearAnimationDuration1 = CLEAR_ANIMATION_BASE + (linesCleared - 1) * 10_000_000;
+                }
+            }
+        }
+    }
+    
+    /**
+     * 플레이어 2의 줄 삭제 체크 및 처리 (블록 배치 콜백에서 호출)
+     */
+    private void checkAndClearLinesForPlayer2() {
+        if (!isAnimatingClear2 && battleEngine.isGameRunning() && !battleEngine.isPaused()) {
+            java.util.List<Integer> fullLines = battleEngine.getPlayer2Engine().getFullLines();
+            if (!fullLines.isEmpty()) {
+                int linesCleared = battleEngine.getPlayer2Engine().getGameBoard().clearLines();
+                if (linesCleared > 0) {
+                    battleEngine.getPlayer2Engine().updateScoreForClear(linesCleared);
+                    MusicManager.getInstance().playRemoveBlockSound();
+                    
+                    if (linesCleared >= 2) {
+                        int lastBlockCol = battleEngine.getPlayer2Engine().getLastPlacedBlockCol();
+                        battleEngine.processPlayer2Attack(linesCleared, lastBlockCol);
+                    }
+                    
+                    // 애니메이션 시작
+                    player2LinesToClear = fullLines;
+                    isAnimatingClear2 = true;
+                    clearAnimationStartTime2 = System.nanoTime();
+                    currentClearAnimationDuration2 = CLEAR_ANIMATION_BASE + (linesCleared - 1) * 10_000_000;
+                }
+            }
+        }
     }
 }
 
