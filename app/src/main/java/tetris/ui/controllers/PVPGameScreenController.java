@@ -16,6 +16,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import tetris.ui.SceneManager;
 import tetris.ui.SettingsManager;
+import tetris.ui.MusicManager;
 import tetris.game.BattleGameEngine;
 import tetris.game.GameBoard;
 import tetris.game.Piece;
@@ -647,6 +648,8 @@ public class PVPGameScreenController implements Initializable {
     }
     
     private void startGame() {
+        // 게임 브금 재생
+        MusicManager.getInstance().playGameMusic();
         battleEngine.startGame();
         
         // 시간제한 모드의 경우 게임 시작 시간 기록
@@ -726,6 +729,9 @@ public class PVPGameScreenController implements Initializable {
                                 getMyEngine().clearLinesManually();
                                 int afterCleared = getMyEngine().getLinesCleared();
                                 int cleared = afterCleared - beforeCleared;
+
+                                // 블록 삭제 효과음 재생
+                                MusicManager.getInstance().playRemoveBlockSound();
 
                                 // 공격 메커니즘 처리 (줄 삭제 직후 바로 처리)
                                 if (cleared >= 2) {

@@ -12,6 +12,7 @@ import javafx.scene.paint.Color;
 import javafx.animation.AnimationTimer;
 import tetris.ui.SceneManager;
 import tetris.ui.SettingsManager;
+import tetris.ui.MusicManager;
 import tetris.game.BattleGameEngine;
 import tetris.game.GameBoard;
 import tetris.game.Piece;
@@ -70,9 +71,6 @@ public class BattleGameScreenController implements Initializable {
 
     @FXML
     private Button rematchButton;
-
-    @FXML
-    private Button toMenuButton;
 
     private SceneManager sceneManager;
     private SettingsManager settingsManager;
@@ -146,6 +144,9 @@ public class BattleGameScreenController implements Initializable {
                 break;
         }
 
+        // 게임 브금 재생
+        MusicManager.getInstance().playGameMusic();
+        
         setupCanvases();
         setupKeyHandler();
     }
@@ -282,6 +283,9 @@ public class BattleGameScreenController implements Initializable {
                             int afterCleared = battleEngine.getPlayer1Engine().getLinesCleared();
                             int cleared = afterCleared - beforeCleared;
                             
+                            // 블록 삭제 효과음 재생
+                            MusicManager.getInstance().playRemoveBlockSound();
+                            
                             // 공격 메커니즘 처리 (줄 삭제 직후 바로 처리)
                             if (cleared >= 2) {
                                 int lastBlockCol = battleEngine.getPlayer1Engine().getLastPlacedBlockCol();
@@ -310,6 +314,9 @@ public class BattleGameScreenController implements Initializable {
                             battleEngine.getPlayer2Engine().clearLinesManually();
                             int afterCleared = battleEngine.getPlayer2Engine().getLinesCleared();
                             int cleared = afterCleared - beforeCleared;
+                            
+                            // 블록 삭제 효과음 재생
+                            MusicManager.getInstance().playRemoveBlockSound();
                             
                             // 공격 메커니즘 처리 (줄 삭제 직후 바로 처리)
                             if (cleared >= 2) {

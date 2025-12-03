@@ -213,7 +213,13 @@ public class SceneManager {
             }
 
             // 대전 모드는 화면이 넓어야 하므로 가로로 확장
-            width = width * 1.6; // 2개 보드를 표시하기 위해 넓게
+            if (screenSize.equals("작게")) {
+                width = 840; 
+            } else if (screenSize.equals("크게")) {
+                width = 1080; 
+            } else {
+                width = width * 1.6; // 중간은 기존 비율 유지
+            }
 
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
             Scene scene = new Scene(loader.load(), width, height);
@@ -268,7 +274,13 @@ public class SceneManager {
             }
 
             // PVP 모드는 화면이 넓어야 하므로 가로로 확장 (2개 보드 표시)
-            width = width * 1.6;
+            if (screenSize.equals("작게")) {
+                width = 900; // 작은 화면: 900px
+            } else if (screenSize.equals("크게")) {
+                width = 1120; // 큰 화면: 1120px
+            } else {
+                width = width * 1.6; // 중간은 기존 비율 유지
+            }
 
             System.out.println("[SCENE] Loading FXML...");
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));

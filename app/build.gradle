@@ -29,6 +29,7 @@ dependencies {
     // JavaFX 명시적 의존성
     implementation 'org.openjfx:javafx-controls:21'
     implementation 'org.openjfx:javafx-fxml:21'
+    implementation 'org.openjfx:javafx-media:21'
 
     compileOnly 'org.projectlombok:lombok:1.18.34'
     annotationProcessor 'org.projectlombok:lombok:1.18.34'
@@ -93,7 +94,7 @@ jacocoTestCoverageVerification {
 
 javafx {
     version = '21'
-    modules = [ 'javafx.controls', 'javafx.fxml' ]
+    modules = [ 'javafx.controls', 'javafx.fxml', 'javafx.media' ]
 }
 
 // JAR 파일 생성 설정
