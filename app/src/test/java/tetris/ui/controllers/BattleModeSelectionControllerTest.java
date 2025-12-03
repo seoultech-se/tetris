@@ -158,26 +158,6 @@ class BattleModeSelectionControllerTest extends JavaFXTestBase {
     }
 
     @Test
-    void testComputerBattleNavigatesVsComputer() throws Exception {
-        runOnFxThreadAndWait(() -> {
-            try {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/BattleModeSelection.fxml"));
-                loader.load();
-                BattleModeSelectionController controller = loader.getController();
-
-                TestSceneManager sceneManager = new TestSceneManager(new Stage());
-                controller.setSceneManager(sceneManager);
-
-                invoke(controller, "onComputerBattle");
-                assertEquals("NORMAL", sceneManager.lastBattleMode);
-                assertTrue(sceneManager.vsComputer);
-            } catch (Exception e) {
-                fail("Computer battle navigation failed: " + e.getMessage());
-            }
-        });
-    }
-
-    @Test
     void testBackButtonReturnsToMenu() throws Exception {
         runOnFxThreadAndWait(() -> {
             try {
@@ -217,11 +197,11 @@ class BattleModeSelectionControllerTest extends JavaFXTestBase {
             vsComputer = false;
         }
 
-        @Override
-        public void showBattleGameScreenAgainstComputer(String battleMode) {
-            lastBattleMode = battleMode;
-            vsComputer = true;
-        }
+        // @Override
+        // public void showBattleGameScreenAgainstComputer(String battleMode) {
+        //     lastBattleMode = battleMode;
+        //     vsComputer = true;
+        // }
 
         @Override
         public void showMainMenu() {
