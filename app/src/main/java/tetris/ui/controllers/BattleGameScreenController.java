@@ -87,7 +87,7 @@ public class BattleGameScreenController implements Initializable {
     private java.util.List<Integer> player2LinesToClear = null;
     private long clearAnimationStartTime1 = 0;
     private long clearAnimationStartTime2 = 0;
-    private static final long CLEAR_ANIMATION_DURATION = 100_000_000; // 0.1초 (시각적 효과만)
+    private static final long CLEAR_ANIMATION_DURATION = 50_000_000; // 0.05초 (시각적 효과만)
     private boolean isAnimatingClear1 = false;
     private boolean isAnimatingClear2 = false;
     
@@ -278,18 +278,17 @@ public class BattleGameScreenController implements Initializable {
                         java.util.List<Integer> fullLines = battleEngine.getPlayer1Engine().getFullLines();
                         if (!fullLines.isEmpty()) {
                             // 즉시 줄 삭제
-                            int beforeCleared = battleEngine.getPlayer1Engine().getLinesCleared();
-                            battleEngine.getPlayer1Engine().clearLinesManually();
-                            int afterCleared = battleEngine.getPlayer1Engine().getLinesCleared();
-                            int cleared = afterCleared - beforeCleared;
-                            
-                            // 블록 삭제 효과음 재생
-                            MusicManager.getInstance().playRemoveBlockSound();
-                            
-                            // 공격 메커니즘 처리 (줄 삭제 직후 바로 처리)
-                            if (cleared >= 2) {
-                                int lastBlockCol = battleEngine.getPlayer1Engine().getLastPlacedBlockCol();
-                                battleEngine.processPlayer1Attack(cleared, lastBlockCol);
+                            int linesCleared = battleEngine.getPlayer1Engine().getGameBoard().clearLines();
+                            if (linesCleared > 0) {
+                                battleEngine.getPlayer1Engine().updateScoreForClear(linesCleared);
+                                // 줄 삭제 직후 즉시 효과음 재생
+                                MusicManager.getInstance().playRemoveBlockSound();
+                                
+                                // 공격 메커니즘 처리 (줄 삭제 직후 바로 처리)
+                                if (linesCleared >= 2) {
+                                    int lastBlockCol = battleEngine.getPlayer1Engine().getLastPlacedBlockCol();
+                                    battleEngine.processPlayer1Attack(linesCleared, lastBlockCol);
+                                }
                             }
                             
                             // 애니메이션 시작 (시각적 효과만)
@@ -300,6 +299,25 @@ public class BattleGameScreenController implements Initializable {
                         }
                     }
                     lastUpdateTime1 = now;
+                } else if (battleEngine.isGameRunning() && !battleEngine.isPaused() && !isAnimatingClear1) {
+                    // 하드드롭 직후 줄 삭제 감지 (타이밍 외)
+                    java.util.List<Integer> fullLines = battleEngine.getPlayer1Engine().getFullLines();
+                    if (!fullLines.isEmpty()) {
+                        int linesCleared = battleEngine.getPlayer1Engine().getGameBoard().clearLines();
+                        if (linesCleared > 0) {
+                            battleEngine.getPlayer1Engine().updateScoreForClear(linesCleared);
+                            MusicManager.getInstance().playRemoveBlockSound();
+                            
+                            if (linesCleared >= 2) {
+                                int lastBlockCol = battleEngine.getPlayer1Engine().getLastPlacedBlockCol();
+                                battleEngine.processPlayer1Attack(linesCleared, lastBlockCol);
+                            }
+                        }
+                        
+                        player1LinesToClear = fullLines;
+                        isAnimatingClear1 = true;
+                        clearAnimationStartTime1 = now;
+                    }
                 }
 
                 // 플레이어 2 블록 낙하
@@ -310,18 +328,17 @@ public class BattleGameScreenController implements Initializable {
                         java.util.List<Integer> fullLines = battleEngine.getPlayer2Engine().getFullLines();
                         if (!fullLines.isEmpty()) {
                             // 즉시 줄 삭제
-                            int beforeCleared = battleEngine.getPlayer2Engine().getLinesCleared();
-                            battleEngine.getPlayer2Engine().clearLinesManually();
-                            int afterCleared = battleEngine.getPlayer2Engine().getLinesCleared();
-                            int cleared = afterCleared - beforeCleared;
-                            
-                            // 블록 삭제 효과음 재생
-                            MusicManager.getInstance().playRemoveBlockSound();
-                            
-                            // 공격 메커니즘 처리 (줄 삭제 직후 바로 처리)
-                            if (cleared >= 2) {
-                                int lastBlockCol = battleEngine.getPlayer2Engine().getLastPlacedBlockCol();
-                                battleEngine.processPlayer2Attack(cleared, lastBlockCol);
+                            int linesCleared = battleEngine.getPlayer2Engine().getGameBoard().clearLines();
+                            if (linesCleared > 0) {
+                                battleEngine.getPlayer2Engine().updateScoreForClear(linesCleared);
+                                // 줄 삭제 직후 즉시 효과음 재생
+                                MusicManager.getInstance().playRemoveBlockSound();
+                                
+                                // 공격 메커니즘 처리 (줄 삭제 직후 바로 처리)
+                                if (linesCleared >= 2) {
+                                    int lastBlockCol = battleEngine.getPlayer2Engine().getLastPlacedBlockCol();
+                                    battleEngine.processPlayer2Attack(linesCleared, lastBlockCol);
+                                }
                             }
                             
                             // 애니메이션 시작 (시각적 효과만)
@@ -332,6 +349,25 @@ public class BattleGameScreenController implements Initializable {
                         }
                     }
                     lastUpdateTime2 = now;
+                } else if (battleEngine.isGameRunning() && !battleEngine.isPaused() && !isAnimatingClear2) {
+                    // 하드드롭 직후 줄 삭제 감지 (타이밍 외)
+                    java.util.List<Integer> fullLines = battleEngine.getPlayer2Engine().getFullLines();
+                    if (!fullLines.isEmpty()) {
+                        int linesCleared = battleEngine.getPlayer2Engine().getGameBoard().clearLines();
+                        if (linesCleared > 0) {
+                            battleEngine.getPlayer2Engine().updateScoreForClear(linesCleared);
+                            MusicManager.getInstance().playRemoveBlockSound();
+                            
+                            if (linesCleared >= 2) {
+                                int lastBlockCol = battleEngine.getPlayer2Engine().getLastPlacedBlockCol();
+                                battleEngine.processPlayer2Attack(linesCleared, lastBlockCol);
+                            }
+                        }
+                        
+                        player2LinesToClear = fullLines;
+                        isAnimatingClear2 = true;
+                        clearAnimationStartTime2 = now;
+                    }
                 }
                 
                 // 애니메이션 처리 (시각적 효과만)
@@ -611,11 +647,6 @@ public class BattleGameScreenController implements Initializable {
             gc.setFont(Font.font("Arial", javafx.scene.text.FontWeight.BOLD, (int)(blockSize * 0.8)));
             gc.fillText("+" + (numLines - 10), GameBoard.BOARD_WIDTH * blockSize - 20, 10 * blockSize - 2);
         }
-    }
-
-    private void renderPiece(GraphicsContext gc, Piece piece) {
-        // 기본 BLOCK_SIZE 사용 (레거시 호환)
-        renderPieceScaled(gc, piece, BLOCK_SIZE);
     }
 
     private void renderPieceScaled(GraphicsContext gc, Piece piece, double blockSize) {
