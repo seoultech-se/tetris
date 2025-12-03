@@ -87,21 +87,58 @@ public class GameBoard {
     }
 
     public int clearLines() {
-        int linesCleared = 0;
-
+        // 먼저 모든 가득 찬 줄의 인덱스를 수집
+        List<Integer> fullLineIndices = new ArrayList<>();
         for (int row = BOARD_HEIGHT - 1; row >= 0; row--) {
             if (isLineFull(row)) {
-                clearLine(row);
-                dropLinesAbove(row);
-                linesCleared++;
-                row++;
+                fullLineIndices.add(row);
             }
         }
+        
+        // 찾은 줄이 없으면 빠르게 반환
+        if (fullLineIndices.isEmpty()) {
+            return 0;
+        }
+        
+        // 내림차순으로 정렬하여 위에서부터 아래로 처리
+        fullLineIndices.sort((a, b) -> b - a);
+        
+        // 한 번의 배열 재구성으로 모든 줄 삭제 처리
+        int[] newBoard[] = new int[BOARD_HEIGHT][BOARD_WIDTH];
+        ItemType[][] newItemBoard = new ItemType[BOARD_HEIGHT][BOARD_WIDTH];
+        boolean[][] newAttackBoard = new boolean[BOARD_HEIGHT][BOARD_WIDTH];
+        
+        // 초기화
+        for (int i = 0; i < BOARD_HEIGHT; i++) {
+            for (int j = 0; j < BOARD_WIDTH; j++) {
+                newBoard[i][j] = 0;
+                newItemBoard[i][j] = ItemType.NONE;
+                newAttackBoard[i][j] = false;
+            }
+        }
+        
+        // 삭제되지 않은 줄들을 새 배열에 복사 (위에서 채우기)
+        int targetRow = BOARD_HEIGHT - 1;
+        for (int sourceRow = BOARD_HEIGHT - 1; sourceRow >= 0; sourceRow--) {
+            if (!fullLineIndices.contains(sourceRow)) {
+                for (int col = 0; col < BOARD_WIDTH; col++) {
+                    newBoard[targetRow][col] = board[sourceRow][col];
+                    newItemBoard[targetRow][col] = itemBoard[sourceRow][col];
+                    newAttackBoard[targetRow][col] = attackBoard[sourceRow][col];
+                }
+                targetRow--;
+            }
+        }
+        
+        // 새 보드로 교체
+        this.board = newBoard;
+        this.itemBoard = newItemBoard;
+        this.attackBoard = newAttackBoard;
         
         // 공격 줄이 삭제되면 공격 줄 수 업데이트
         updateAttackLinesCount();
 
-        return linesCleared;
+        return fullLineIndices.size();
     }
     
     /**

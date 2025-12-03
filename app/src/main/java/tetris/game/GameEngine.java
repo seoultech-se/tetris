@@ -17,6 +17,9 @@ public class GameEngine {
     // 블록 배치 후 콜백 (대전 모드 공격 적용용)
     private Runnable onPiecePlacedCallback = null;
     
+    // 줄 삭제 콜백 (삭제된 줄 개수와 함께)
+    private java.util.function.Consumer<Integer> onLinesClearedCallback = null;
+    
     private static final long BASE_FALL_SPEED = 1_000_000_000L;
 
     // 아이템 생성 조건
@@ -290,7 +293,18 @@ public class GameEngine {
         int normalClearedLines = gameBoard.clearLines();
         if (normalClearedLines > 0) {
             updateScore(normalClearedLines);
+            // 줄이 삭제되었을 때 콜백 호출
+            if (onLinesClearedCallback != null) {
+                onLinesClearedCallback.accept(normalClearedLines);
+            }
         }
+    }
+
+    /**
+     * 줄 삭제 콜백 설정
+     */
+    public void setOnLinesClearedCallback(java.util.function.Consumer<Integer> callback) {
+        this.onLinesClearedCallback = callback;
     }
 
     private void spawnNewPiece() {
@@ -390,6 +404,13 @@ public class GameEngine {
 
     public GameBoard getGameBoard() {
         return gameBoard;
+    }
+    
+    /**
+     * 줄 삭제로 인한 점수 업데이트 (UI에서 직접 호출)
+     */
+    public void updateScoreForClear(int clearedLines) {
+        updateScore(clearedLines);
     }
 
     public Piece getCurrentPiece() {

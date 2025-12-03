@@ -58,7 +58,7 @@ public class GameScreenController implements Initializable {
     // 줄 삭제 애니메이션 관련
     private java.util.List<Integer> linesToClear = null;
     private long clearAnimationStartTime = 0;
-    private static final long CLEAR_ANIMATION_DURATION = 100_000_000; // 0.1초 (시각적 효과만)
+    private static final long CLEAR_ANIMATION_DURATION = 50_000_000; // 0.05초 (시각적 효과만)
     private boolean isAnimatingClear = false;
 
     // 블록 크기 (화면 크기에 따라 동적으로 설정)
@@ -225,9 +225,13 @@ public class GameScreenController implements Initializable {
                         java.util.List<Integer> fullLines = gameEngine.getFullLines();
                         if (!fullLines.isEmpty()) {
                             // 즉시 줄 삭제
-                            gameEngine.clearLinesManually();
-                            // 블록 삭제 효과음 재생
-                            MusicManager.getInstance().playRemoveBlockSound();
+                            int linesCleared = gameEngine.getGameBoard().clearLines();
+                            if (linesCleared > 0) {
+                                gameEngine.updateScoreForClear(linesCleared);
+                                // 줄 삭제 직후 즉시 효과음 재생
+                                MusicManager.getInstance().playRemoveBlockSound();
+                            }
+                            
                             // 애니메이션 시작 (시각적 효과만)
                             linesToClear = fullLines;
                             isAnimatingClear = true;
@@ -236,6 +240,25 @@ public class GameScreenController implements Initializable {
                         }
                     }
                     lastUpdateTime = now;
+                }
+                
+                // 하드드롭 직후 또는 매 프레임마다 줄 삭제 확인 (타이밍 외)
+                if (!isAnimatingClear && gameEngine.isGameRunning() && !gameEngine.isPaused()) {
+                    java.util.List<Integer> fullLines = gameEngine.getFullLines();
+                    if (!fullLines.isEmpty()) {
+                        // 즉시 줄 삭제
+                        int linesCleared = gameEngine.getGameBoard().clearLines();
+                        if (linesCleared > 0) {
+                            gameEngine.updateScoreForClear(linesCleared);
+                            // 줄 삭제 직후 즉시 효과음 재생
+                            MusicManager.getInstance().playRemoveBlockSound();
+                        }
+                        
+                        // 애니메이션 시작 (시각적 효과만)
+                        linesToClear = fullLines;
+                        isAnimatingClear = true;
+                        clearAnimationStartTime = now;
+                    }
                 }
 
                 // 점수 2배 상태 업데이트
