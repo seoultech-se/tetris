@@ -818,21 +818,23 @@ public class BattleGameScreenController implements Initializable {
             long minutes = remaining / 60;
             long seconds = remaining % 60;
             timerLabel.setText(String.format("%02d:%02d", minutes, seconds));
+            // 시간 표시 색상 설정 (#e74c3c)
+            timerLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
         } else if (timerLabel != null) {
             timerLabel.setText("");
         }
 
-        // 승자 표시
-        if (winnerLabel != null) {
+        // 승자 표시 (일시정지 중이 아닐 때만)
+        if (winnerLabel != null && !battleEngine.isPaused()) {
             String winner = battleEngine.getWinner();
             if (winner != null) {
                 switch (winner) {
                     case "PLAYER1":
-                        winnerLabel.setText("플레이어 1 승리!");
+                        winnerLabel.setText("플레이어 1\n승리!");
                         winnerLabel.setTextFill(Color.GREEN);
                         break;
                     case "PLAYER2":
-                        winnerLabel.setText("플레이어 2 승리!");
+                        winnerLabel.setText("플레이어 2\n승리!");
                         winnerLabel.setTextFill(Color.GREEN);
                         break;
                     case "DRAW":
@@ -850,6 +852,21 @@ public class BattleGameScreenController implements Initializable {
     private void onPause() {
         if (battleEngine != null) {
             battleEngine.pauseGame();
+            boolean isPaused = battleEngine.isPaused();
+            if (winnerLabel != null) {
+                if (isPaused) {
+                    winnerLabel.setText("일시 정지");
+                    winnerLabel.setTextFill(Color.YELLOW);
+                } else {
+                    // 일시정지 해제 시 원래 상태로 복원 (게임 오버가 아닌 경우)
+                    if (battleEngine.getWinner() == null) {
+                        winnerLabel.setText("");
+                    } else {
+                        // 게임 오버 상태면 원래 승자 표시 유지
+                        updateUI();
+                    }
+                }
+            }
         }
     }
 
