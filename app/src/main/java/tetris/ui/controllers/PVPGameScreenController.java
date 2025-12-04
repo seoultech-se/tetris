@@ -123,8 +123,9 @@ public class PVPGameScreenController implements Initializable {
     // 줄 삭제 애니메이션 관련
     private java.util.List<Integer> playerLinesToClear = null;
     private long clearAnimationStartTime = 0;
-    private static final long CLEAR_ANIMATION_DURATION = 100_000_000; // 0.1초 (시각적 효과만)
+    private static final long CLEAR_ANIMATION_BASE = 50_000_000; // 기본 50ms
     private boolean isAnimatingClear = false;
+    private long currentClearAnimationDuration = CLEAR_ANIMATION_BASE; // 현재 애니메이션 시간 (줄 수에 따라 변동)
 
     // 상대방 상태 데이터
     private GameStateData opponentState;
@@ -314,10 +315,8 @@ public class PVPGameScreenController implements Initializable {
             opponentPlayerLabel.setText("서버");
         }
         
-        // 내 블록이 배치될 때마다 공격 적용
-        getMyEngine().setOnPiecePlacedCallback(() -> {
-            battleEngine.applyPendingAttacks(isServer ? 1 : 2);
-        });
+        // 내 블록이 배치될 때마다 공격 적용 및 줄 삭제 즉시 체크
+        setupPiecePlacedCallbackForMyEngine();
     }
 
     private void setupNetworkHandlers() {
@@ -721,37 +720,8 @@ public class PVPGameScreenController implements Initializable {
                                 getMyEngine().resetPieceJustPlaced();
                             }
 
-                            // 줄 삭제 체크 및 즉시 삭제
-                            java.util.List<Integer> currentLinesCleared = getMyEngine().getFullLines();
-                            if (!currentLinesCleared.isEmpty()) {
-                                // 즉시 줄 삭제
-                                int beforeCleared = getMyEngine().getLinesCleared();
-                                getMyEngine().clearLinesManually();
-                                int afterCleared = getMyEngine().getLinesCleared();
-                                int cleared = afterCleared - beforeCleared;
-
-                                // 블록 삭제 효과음 재생
-                                MusicManager.getInstance().playRemoveBlockSound();
-
-                                // 공격 메커니즘 처리 (줄 삭제 직후 바로 처리)
-                                if (cleared >= 2) {
-                                    int lastBlockCol = getMyEngine().getLastPlacedBlockCol();
-                                    // 내가 서버면 Player1, 클라이언트면 Player2
-                                    if (isServer) {
-                                        battleEngine.processPlayer1Attack(cleared, lastBlockCol);
-                                    } else {
-                                        battleEngine.processPlayer2Attack(cleared, lastBlockCol);
-                                    }
-                                    // 상대방에게 공격 전송
-                                    sendAttack(cleared, lastBlockCol);
-                                }
-
-                                // 애니메이션 시작 (시각적 효과만)
-                                playerLinesToClear = currentLinesCleared;
-                                isAnimatingClear = true;
-                                clearAnimationStartTime = now;
-                                lastUpdateTimeMe = now; // 타이머 리셋
-                            }
+                            // 줄 삭제는 블록 배치 콜백에서만 처리 (중복 방지)
+                            // getFullLines() 체크 제거 - 콜백이 담당합니다
 
                             lastUpdateTimeMe = now;
 
@@ -763,7 +733,7 @@ public class PVPGameScreenController implements Initializable {
                     // 애니메이션 처리 (시각적 효과만)
                     if (isAnimatingClear) {
                         long elapsed = now - clearAnimationStartTime;
-                        if (elapsed >= CLEAR_ANIMATION_DURATION) {
+                        if (elapsed >= currentClearAnimationDuration) {
                             isAnimatingClear = false;
                             playerLinesToClear = null;
                         }
@@ -806,6 +776,64 @@ public class PVPGameScreenController implements Initializable {
 
     private int getMyPendingAttacks() {
         return isServer ? battleEngine.getPendingAttacksToPlayer1() : battleEngine.getPendingAttacksToPlayer2();
+    }
+
+    /**
+     * 내 엔진에 블록 배치 콜백을 설정하는 공통 메서드
+     * (초기화와 재시작에서 동일한 동작이 필요하므로 분리)
+     */
+    private void setupPiecePlacedCallbackForMyEngine() {
+        getMyEngine().setOnPiecePlacedCallback(() -> {
+            battleEngine.applyPendingAttacks(isServer ? 1 : 2);
+
+            // 블록 배치 후 즉시 줄 삭제 체크 (하드드롭 등으로 인한 딜레이 방지)
+            // 애니메이션 진행 중이어도 새로운 줄 삭제는 처리해야 함
+            if (battleEngine.isGameRunning() && !battleEngine.isPaused()) {
+                java.util.List<Integer> currentLinesCleared = getMyEngine().getFullLines();
+                if (!currentLinesCleared.isEmpty()) {
+                    // 이전 줄 삭제 수 저장
+                    int beforeCleared = getMyEngine().getLinesCleared();
+
+                    // 줄 삭제 수행
+                    getMyEngine().clearLinesManually();
+
+                    // 새로 삭제된 줄 수 계산
+                    int afterCleared = getMyEngine().getLinesCleared();
+                    int cleared = afterCleared - beforeCleared;
+
+                    if (cleared > 0) {
+                        System.out.println("[PVP-GAME] Lines cleared: " + cleared + " (before: " + beforeCleared + ", after: " + afterCleared + ")");
+
+                        // 블록 삭제 효과음 재생
+                        MusicManager.getInstance().playRemoveBlockSound();
+
+                        // 공격 메커니즘 처리
+                        if (cleared >= 2) {
+                            int lastBlockCol = getMyEngine().getLastPlacedBlockCol();
+                            if (isServer) {
+                                battleEngine.processPlayer1Attack(cleared, lastBlockCol);
+                            } else {
+                                battleEngine.processPlayer2Attack(cleared, lastBlockCol);
+                            }
+                            sendAttack(cleared, lastBlockCol);
+                        }
+
+                        // 애니메이션 이미 진행 중이면 줄 수를 누적
+                        if (isAnimatingClear && playerLinesToClear != null) {
+                            playerLinesToClear.addAll(currentLinesCleared);
+                            // 애니메이션 시간도 추가 시간만큼 연장
+                            currentClearAnimationDuration += cleared * 10_000_000;
+                        } else {
+                            // 새로운 애니메이션 시작
+                            playerLinesToClear = new java.util.ArrayList<>(currentLinesCleared);
+                            isAnimatingClear = true;
+                            clearAnimationStartTime = System.nanoTime();
+                            currentClearAnimationDuration = CLEAR_ANIMATION_BASE + (cleared - 1) * 10_000_000; // 줄당 10ms 추가
+                        }
+                    }
+                }
+            }
+        });
     }
 
     private void sendMyState() {
@@ -1714,9 +1742,7 @@ public class PVPGameScreenController implements Initializable {
             }
             
             // 내 블록이 배치될 때마다 공격 적용
-            getMyEngine().setOnPiecePlacedCallback(() -> {
-                battleEngine.applyPendingAttacks(isServer ? 1 : 2);
-            });
+            setupPiecePlacedCallbackForMyEngine();
             
             // 카운트다운 시작
             startCountdown();

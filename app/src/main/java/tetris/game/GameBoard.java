@@ -306,28 +306,26 @@ public class GameBoard {
     }
 
     /**
-     * 폭탄 효과 처리: 1x1 폭탄이 위치한 행과 열을 십자가(+) 모양으로 제거
+     * 폭탄 효과 처리: 1x1 폭탄을 중심으로 3x3 범위의 블록을 모두 제거
+     * 제거 후 중력을 적용하여 떠있는 블록들을 아래로 이동
      * @param bombRows 폭탄이 위치한 행
      * @param bombCols 폭탄이 위치한 열
      */
     private void processBombEffect(List<Integer> bombRows, List<Integer> bombCols) {
-        // 폭탄이 위치한 열 전체 제거 (세로선)
-        for (int col : bombCols) {
-            if (col >= 0 && col < BOARD_WIDTH) {
-                for (int row = 0; row < BOARD_HEIGHT; row++) {
-                    clearCell(row, col);
+        // 각 폭탄 위치에 대해 3x3 범위 제거
+        for (int bombRow : bombRows) {
+            for (int bombCol : bombCols) {
+                // 폭탄을 중심으로 3x3 범위 제거 (bombRow-1 ~ bombRow+1, bombCol-1 ~ bombCol+1)
+                for (int row = bombRow - 1; row <= bombRow + 1; row++) {
+                    for (int col = bombCol - 1; col <= bombCol + 1; col++) {
+                        clearCell(row, col);
+                    }
                 }
             }
         }
 
-        // 폭탄이 위치한 행 전체 제거 (가로선)
-        for (int row : bombRows) {
-            if (row >= 0 && row < BOARD_HEIGHT) {
-                for (int col = 0; col < BOARD_WIDTH; col++) {
-                    clearCell(row, col);
-                }
-            }
-        }
+        // 중력 적용: 떠있는 블록들을 아래로 이동
+        applyGravity();
     }
 
     /**
@@ -339,7 +337,51 @@ public class GameBoard {
         if (row >= 0 && row < BOARD_HEIGHT && col >= 0 && col < BOARD_WIDTH) {
             board[row][col] = 0;
             itemBoard[row][col] = ItemType.NONE;
+            attackBoard[row][col] = false;
         }
+    }
+
+    /**
+     * 중력 적용: 떠있는 블록들을 열별로 아래로 이동
+     * 각 열에 대해 빈 공간을 제거하고 블록들을 아래로 밀착시킴
+     */
+    private void applyGravity() {
+        // 각 열에 대해 중력 적용
+        for (int col = 0; col < BOARD_WIDTH; col++) {
+            // 해당 열의 블록들을 아래쪽부터 수집 (빈 공간 제외)
+            int[] columnBlocks = new int[BOARD_HEIGHT];
+            ItemType[] columnItems = new ItemType[BOARD_HEIGHT];
+            boolean[] columnAttacks = new boolean[BOARD_HEIGHT];
+            int writeIndex = BOARD_HEIGHT - 1;
+
+            // 아래에서 위로 스캔하면서 블록이 있는 것만 수집
+            for (int row = BOARD_HEIGHT - 1; row >= 0; row--) {
+                if (board[row][col] != 0) {
+                    columnBlocks[writeIndex] = board[row][col];
+                    columnItems[writeIndex] = itemBoard[row][col];
+                    columnAttacks[writeIndex] = attackBoard[row][col];
+                    writeIndex--;
+                }
+            }
+
+            // 나머지는 0으로 채움 (위쪽 빈 공간)
+            while (writeIndex >= 0) {
+                columnBlocks[writeIndex] = 0;
+                columnItems[writeIndex] = ItemType.NONE;
+                columnAttacks[writeIndex] = false;
+                writeIndex--;
+            }
+
+            // 정리된 열을 다시 보드에 적용
+            for (int row = 0; row < BOARD_HEIGHT; row++) {
+                board[row][col] = columnBlocks[row];
+                itemBoard[row][col] = columnItems[row];
+                attackBoard[row][col] = columnAttacks[row];
+            }
+        }
+
+        // 공격 줄 수 업데이트 (중력 적용 후 변경될 수 있음)
+        updateAttackLinesCount();
     }
 
     /**
