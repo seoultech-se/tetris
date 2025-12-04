@@ -222,7 +222,7 @@ public class SettingsController implements Initializable {
             return;
         }
         
-        // 설정 저장 로직
+        // 설정 저장 로직.
         saveSettings();
         onBackToMenu();
     }
