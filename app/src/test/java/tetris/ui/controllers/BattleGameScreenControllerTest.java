@@ -790,11 +790,11 @@ class BattleGameScreenControllerTest extends JavaFXTestBase {
                 
                 BattleGameScreenController controller = loader.getController();
                 
-                Field durationField = BattleGameScreenController.class.getDeclaredField("CLEAR_ANIMATION_DURATION");
+                Field durationField = BattleGameScreenController.class.getDeclaredField("CLEAR_ANIMATION_BASE");
                 durationField.setAccessible(true);
                 long duration = (long) durationField.get(null);
                 
-                assertEquals(50_000_000L, duration, "CLEAR_ANIMATION_DURATION should be 50ms");
+                assertEquals(50_000_000L, duration, "CLEAR_ANIMATION_BASE should be 50ms");
             } catch (Exception e) {
                 fail("Clear animation duration test failed: " + e.getMessage());
             }

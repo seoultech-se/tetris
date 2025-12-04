@@ -820,12 +820,12 @@ class PVPGameScreenControllerTest extends JavaFXTestBase {
                 
                 PVPGameScreenController controller = loader.getController();
                 
-                // Access static field
-                Field durationField = PVPGameScreenController.class.getDeclaredField("CLEAR_ANIMATION_DURATION");
+                // Access static field - changed from CLEAR_ANIMATION_DURATION to CLEAR_ANIMATION_BASE
+                Field durationField = PVPGameScreenController.class.getDeclaredField("CLEAR_ANIMATION_BASE");
                 durationField.setAccessible(true);
                 long duration = (long) durationField.get(null);
                 
-                assertEquals(100_000_000L, duration, "CLEAR_ANIMATION_DURATION should be 100ms");
+                assertEquals(50_000_000L, duration, "CLEAR_ANIMATION_BASE should be 50ms");
             } catch (Exception e) {
                 fail("Failed to check clear animation duration: " + e.getMessage());
             }
