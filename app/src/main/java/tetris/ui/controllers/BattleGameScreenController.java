@@ -1,14 +1,18 @@
 package tetris.ui.controllers;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.animation.AnimationTimer;
 import tetris.ui.SceneManager;
 import tetris.ui.SettingsManager;
+import tetris.ui.MusicManager;
 import tetris.game.BattleGameEngine;
 import tetris.game.GameBoard;
 import tetris.game.Piece;
@@ -62,9 +66,16 @@ public class BattleGameScreenController implements Initializable {
     @FXML
     private Label winnerLabel;
 
+    @FXML
+    private VBox gameOverBox;
+
+    @FXML
+    private Button rematchButton;
+
     private SceneManager sceneManager;
     private SettingsManager settingsManager;
     private BattleGameEngine battleEngine;
+    private String battleMode;
     private AnimationTimer gameLoop;
     private long lastUpdateTime1 = 0;
     private long lastUpdateTime2 = 0;
@@ -76,7 +87,9 @@ public class BattleGameScreenController implements Initializable {
     private java.util.List<Integer> player2LinesToClear = null;
     private long clearAnimationStartTime1 = 0;
     private long clearAnimationStartTime2 = 0;
-    private static final long CLEAR_ANIMATION_DURATION = 100_000_000;
+    private static final long CLEAR_ANIMATION_BASE = 50_000_000; // 기본 50ms
+    private long currentClearAnimationDuration1 = CLEAR_ANIMATION_BASE;
+    private long currentClearAnimationDuration2 = CLEAR_ANIMATION_BASE;
     private boolean isAnimatingClear1 = false;
     private boolean isAnimatingClear2 = false;
     
@@ -84,18 +97,32 @@ public class BattleGameScreenController implements Initializable {
     // 블록 크기
     private int BLOCK_SIZE = 25;
 
-    // 블록 색상 설정
+    // 블록 색상 설정 (ColorBlind Safe 팔레트)
     private static final Color[] PIECE_COLORS = {
         Color.BLACK,
-        Color.web("#56B4E9"),  // 1 - I
-        Color.web("#F0E442"),  // 2 - O
-        Color.web("#CC79A7"),  // 3 - T
-        Color.web("#009E73"),  // 4 - S
-        Color.web("#D55E00"),  // 5 - Z
-        Color.web("#0072B2"),  // 6 - J
-        Color.web("#E69F00"),  // 7 - L
-        Color.web("#999999"),  // 8 - 공격 블록 (회색)
-        Color.web("#FF0000")   // 9 - BOMB
+        Color.web("#56B4E9"),          // 1 - I 피스 (하늘색)
+        Color.web("#F0E442"),          // 2 - O 피스 (노랑)
+        Color.web("#CC79A7"),          // 3 - T 피스 (핑크/보라)
+        Color.web("#009E73"),          // 4 - S 피스 (초록)
+        Color.web("#D55E00"),          // 5 - Z 피스 (적갈색)
+        Color.web("#0072B2"),          // 6 - J 피스 (파랑)
+        Color.web("#E69F00"),          // 7 - L 피스 (주황)
+        Color.web("#999999"),          // 8 - WEIGHT 피스 (회색 - 무게추)
+        Color.web("#FF0000")           // 9 - BOMB 피스 (빨강 - 폭탄)
+    };
+
+    // 접근성 심볼 (0은 빈칸)
+    private static final String[] PIECE_SYMBOLS = {
+        " ", // 0
+        "O", // 1 - I (직선 형태를 텍스트로 대체)
+        "●", // 2 - O
+        "★", // 3 - T
+        "▲", // 4 - S
+        "■", // 5 - Z
+        "◆", // 6 - J (다이아몬드)
+        "◇", // 7 - L (빈 다이아몬드)
+        "▼", // 8 - 공격 블록 (아래를 가리키는 화살표)
+        "✸"  // 9 - BOMB (폭발 효과)
     };
 
     @Override
@@ -119,6 +146,9 @@ public class BattleGameScreenController implements Initializable {
                 break;
         }
 
+        // 게임 브금 재생
+        MusicManager.getInstance().playGameMusic();
+        
         setupCanvases();
         setupKeyHandler();
     }
@@ -128,20 +158,24 @@ public class BattleGameScreenController implements Initializable {
     }
 
     public void setBattleMode(String battleMode) {
+        this.battleMode = battleMode;
         this.battleEngine = new BattleGameEngine(battleMode);
         
         if ("TIME_LIMIT".equals(battleMode)) {
             battleEngine.setTimeLimit(180); // 3분
         }
-        
-        // 블록이 떨어질 때마다 공격 적용하도록 콜백 설정
+
         battleEngine.getPlayer1Engine().setOnPiecePlacedCallback(() -> {
-            battleEngine.applyPendingAttacks(1); // 플레이어 1에게만 공격 적용
+            battleEngine.applyPendingAttacks(1);
+            // 블록 배치 후 즉시 줄 삭제 체크
+            checkAndClearLinesForPlayer1();
         });
         battleEngine.getPlayer2Engine().setOnPiecePlacedCallback(() -> {
-            battleEngine.applyPendingAttacks(2); // 플레이어 2에게만 공격 적용
+            battleEngine.applyPendingAttacks(2);
+            // 블록 배치 후 즉시 줄 삭제 체크
+            checkAndClearLinesForPlayer2();
         });
-        
+
         startGameLoop();
         battleEngine.startGame();
     }
@@ -189,22 +223,30 @@ public class BattleGameScreenController implements Initializable {
                         }
                         
                         if (battleEngine != null && battleEngine.isGameRunning() && !battleEngine.isPaused()) {
-                            // 플레이어 1: WASD + Space
-                            if (code == javafx.scene.input.KeyCode.A || 
-                                code == javafx.scene.input.KeyCode.D ||
-                                code == javafx.scene.input.KeyCode.S ||
-                                code == javafx.scene.input.KeyCode.W ||
-                                code == javafx.scene.input.KeyCode.SPACE ||
+                            // Player1 키 설정
+                            javafx.scene.input.KeyCode p1Left = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyLeft());
+                            javafx.scene.input.KeyCode p1Right = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyRight());
+                            javafx.scene.input.KeyCode p1Down = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyDown());
+                            javafx.scene.input.KeyCode p1Rotate = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyRotate());
+                            javafx.scene.input.KeyCode p1HardDrop = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyHardDrop());
+                            
+                            // Player2 키 설정
+                            javafx.scene.input.KeyCode p2Left = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyLeftP2());
+                            javafx.scene.input.KeyCode p2Right = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyRightP2());
+                            javafx.scene.input.KeyCode p2Down = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyDownP2());
+                            javafx.scene.input.KeyCode p2Rotate = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyRotateP2());
+                            javafx.scene.input.KeyCode p2HardDrop = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyHardDropP2());
+                            
+                            // 플레이어 1 키 처리
+                            if (code == p1Left || code == p1Right || code == p1Down || 
+                                code == p1Rotate || code == p1HardDrop || 
                                 code == javafx.scene.input.KeyCode.N) {
                                 battleEngine.handlePlayer1KeyPress(code);
                                 event.consume();
                             }
-                            // 플레이어 2: 방향키 + Enter
-                            else if (code == javafx.scene.input.KeyCode.LEFT ||
-                                     code == javafx.scene.input.KeyCode.RIGHT ||
-                                     code == javafx.scene.input.KeyCode.DOWN ||
-                                     code == javafx.scene.input.KeyCode.UP ||
-                                     code == javafx.scene.input.KeyCode.ENTER) {
+                            // 플레이어 2 키 처리
+                            else if (code == p2Left || code == p2Right || code == p2Down ||
+                                     code == p2Rotate || code == p2HardDrop) {
                                 battleEngine.handlePlayer2KeyPress(code);
                                 event.consume();
                             }
@@ -239,74 +281,127 @@ public class BattleGameScreenController implements Initializable {
                 battleEngine.update();
 
                 // 플레이어 1 블록 낙하
-                if (!isAnimatingClear1 && now - lastUpdateTime1 >= fallSpeed1) {
+                if (now - lastUpdateTime1 >= fallSpeed1) {
                     if (battleEngine.isGameRunning() && !battleEngine.isPaused()) {
                         battleEngine.getPlayer1Engine().movePieceDown();
-                        // 공격은 placePiece() 내부의 콜백에서 자동으로 적용됨
-                        java.util.List<Integer> fullLines = battleEngine.getPlayer1Engine().getFullLines();
-                        if (!fullLines.isEmpty()) {
-                            player1LinesToClear = fullLines;
-                            isAnimatingClear1 = true;
-                            clearAnimationStartTime1 = now;
+                        // 애니메이션 중이 아닐 때만 줄 삭제 체크
+                        if (!isAnimatingClear1) {
+                            java.util.List<Integer> fullLines = battleEngine.getPlayer1Engine().getFullLines();
+                            if (!fullLines.isEmpty()) {
+                                // 즉시 줄 삭제
+                                int linesCleared = battleEngine.getPlayer1Engine().getGameBoard().clearLines();
+                                if (linesCleared > 0) {
+                                    battleEngine.getPlayer1Engine().updateScoreForClear(linesCleared);
+                                    // 줄 삭제 직후 즉시 효과음 재생
+                                    MusicManager.getInstance().playRemoveBlockSound();
+                                    
+                                    // 공격 메커니즘 처리 (줄 삭제 직후 바로 처리)
+                                    if (linesCleared >= 2) {
+                                        int lastBlockCol = battleEngine.getPlayer1Engine().getLastPlacedBlockCol();
+                                        battleEngine.processPlayer1Attack(linesCleared, lastBlockCol);
+                                    }
+                                }
+                                
+                                // 애니메이션 시작 (줄 수에 따라 시간 조정)
+                                player1LinesToClear = fullLines;
+                                isAnimatingClear1 = true;
+                                clearAnimationStartTime1 = now;
+                                currentClearAnimationDuration1 = CLEAR_ANIMATION_BASE + (linesCleared - 1) * 10_000_000;
+                                lastUpdateTime1 = now; // 타이머 리셋
+                            }
                         }
                     }
                     lastUpdateTime1 = now;
+                } else if (battleEngine.isGameRunning() && !battleEngine.isPaused() && !isAnimatingClear1) {
+                    // 하드드롭 직후 줄 삭제 감지 (타이밍 외) - 즉시 체크하여 딜레이 방지
+                    java.util.List<Integer> fullLines = battleEngine.getPlayer1Engine().getFullLines();
+                    if (!fullLines.isEmpty()) {
+                        int linesCleared = battleEngine.getPlayer1Engine().getGameBoard().clearLines();
+                        if (linesCleared > 0) {
+                            battleEngine.getPlayer1Engine().updateScoreForClear(linesCleared);
+                            MusicManager.getInstance().playRemoveBlockSound();
+                            
+                            if (linesCleared >= 2) {
+                                int lastBlockCol = battleEngine.getPlayer1Engine().getLastPlacedBlockCol();
+                                battleEngine.processPlayer1Attack(linesCleared, lastBlockCol);
+                            }
+                            
+                            player1LinesToClear = fullLines;
+                            isAnimatingClear1 = true;
+                            clearAnimationStartTime1 = now;
+                            currentClearAnimationDuration1 = CLEAR_ANIMATION_BASE + (linesCleared - 1) * 10_000_000;
+                        }
+                    }
                 }
 
                 // 플레이어 2 블록 낙하
-                if (!isAnimatingClear2 && now - lastUpdateTime2 >= fallSpeed2) {
+                if (now - lastUpdateTime2 >= fallSpeed2) {
                     if (battleEngine.isGameRunning() && !battleEngine.isPaused()) {
                         battleEngine.getPlayer2Engine().movePieceDown();
-                        // 공격은 placePiece() 내부의 콜백에서 자동으로 적용됨
-                        java.util.List<Integer> fullLines = battleEngine.getPlayer2Engine().getFullLines();
-                        if (!fullLines.isEmpty()) {
-                            player2LinesToClear = fullLines;
-                            isAnimatingClear2 = true;
-                            clearAnimationStartTime2 = now;
+                        // 애니메이션 중이 아닐 때만 줄 삭제 체크
+                        if (!isAnimatingClear2) {
+                            java.util.List<Integer> fullLines = battleEngine.getPlayer2Engine().getFullLines();
+                            if (!fullLines.isEmpty()) {
+                                // 즉시 줄 삭제
+                                int linesCleared = battleEngine.getPlayer2Engine().getGameBoard().clearLines();
+                                if (linesCleared > 0) {
+                                    battleEngine.getPlayer2Engine().updateScoreForClear(linesCleared);
+                                    // 줄 삭제 직후 즉시 효과음 재생
+                                    MusicManager.getInstance().playRemoveBlockSound();
+                                    
+                                    // 공격 메커니즘 처리 (줄 삭제 직후 바로 처리)
+                                    if (linesCleared >= 2) {
+                                        int lastBlockCol = battleEngine.getPlayer2Engine().getLastPlacedBlockCol();
+                                        battleEngine.processPlayer2Attack(linesCleared, lastBlockCol);
+                                    }
+                                }
+                                
+                                // 애니메이션 시작 (줄 수에 따라 시간 조정)
+                                player2LinesToClear = fullLines;
+                                isAnimatingClear2 = true;
+                                clearAnimationStartTime2 = now;
+                                currentClearAnimationDuration2 = CLEAR_ANIMATION_BASE + (linesCleared - 1) * 10_000_000;
+                                lastUpdateTime2 = now; // 타이머 리셋
+                            }
                         }
                     }
                     lastUpdateTime2 = now;
+                } else if (battleEngine.isGameRunning() && !battleEngine.isPaused() && !isAnimatingClear2) {
+                    // 하드드롭 직후 줄 삭제 감지 (타이밍 외) - 즉시 체크하여 딜레이 방지
+                    java.util.List<Integer> fullLines = battleEngine.getPlayer2Engine().getFullLines();
+                    if (!fullLines.isEmpty()) {
+                        int linesCleared = battleEngine.getPlayer2Engine().getGameBoard().clearLines();
+                        if (linesCleared > 0) {
+                            battleEngine.getPlayer2Engine().updateScoreForClear(linesCleared);
+                            MusicManager.getInstance().playRemoveBlockSound();
+                            
+                            if (linesCleared >= 2) {
+                                int lastBlockCol = battleEngine.getPlayer2Engine().getLastPlacedBlockCol();
+                                battleEngine.processPlayer2Attack(linesCleared, lastBlockCol);
+                            }
+                            
+                            player2LinesToClear = fullLines;
+                            isAnimatingClear2 = true;
+                            clearAnimationStartTime2 = now;
+                            currentClearAnimationDuration2 = CLEAR_ANIMATION_BASE + (linesCleared - 1) * 10_000_000;
+                        }
+                    }
                 }
                 
-
-                // 애니메이션 처리
+                // 애니메이션 처리 (시각적 효과만)
                 if (isAnimatingClear1) {
                     long elapsed = now - clearAnimationStartTime1;
-                    if (elapsed >= CLEAR_ANIMATION_DURATION) {
-                        int beforeCleared = battleEngine.getPlayer1Engine().getLinesCleared();
-                        battleEngine.getPlayer1Engine().clearLinesManually();
-                        int afterCleared = battleEngine.getPlayer1Engine().getLinesCleared();
-                        int cleared = afterCleared - beforeCleared;
-                        
-                        // 공격 메커니즘 처리 (줄 삭제 직후 바로 처리)
-                        if (cleared >= 2) {
-                            int lastBlockCol = battleEngine.getPlayer1Engine().getLastPlacedBlockCol();
-                            battleEngine.processPlayer1Attack(cleared, lastBlockCol);
-                        }
-                        
+                    if (elapsed >= currentClearAnimationDuration1) {
                         isAnimatingClear1 = false;
                         player1LinesToClear = null;
-                        lastUpdateTime1 = now;
                     }
                 }
 
                 if (isAnimatingClear2) {
                     long elapsed = now - clearAnimationStartTime2;
-                    if (elapsed >= CLEAR_ANIMATION_DURATION) {
-                        int beforeCleared = battleEngine.getPlayer2Engine().getLinesCleared();
-                        battleEngine.getPlayer2Engine().clearLinesManually();
-                        int afterCleared = battleEngine.getPlayer2Engine().getLinesCleared();
-                        int cleared = afterCleared - beforeCleared;
-                        
-                        // 공격 메커니즘 처리 (줄 삭제 직후 바로 처리)
-                        if (cleared >= 2) {
-                            int lastBlockCol = battleEngine.getPlayer2Engine().getLastPlacedBlockCol();
-                            battleEngine.processPlayer2Attack(cleared, lastBlockCol);
-                        }
-                        
+                    if (elapsed >= currentClearAnimationDuration2) {
                         isAnimatingClear2 = false;
                         player2LinesToClear = null;
-                        lastUpdateTime2 = now;
                     }
                 }
 
@@ -344,6 +439,9 @@ public class BattleGameScreenController implements Initializable {
             player1Canvas.getHeight() / GameBoard.BOARD_HEIGHT
         );
 
+        // 회색 격자 표시
+        drawGrid(gc, player1Canvas, blockSize);
+
         GameBoard board = battleEngine.getPlayer1Engine().getGameBoard();
         for (int row = 0; row < GameBoard.BOARD_HEIGHT; row++) {
             for (int col = 0; col < GameBoard.BOARD_WIDTH; col++) {
@@ -370,6 +468,8 @@ public class BattleGameScreenController implements Initializable {
             Piece currentPiece = battleEngine.getPlayer1Engine().getCurrentPiece();
             if (currentPiece != null) {
                 renderPieceScaled(gc, currentPiece, blockSize);
+                // 착지 위치에 형광 초록색 표시
+                renderLandingIndicatorScaled(gc, currentPiece, battleEngine.getPlayer1Engine(), player1Canvas, blockSize);
             }
         }
 
@@ -388,6 +488,9 @@ public class BattleGameScreenController implements Initializable {
             player2Canvas.getWidth() / GameBoard.BOARD_WIDTH,
             player2Canvas.getHeight() / GameBoard.BOARD_HEIGHT
         );
+
+        // 회색 격자 표시
+        drawGrid(gc, player2Canvas, blockSize);
 
         GameBoard board = battleEngine.getPlayer2Engine().getGameBoard();
         for (int row = 0; row < GameBoard.BOARD_HEIGHT; row++) {
@@ -415,6 +518,8 @@ public class BattleGameScreenController implements Initializable {
             Piece currentPiece = battleEngine.getPlayer2Engine().getCurrentPiece();
             if (currentPiece != null) {
                 renderPieceScaled(gc, currentPiece, blockSize);
+                // 착지 위치에 형광 초록색 표시
+                renderLandingIndicatorScaled(gc, currentPiece, battleEngine.getPlayer2Engine(), player2Canvas, blockSize);
             }
         }
 
@@ -534,6 +639,10 @@ public class BattleGameScreenController implements Initializable {
             double y = line * blockSize + blockSize / 2; // 줄의 중앙
             // 큐에서 빈칸 위치 가져오기 (없으면 기본값)
             int emptyCol = (line < emptyCols.size()) ? emptyCols.get(line) : (line * 3) % GameBoard.BOARD_WIDTH;
+            // emptyCol 값이 유효한 범위인지 확인
+            if (emptyCol < 0 || emptyCol >= GameBoard.BOARD_WIDTH) {
+                emptyCol = (line * 3) % GameBoard.BOARD_WIDTH;
+            }
             
             for (int col = 0; col < GameBoard.BOARD_WIDTH; col++) {
                 double x = col * blockSize + blockSize / 2; // 열의 중앙
@@ -558,11 +667,6 @@ public class BattleGameScreenController implements Initializable {
         }
     }
 
-    private void renderPiece(GraphicsContext gc, Piece piece) {
-        // 기본 BLOCK_SIZE 사용 (레거시 호환)
-        renderPieceScaled(gc, piece, BLOCK_SIZE);
-    }
-    
     private void renderPieceScaled(GraphicsContext gc, Piece piece, double blockSize) {
         int[][] shape = piece.getShape();
         Color color = PIECE_COLORS[piece.getType()];
@@ -580,37 +684,149 @@ public class BattleGameScreenController implements Initializable {
             }
         }
     }
+    
+    /**
+     * 블록의 착지 위치에 형광 초록색으로 블록 전체 표시 (스케일된 버전)
+     */
+    private void renderLandingIndicatorScaled(GraphicsContext gc, Piece piece, tetris.game.GameEngine gameEngine, Canvas canvas, double blockSize) {
+        if (piece == null || gameEngine == null) {
+            return;
+        }
+        
+        // 착지할 위치의 블록 가져오기
+        tetris.game.Piece landingPiece = gameEngine.getLandingPiece();
+        if (landingPiece == null) {
+            return;
+        }
+        
+        // 형광 초록색 설정 (반투명)
+        Color indicatorColor = Color.web("#00FF00", 0.5); // 형광 초록색, 50% 투명도
+        gc.setFill(indicatorColor);
+        gc.setStroke(Color.web("#00FF00")); // 테두리는 불투명
+        gc.setLineWidth(2);
+        
+        // 착지할 블록의 shape를 형광 초록색으로 표시
+        int[][] shape = landingPiece.getShape();
+        int pieceX = landingPiece.getX();
+        int pieceY = landingPiece.getY();
+        
+        for (int row = 0; row < shape.length; row++) {
+            for (int col = 0; col < shape[row].length; col++) {
+                if (shape[row][col] != 0) {
+                    double x = (pieceX + col) * blockSize;
+                    double y = (pieceY + row) * blockSize;
+                    
+                    // 캔버스 범위 체크
+                    if (x >= 0 && x < canvas.getWidth() && 
+                        y >= 0 && y < canvas.getHeight()) {
+                        // 반투명한 초록색 사각형 그리기
+                        gc.fillRect(x, y, blockSize, blockSize);
+                        gc.strokeRect(x, y, blockSize, blockSize);
+                    }
+                }
+            }
+        }
+    }
 
     private void renderBlock(GraphicsContext gc, int x, int y, Color color, int pieceType, ItemType itemType) {
         renderBlockScaled(gc, x, y, BLOCK_SIZE, color, pieceType, itemType);
     }
     
     private void renderBlockScaled(GraphicsContext gc, double x, double y, double size, Color color, int pieceType, ItemType itemType) {
-        gc.setFill(color);
-        gc.fillRect(x, y, size, size);
-
-        gc.setStroke(Color.WHITE);
-        gc.setLineWidth(1);
-        gc.strokeRect(x, y, size, size);
-
-        if (itemType != null && itemType != ItemType.NONE) {
-            String itemChar = itemType.getDisplayChar();
-            if (!itemChar.isEmpty()) {
-                double fontSize = size * 0.6;
-                Font font = Font.font("Arial", javafx.scene.text.FontWeight.BOLD, fontSize);
-                gc.setFont(font);
-                gc.setFill(Color.WHITE);
-
-                Text text = new Text(itemChar);
-                text.setFont(font);
-                double textWidth = text.getLayoutBounds().getWidth();
-                double textHeight = text.getLayoutBounds().getHeight();
-
-                double tx = x + (size - textWidth) / 2.0;
-                double ty = y + (size + textHeight) / 2.0 - 2;
-
-                gc.fillText(itemChar, tx, ty);
+        // 색약모드가 켜져 있으면 색 대신 심볼로 채운다
+        if (settingsManager != null && settingsManager.isColorBlindModeEnabled()) {
+            String symbol = "?";
+            if (pieceType >= 0 && pieceType < PIECE_SYMBOLS.length) {
+                symbol = PIECE_SYMBOLS[pieceType];
             }
+
+            // 아이콘을 블록 크기에 맞게 최대한 크게 설정
+            double fontSize = size - 2;
+            if (fontSize < 8) fontSize = 8;
+            Font font = Font.font("Monospaced", fontSize);
+            gc.setFont(font);
+            gc.setFill(Color.WHITE);
+
+            Text text = new Text(symbol);
+            text.setFont(font);
+            double textWidth = text.getLayoutBounds().getWidth();
+            double textHeight = text.getLayoutBounds().getHeight();
+
+            // 사각형 배경 (검정색)
+            gc.setFill(Color.BLACK);
+            gc.fillRect(x, y, size, size);
+
+            // 심볼 그리기 (정중앙 정렬)
+            gc.setFill(Color.WHITE);
+            double tx = x + (size - textWidth) / 2.0;
+            double ty = y + (size + textHeight) / 2.0 - 4;
+            gc.fillText(symbol, tx, ty);
+
+            // 아이템 표시는 별도로
+            if (itemType != null && itemType != ItemType.NONE) {
+                String itemChar = itemType.getDisplayChar();
+                if (!itemChar.isEmpty()) {
+                    double itemFontSize = size * 0.4;
+                    Font itemFont = Font.font("Arial", javafx.scene.text.FontWeight.BOLD, itemFontSize);
+                    gc.setFont(itemFont);
+                    gc.setFill(Color.YELLOW);
+
+                    Text itemText = new Text(itemChar);
+                    itemText.setFont(itemFont);
+                    double itemTextWidth = itemText.getLayoutBounds().getWidth();
+
+                    double itemTx = x + size - itemTextWidth - 2;
+                    double itemTy = y + itemFontSize + 2;
+                    gc.fillText(itemChar, itemTx, itemTy);
+                }
+            }
+        } else {
+            // 일반 모드
+            gc.setFill(color);
+            gc.fillRect(x, y, size, size);
+
+            gc.setStroke(Color.WHITE);
+            gc.setLineWidth(1);
+            gc.strokeRect(x, y, size, size);
+
+            if (itemType != null && itemType != ItemType.NONE) {
+                String itemChar = itemType.getDisplayChar();
+                if (!itemChar.isEmpty()) {
+                    double fontSize = size * 0.6;
+                    Font font = Font.font("Arial", javafx.scene.text.FontWeight.BOLD, fontSize);
+                    gc.setFont(font);
+                    gc.setFill(Color.WHITE);
+
+                    Text text = new Text(itemChar);
+                    text.setFont(font);
+                    double textWidth = text.getLayoutBounds().getWidth();
+                    double textHeight = text.getLayoutBounds().getHeight();
+
+                    double tx = x + (size - textWidth) / 2.0;
+                    double ty = y + (size + textHeight) / 2.0 - 2;
+
+                    gc.fillText(itemChar, tx, ty);
+                }
+            }
+        }
+    }
+
+    // 색약모드용 보드 격자선 렌더링
+    private void drawGrid(GraphicsContext gc, Canvas canvas, double blockSize) {
+        gc.setStroke(Color.web("#444444"));
+        gc.setLineWidth(1);
+        double width = canvas.getWidth();
+        double height = canvas.getHeight();
+
+        // 세로선
+        for (int x = 0; x <= GameBoard.BOARD_WIDTH; x++) {
+            double px = x * blockSize;
+            gc.strokeLine(px, 0, px, height);
+        }
+        // 가로선
+        for (int y = 0; y <= GameBoard.BOARD_HEIGHT; y++) {
+            double py = y * blockSize;
+            gc.strokeLine(0, py, width, py);
         }
     }
 
@@ -651,21 +867,23 @@ public class BattleGameScreenController implements Initializable {
             long minutes = remaining / 60;
             long seconds = remaining % 60;
             timerLabel.setText(String.format("%02d:%02d", minutes, seconds));
+            // 시간 표시 색상 설정 (#e74c3c)
+            timerLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
         } else if (timerLabel != null) {
             timerLabel.setText("");
         }
 
-        // 승자 표시
-        if (winnerLabel != null) {
+        // 승자 표시 (일시정지 중이 아닐 때만)
+        if (winnerLabel != null && !battleEngine.isPaused()) {
             String winner = battleEngine.getWinner();
             if (winner != null) {
                 switch (winner) {
                     case "PLAYER1":
-                        winnerLabel.setText("플레이어 1 승리!");
+                        winnerLabel.setText("플레이어 1\n승리!");
                         winnerLabel.setTextFill(Color.GREEN);
                         break;
                     case "PLAYER2":
-                        winnerLabel.setText("플레이어 2 승리!");
+                        winnerLabel.setText("플레이어 2\n승리!");
                         winnerLabel.setTextFill(Color.GREEN);
                         break;
                     case "DRAW":
@@ -683,6 +901,21 @@ public class BattleGameScreenController implements Initializable {
     private void onPause() {
         if (battleEngine != null) {
             battleEngine.pauseGame();
+            boolean isPaused = battleEngine.isPaused();
+            if (winnerLabel != null) {
+                if (isPaused) {
+                    winnerLabel.setText("일시 정지");
+                    winnerLabel.setTextFill(Color.YELLOW);
+                } else {
+                    // 일시정지 해제 시 원래 상태로 복원 (게임 오버가 아닌 경우)
+                    if (battleEngine.getWinner() == null) {
+                        winnerLabel.setText("");
+                    } else {
+                        // 게임 오버 상태면 원래 승자 표시 유지
+                        updateUI();
+                    }
+                }
+            }
         }
     }
 
@@ -701,8 +934,119 @@ public class BattleGameScreenController implements Initializable {
 
     private void showGameOver() {
         if (sceneManager != null) {
-            // 대전 모드는 스코어보드에 기록하지 않음
-            sceneManager.showMainMenu();
+            updateUI();
+            
+            Platform.runLater(() -> {
+                // 승패 판정
+                String winner = battleEngine.getWinner();
+                
+                if ("PLAYER1".equals(winner)) {
+                    winnerLabel.setText("플레이어 1 승리!");
+                } else if ("PLAYER2".equals(winner)) {
+                    winnerLabel.setText("플레이어 2 승리!");
+                } else if ("DRAW".equals(winner)){
+                    winnerLabel.setText("무승부!");
+                }
+                
+                if (gameOverBox != null) {
+                    gameOverBox.setVisible(true);
+                    gameOverBox.setManaged(true);
+                }
+            });
+        }
+    }
+
+    @FXML
+    private void onRematch() {
+        System.out.println("[BATTLE] Rematch");
+        restartGame();
+    }
+
+    private void restartGame() {
+        Platform.runLater(() -> {
+            // 게임 오버 UI 숨기기
+            if (gameOverBox != null) {
+                gameOverBox.setVisible(false);
+                gameOverBox.setManaged(false);
+            }
+            winnerLabel.setText("");
+            
+            // 게임 루프 정지
+            if (gameLoop != null) {
+                gameLoop.stop();
+            }
+            
+            // 게임 엔진 재초기화
+            battleEngine = new BattleGameEngine(battleMode);
+            if ("TIME_LIMIT".equals(battleMode)) {
+                battleEngine.setTimeLimit(180);
+            }
+            
+            // 블록이 떨어질 때마다 공격 적용하도록 콜백 설정
+            battleEngine.getPlayer1Engine().setOnPiecePlacedCallback(() -> {
+                battleEngine.applyPendingAttacks(1);
+            });
+            battleEngine.getPlayer2Engine().setOnPiecePlacedCallback(() -> {
+                battleEngine.applyPendingAttacks(2);
+            });
+            
+            // 게임 시작
+            startGameLoop();
+            battleEngine.startGame();
+        });
+    }
+    
+    /**
+     * 플레이어 1의 줄 삭제 체크 및 처리 (블록 배치 콜백에서 호출)
+     */
+    private void checkAndClearLinesForPlayer1() {
+        if (!isAnimatingClear1 && battleEngine.isGameRunning() && !battleEngine.isPaused()) {
+            java.util.List<Integer> fullLines = battleEngine.getPlayer1Engine().getFullLines();
+            if (!fullLines.isEmpty()) {
+                int linesCleared = battleEngine.getPlayer1Engine().getGameBoard().clearLines();
+                if (linesCleared > 0) {
+                    battleEngine.getPlayer1Engine().updateScoreForClear(linesCleared);
+                    MusicManager.getInstance().playRemoveBlockSound();
+                    
+                    if (linesCleared >= 2) {
+                        int lastBlockCol = battleEngine.getPlayer1Engine().getLastPlacedBlockCol();
+                        battleEngine.processPlayer1Attack(linesCleared, lastBlockCol);
+                    }
+                    
+                    // 애니메이션 시작
+                    player1LinesToClear = fullLines;
+                    isAnimatingClear1 = true;
+                    clearAnimationStartTime1 = System.nanoTime();
+                    currentClearAnimationDuration1 = CLEAR_ANIMATION_BASE + (linesCleared - 1) * 10_000_000;
+                }
+            }
+        }
+    }
+    
+    /**
+     * 플레이어 2의 줄 삭제 체크 및 처리 (블록 배치 콜백에서 호출)
+     */
+    private void checkAndClearLinesForPlayer2() {
+        if (!isAnimatingClear2 && battleEngine.isGameRunning() && !battleEngine.isPaused()) {
+            java.util.List<Integer> fullLines = battleEngine.getPlayer2Engine().getFullLines();
+            if (!fullLines.isEmpty()) {
+                int linesCleared = battleEngine.getPlayer2Engine().getGameBoard().clearLines();
+                if (linesCleared > 0) {
+                    battleEngine.getPlayer2Engine().updateScoreForClear(linesCleared);
+                    MusicManager.getInstance().playRemoveBlockSound();
+                    
+                    if (linesCleared >= 2) {
+                        int lastBlockCol = battleEngine.getPlayer2Engine().getLastPlacedBlockCol();
+                        battleEngine.processPlayer2Attack(linesCleared, lastBlockCol);
+                    }
+                    
+                    // 애니메이션 시작
+                    player2LinesToClear = fullLines;
+                    isAnimatingClear2 = true;
+                    clearAnimationStartTime2 = System.nanoTime();
+                    currentClearAnimationDuration2 = CLEAR_ANIMATION_BASE + (linesCleared - 1) * 10_000_000;
+                }
+            }
         }
     }
 }

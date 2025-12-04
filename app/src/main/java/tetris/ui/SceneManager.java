@@ -132,7 +132,10 @@ public class SceneManager {
                 cssPath = "/css/GameOverScreen.css";
             } else if (fxmlPath.contains("BattleModeSelection")) {
                 cssPath = "/css/MainMenu.css"; // 같은 스타일 사용
-            } else if (fxmlPath.contains("PVPModeSelection")) {
+            } else if (fxmlPath.contains("PVPModeSelection")
+                    || fxmlPath.contains("PVPNetworkSelection")
+                    || fxmlPath.contains("PVPServerWaiting")
+                    || fxmlPath.contains("PVPClientConnection")) {
                 cssPath = "/css/MainMenu.css"; // 같은 스타일 사용
             } else if (fxmlPath.contains("BattleGameScreen")) {
                 cssPath = "/css/GameScreen.css"; // 같은 스타일 사용
@@ -177,8 +180,7 @@ public class SceneManager {
                 }
             }
 
-            primaryStage.setScene(scene);
-            primaryStage.show();
+            applyScene(scene);
         } catch (IOException e) {
             System.err.println("Error loading scene: " + fxmlPath);
             e.printStackTrace();
@@ -211,7 +213,13 @@ public class SceneManager {
             }
 
             // 대전 모드는 화면이 넓어야 하므로 가로로 확장
-            width = width * 1.6; // 2개 보드를 표시하기 위해 넓게
+            if (screenSize.equals("작게")) {
+                width = 840; 
+            } else if (screenSize.equals("크게")) {
+                width = 1080; 
+            } else {
+                width = width * 1.6; // 중간은 기존 비율 유지
+            }
 
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
             Scene scene = new Scene(loader.load(), width, height);
@@ -231,8 +239,7 @@ public class SceneManager {
                 battleController.setBattleMode(battleMode);
             }
 
-            primaryStage.setScene(scene);
-            primaryStage.show();
+            applyScene(scene);
         } catch (IOException e) {
             System.err.println("Error loading battle scene: " + fxmlPath);
             e.printStackTrace();
@@ -240,6 +247,8 @@ public class SceneManager {
     }
 
     private void loadPVPScene(String fxmlPath, String gameMode, Object gameServer, Object gameClient, boolean isServer) {
+        System.out.println("[SCENE] Loading PVP scene: " + fxmlPath);
+        System.out.println("[SCENE] Game mode: " + gameMode + ", isServer: " + isServer);
         try {
             String screenSize = SettingsManager.getInstance().getScreenSize();
             double width = MEDIUM_WIDTH;
@@ -265,8 +274,15 @@ public class SceneManager {
             }
 
             // PVP 모드는 화면이 넓어야 하므로 가로로 확장 (2개 보드 표시)
-            width = width * 1.6;
+            if (screenSize.equals("작게")) {
+                width = 900; // 작은 화면: 900px
+            } else if (screenSize.equals("크게")) {
+                width = 1120; // 큰 화면: 1120px
+            } else {
+                width = width * 1.6; // 중간은 기존 비율 유지
+            }
 
+            System.out.println("[SCENE] Loading FXML...");
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
             Scene scene = new Scene(loader.load(), width, height);
 
@@ -274,22 +290,31 @@ public class SceneManager {
             URL cssUrl = getClass().getResource("/css/PVPGameScreen.css");
             if (cssUrl != null) {
                 scene.getStylesheets().add(cssUrl.toExternalForm());
+                System.out.println("[SCENE] CSS loaded");
             }
 
             // 컨트롤러에 SceneManager와 게임 모드, 네트워크 객체 설정
+            System.out.println("[SCENE] Getting controller...");
             Object controller = loader.getController();
             if (controller instanceof tetris.ui.controllers.PVPGameScreenController) {
+                System.out.println("[SCENE] PVPGameScreenController found, configuring...");
                 tetris.ui.controllers.PVPGameScreenController pvpController =
                     (tetris.ui.controllers.PVPGameScreenController) controller;
                 pvpController.setSceneManager(this);
                 pvpController.setGameMode(gameMode);
+
+                // PVPNetworkSelectionController에 게임 컨트롤러 참조 전달
+                System.out.println("[SCENE] Registering game controller to network handler");
+                tetris.ui.controllers.PVPNetworkSelectionController.setGameScreenController(pvpController);
+
                 pvpController.setNetworkObjects(gameServer, gameClient, isServer);
             }
 
-            primaryStage.setScene(scene);
-            primaryStage.show();
+            System.out.println("[SCENE] Displaying scene...");
+            applyScene(scene);
+            System.out.println("[SCENE] PVP scene loaded successfully");
         } catch (IOException e) {
-            System.err.println("Error loading PVP scene: " + fxmlPath);
+            System.err.println("[SCENE] Error loading PVP scene: " + fxmlPath);
             e.printStackTrace();
         }
     }
@@ -337,8 +362,7 @@ public class SceneManager {
                 networkController.setGameMode(gameMode);
             }
 
-            primaryStage.setScene(scene);
-            primaryStage.show();
+            applyScene(scene);
         } catch (IOException e) {
             System.err.println("Error loading PVP network selection scene: " + fxmlPath);
             e.printStackTrace();
@@ -389,8 +413,7 @@ public class SceneManager {
                 );
             }
 
-            primaryStage.setScene(scene);
-            primaryStage.show();
+            applyScene(scene);
         } catch (IOException e) {
             System.err.println("Error loading PVP server waiting scene: " + fxmlPath);
             e.printStackTrace();
@@ -442,8 +465,7 @@ public class SceneManager {
                 );
             }
 
-            primaryStage.setScene(scene);
-            primaryStage.show();
+            applyScene(scene);
         } catch (IOException e) {
             System.err.println("Error loading PVP lobby scene: " + fxmlPath);
             e.printStackTrace();
@@ -452,5 +474,17 @@ public class SceneManager {
 
     public Stage getPrimaryStage() {
         return primaryStage;
+    }
+
+    private void applyScene(Scene scene) {
+        primaryStage.setScene(scene);
+        if (!isHeadlessEnvironment()) {
+            primaryStage.show();
+        }
+    }
+
+    private boolean isHeadlessEnvironment() {
+        return Boolean.parseBoolean(System.getProperty("testfx.headless", "false"))
+            || Boolean.parseBoolean(System.getProperty("java.awt.headless", "false"));
     }
 }

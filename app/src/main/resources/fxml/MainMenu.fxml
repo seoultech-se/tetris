@@ -9,14 +9,14 @@
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.text.Font?>
 
-<StackPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="tetris.ui.controllers.MainMenuController">
+<StackPane fx:id="rootContainer" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="tetris.ui.controllers.MainMenuController">
    <children>
       <ImageView fx:id="backgroundImage" pickOnBounds="true" preserveRatio="false">
          <image>
             <Image url="@/assets/img/Tetris_Background.png" />
          </image>
       </ImageView>
-      <VBox alignment="BOTTOM_CENTER" spacing="30.0">
+      <VBox fx:id="buttonContainer" alignment="BOTTOM_CENTER" spacing="30.0" styleClass="menu-container">
          <children>
             <Button fx:id="normalModeButton" mnemonicParsing="false" focusTraversable="true" onAction="#onStartNormalMode" prefWidth="200.0" text="일반 모드" styleClass="menu-button normal-mode-button">
                <font>
@@ -55,7 +55,7 @@
             </Button>
          </children>
          <padding>
-            <Insets bottom="50.0" left="50.0" right="50.0" top="50.0" />
+            <Insets bottom="30.0" left="50.0" right="50.0" top="50.0" />
          </padding>
       </VBox>
    </children>

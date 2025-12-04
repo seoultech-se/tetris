@@ -17,10 +17,12 @@ public class BattleGameEngine {
     // 시간제한 모드 관련
     private long timeLimitSeconds; // 초 단위
     private long gameStartTime; // 나노초 단위
+    private long pauseStartTime; // 일시정지 시작 시간 (나노초 단위)
+    private long totalPausedTime; // 총 일시정지된 시간 (나노초 단위)
     private boolean timeLimitMode;
     
     // 승자 정보
-    private String winner; // "PLAYER1", "PLAYER2", null
+    private String winner; // "PLAYER1", "PLAYER2", "DRAW", null
     
     // 대기 중인 공격 줄 큐 (각 플레이어에게 넘어갈 줄 수와 빈칸 위치)
     private Queue<AttackInfo> pendingAttacksToPlayer1;
@@ -60,6 +62,8 @@ public class BattleGameEngine {
         isGameRunning = true;
         isPaused = false;
         gameStartTime = System.nanoTime();
+        totalPausedTime = 0;
+        pauseStartTime = 0;
         player1Engine.startGame();
         player2Engine.startGame();
     }
@@ -67,9 +71,16 @@ public class BattleGameEngine {
     public void pauseGame() {
         isPaused = !isPaused;
         if (isPaused) {
+            // 일시정지 시작 시간 기록
+            pauseStartTime = System.nanoTime();
             player1Engine.pauseGame();
             player2Engine.pauseGame();
         } else {
+            // 일시정지 해제 시 일시정지된 시간 누적
+            if (pauseStartTime > 0) {
+                totalPausedTime += System.nanoTime() - pauseStartTime;
+                pauseStartTime = 0;
+            }
             player1Engine.pauseGame();
             player2Engine.pauseGame();
         }
@@ -99,14 +110,14 @@ public class BattleGameEngine {
     
     /**
      * 플레이어 2의 키 입력 처리
-     * 방향키를 플레이어 1의 키 설정에 매핑
+     * Player2 키 설정을 Player1 키 설정에 매핑
      */
     public void handlePlayer2KeyPress(javafx.scene.input.KeyCode keyCode) {
         if (!isGameRunning || isPaused) {
             return;
         }
         
-        // 방향키를 플레이어 1 키 설정으로 변환
+        // Player2 키를 Player1 키 설정으로 변환
         javafx.scene.input.KeyCode mappedKey = mapPlayer2Key(keyCode);
         if (mappedKey != null) {
             player2Engine.handleKeyPress(mappedKey);
@@ -115,21 +126,29 @@ public class BattleGameEngine {
     }
     
     /**
-     * 플레이어 2의 방향키를 플레이어 1 키 설정으로 매핑
+     * 플레이어 2의 키를 플레이어 1 키 설정으로 매핑
      */
     private javafx.scene.input.KeyCode mapPlayer2Key(javafx.scene.input.KeyCode keyCode) {
         SettingsManager settings = SettingsManager.getInstance();
         
-        // 방향키를 플레이어 1의 키 설정으로 변환
-        if (keyCode == javafx.scene.input.KeyCode.LEFT) {
+        // Player2 키와 Player1 키 설정 매핑
+        String p2Left = settings.getKeyLeftP2();
+        String p2Right = settings.getKeyRightP2();
+        String p2Down = settings.getKeyDownP2();
+        String p2Rotate = settings.getKeyRotateP2();
+        String p2HardDrop = settings.getKeyHardDropP2();
+        
+        String keyName = keyCode.name();
+        
+        if (keyName.equals(p2Left)) {
             return javafx.scene.input.KeyCode.valueOf(settings.getKeyLeft());
-        } else if (keyCode == javafx.scene.input.KeyCode.RIGHT) {
+        } else if (keyName.equals(p2Right)) {
             return javafx.scene.input.KeyCode.valueOf(settings.getKeyRight());
-        } else if (keyCode == javafx.scene.input.KeyCode.DOWN) {
+        } else if (keyName.equals(p2Down)) {
             return javafx.scene.input.KeyCode.valueOf(settings.getKeyDown());
-        } else if (keyCode == javafx.scene.input.KeyCode.UP) {
+        } else if (keyName.equals(p2Rotate)) {
             return javafx.scene.input.KeyCode.valueOf(settings.getKeyRotate());
-        } else if (keyCode == javafx.scene.input.KeyCode.ENTER) {
+        } else if (keyName.equals(p2HardDrop)) {
             return javafx.scene.input.KeyCode.valueOf(settings.getKeyHardDrop());
         }
         
@@ -143,10 +162,27 @@ public class BattleGameEngine {
         if (!isGameRunning || isPaused) {
             return;
         }
+
+        if (winner != null) {
+            return;
+        }
+        
+        // 게임 오버 체크 (매 프레임마다 확인)
+        checkGameOver();
+
+        if (winner != null) {
+            return;
+        }
         
         // 시간제한 모드 체크
         if (timeLimitMode) {
-            long elapsed = (System.nanoTime() - gameStartTime) / 1_000_000_000L;
+            long currentTime = System.nanoTime();
+            long pausedTime = totalPausedTime;
+            // 현재 일시정지 중이면 일시정지 시작 시간부터의 경과 시간도 빼기
+            if (isPaused && pauseStartTime > 0) {
+                pausedTime += currentTime - pauseStartTime;
+            }
+            long elapsed = (currentTime - gameStartTime - pausedTime) / 1_000_000_000L;
             if (elapsed >= timeLimitSeconds) {
                 // 시간 종료 - 점수 높은 사람 승리
                 if (player1Engine.getScore() > player2Engine.getScore()) {
@@ -247,7 +283,7 @@ public class BattleGameEngine {
     public void applyPendingAttacks(int playerNumber) {
         if (playerNumber == 1) {
             // 플레이어 1에게 대기 중인 공격 한 줄씩 적용
-            if (!pendingAttacksToPlayer1.isEmpty()) {
+            while (!pendingAttacksToPlayer1.isEmpty()) {
                 AttackInfo attack = pendingAttacksToPlayer1.poll();
                 player1Engine.getGameBoard().addAttackLines(1, attack.emptyCol);
                 // 공격 블록 추가 후 게임 오버 체크
@@ -257,7 +293,7 @@ public class BattleGameEngine {
             }
         } else if (playerNumber == 2) {
             // 플레이어 2에게 대기 중인 공격 한 줄씩 적용
-            if (!pendingAttacksToPlayer2.isEmpty()) {
+            while (!pendingAttacksToPlayer2.isEmpty()) {
                 AttackInfo attack = pendingAttacksToPlayer2.poll();
                 player2Engine.getGameBoard().addAttackLines(1, attack.emptyCol);
                 // 공격 블록 추가 후 게임 오버 체크
@@ -275,7 +311,29 @@ public class BattleGameEngine {
         applyPendingAttacks(1);
         applyPendingAttacks(2);
     }
-    
+
+    /**
+     * 플레이어 1에게 직접 공격 추가 (네트워크로 받은 공격용)
+     * @param lines 공격 줄 수
+     * @param emptyCol 빈칸 위치
+     */
+    public void addAttackToPlayer1(int lines, int emptyCol) {
+        for (int i = 0; i < lines; i++) {
+            pendingAttacksToPlayer1.offer(new AttackInfo(1, emptyCol));
+        }
+    }
+
+    /**
+     * 플레이어 2에게 직접 공격 추가 (네트워크로 받은 공격용)
+     * @param lines 공격 줄 수
+     * @param emptyCol 빈칸 위치
+     */
+    public void addAttackToPlayer2(int lines, int emptyCol) {
+        for (int i = 0; i < lines; i++) {
+            pendingAttacksToPlayer2.offer(new AttackInfo(1, emptyCol));
+        }
+    }
+
     /**
      * 플레이어 1에게 대기 중인 공격 줄 수 반환
      */
@@ -369,7 +427,13 @@ public class BattleGameEngine {
         if (!timeLimitMode || !isGameRunning) {
             return 0;
         }
-        long elapsed = (System.nanoTime() - gameStartTime) / 1_000_000_000L;
+        long currentTime = System.nanoTime();
+        long pausedTime = totalPausedTime;
+        // 현재 일시정지 중이면 일시정지 시작 시간부터의 경과 시간도 빼기
+        if (isPaused && pauseStartTime > 0) {
+            pausedTime += currentTime - pauseStartTime;
+        }
+        long elapsed = (currentTime - gameStartTime - pausedTime) / 1_000_000_000L;
         return Math.max(0, timeLimitSeconds - elapsed);
     }
     
