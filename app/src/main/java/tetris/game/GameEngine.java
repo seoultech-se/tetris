@@ -64,7 +64,9 @@ public class GameEngine {
         }
 
         SettingsManager settings = SettingsManager.getInstance();
-        String keyName = keyCode.getName().toUpperCase();
+        // KeyCode.toString()은 "SPACE", "LEFT" 등 대문자로 반환
+        // KeyCode.getName()은 "Space", "Left" 등 혼합 케이스로 반환하므로 사용하지 않음
+        String keyName = keyCode.toString();
 
         if (keyName.equals(settings.getKeyLeft())) {
             movePieceLeft();
@@ -74,7 +76,7 @@ public class GameEngine {
             movePieceDown();
         } else if (keyName.equals(settings.getKeyRotate())) {
             rotatePiece();
-        } else if (keyName.equals(settings.getKeyHardDrop()) || keyCode == javafx.scene.input.KeyCode.SPACE) {
+        } else if (keyName.equals(settings.getKeyHardDrop())) {
             hardDrop();
         } else if (keyCode == javafx.scene.input.KeyCode.N && hasSkipItem()) {
             // N키를 누르고 nextPiece가 SKIP 아이템을 가지고 있으면 블록 넘기기

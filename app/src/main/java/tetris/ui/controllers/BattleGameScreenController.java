@@ -236,19 +236,19 @@ public class BattleGameScreenController implements Initializable {
                         }
                         
                         if (battleEngine != null && battleEngine.isGameRunning() && !battleEngine.isPaused()) {
-                            // Player1 키 설정
-                            javafx.scene.input.KeyCode p1Left = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyLeft());
-                            javafx.scene.input.KeyCode p1Right = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyRight());
-                            javafx.scene.input.KeyCode p1Down = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyDown());
-                            javafx.scene.input.KeyCode p1Rotate = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyRotate());
-                            javafx.scene.input.KeyCode p1HardDrop = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyHardDrop());
+                            // Player1 키 설정 (안전한 변환)
+                            javafx.scene.input.KeyCode p1Left = safeKeyCodeValueOf(settingsManager.getKeyLeft(), javafx.scene.input.KeyCode.A);
+                            javafx.scene.input.KeyCode p1Right = safeKeyCodeValueOf(settingsManager.getKeyRight(), javafx.scene.input.KeyCode.D);
+                            javafx.scene.input.KeyCode p1Down = safeKeyCodeValueOf(settingsManager.getKeyDown(), javafx.scene.input.KeyCode.S);
+                            javafx.scene.input.KeyCode p1Rotate = safeKeyCodeValueOf(settingsManager.getKeyRotate(), javafx.scene.input.KeyCode.W);
+                            javafx.scene.input.KeyCode p1HardDrop = safeKeyCodeValueOf(settingsManager.getKeyHardDrop(), javafx.scene.input.KeyCode.SPACE);
                             
-                            // Player2 키 설정
-                            javafx.scene.input.KeyCode p2Left = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyLeftP2());
-                            javafx.scene.input.KeyCode p2Right = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyRightP2());
-                            javafx.scene.input.KeyCode p2Down = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyDownP2());
-                            javafx.scene.input.KeyCode p2Rotate = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyRotateP2());
-                            javafx.scene.input.KeyCode p2HardDrop = javafx.scene.input.KeyCode.valueOf(settingsManager.getKeyHardDropP2());
+                            // Player2 키 설정 (안전한 변환)
+                            javafx.scene.input.KeyCode p2Left = safeKeyCodeValueOf(settingsManager.getKeyLeftP2(), javafx.scene.input.KeyCode.LEFT);
+                            javafx.scene.input.KeyCode p2Right = safeKeyCodeValueOf(settingsManager.getKeyRightP2(), javafx.scene.input.KeyCode.RIGHT);
+                            javafx.scene.input.KeyCode p2Down = safeKeyCodeValueOf(settingsManager.getKeyDownP2(), javafx.scene.input.KeyCode.DOWN);
+                            javafx.scene.input.KeyCode p2Rotate = safeKeyCodeValueOf(settingsManager.getKeyRotateP2(), javafx.scene.input.KeyCode.UP);
+                            javafx.scene.input.KeyCode p2HardDrop = safeKeyCodeValueOf(settingsManager.getKeyHardDropP2(), javafx.scene.input.KeyCode.ENTER);
                             
                             // 플레이어 1 키 처리
                             if (code == p1Left || code == p1Right || code == p1Down || 
@@ -267,6 +267,21 @@ public class BattleGameScreenController implements Initializable {
                     });
                 }
             });
+        }
+    }
+    
+    /**
+     * 안전하게 KeyCode로 변환. 실패 시 기본값 반환.
+     */
+    private javafx.scene.input.KeyCode safeKeyCodeValueOf(String keyName, javafx.scene.input.KeyCode defaultKey) {
+        if (keyName == null || keyName.isEmpty()) {
+            return defaultKey;
+        }
+        try {
+            return javafx.scene.input.KeyCode.valueOf(keyName);
+        } catch (IllegalArgumentException e) {
+            System.err.println("Invalid key name: " + keyName + ", using default: " + defaultKey);
+            return defaultKey;
         }
     }
 
